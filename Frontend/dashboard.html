@@ -899,7 +899,11 @@
     }
 
         // ==================== MODO ALEATÓRIO (QUESTÕES) ====================
-
+    let modoAleatorioAtivo = false;
+    let questoesAleatorias = [];
+    let indiceAleatorioAtual = 0;
+    let simuladoTimerInterval = null;
+    let simuladoTempoRestante = 0;
     
     async function iniciarModoAleatorio(quantidade) {
         await carregarQuestoes();
