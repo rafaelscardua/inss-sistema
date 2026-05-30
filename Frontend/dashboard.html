@@ -872,7 +872,11 @@
         document.querySelectorAll('.btn-responder').forEach(btn => btn.addEventListener('click', async (e) => {
             let id = parseInt(btn.dataset.id);
             let quest = questoes.find(q=>q.id===id);
-            let selected = window.selectedAnswer[id];
+            if (!window.selectedAnswer || !window.selectedAnswer[id]) {
+    alert("Selecione uma alternativa primeiro!");
+    return;
+}
+let selected = window.selectedAnswer[id];
             if(!selected) { alert("Selecione uma alternativa!"); return; }
             let acertou = (selected === quest.correta);
             await salvarResposta(id, acertou, selected);
