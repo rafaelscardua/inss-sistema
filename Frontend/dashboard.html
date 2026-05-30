@@ -404,7 +404,7 @@
         <div id="materiasContainer"></div>
     </div>
 
-
+    
 
         <!-- QUESTÕES -->
     <div id="tab-questoes" class="tab-content">
@@ -427,7 +427,21 @@
 
 
 
-
+    <!-- CRONÔMETRO -->
+    <div id="tab-cronometro" class="tab-content">
+        <div class="cronometro-box">
+            <h2>🍅 Pomodoro Timer</h2>
+            <div class="timer-display" id="timerDisplay">25:00</div>
+            <div class="timer-buttons">
+                <button class="btn-start" id="startTimer">▶ Iniciar</button>
+                <button class="btn-pause" id="pauseTimer">⏸ Pausar</button>
+                <button class="btn-reset" id="resetTimer">🔄 Resetar</button>
+            </div>
+            <div style="margin-top: 20px;">
+                <p>⏱️ 25 min foco → 5 min pausa → após 4 ciclos, pausa longa de 15 min</p>
+            </div>
+        </div>
+    </div>
 
     <!-- IMPORTAÇÃO -->
     <div id="tab-importar" class="tab-content">
@@ -639,6 +653,182 @@
     }
     window.toggleMateria = (idx) => { dadosEstudo.materias[idx].expandido = !dadosEstudo.materias[idx].expandido; salvarPlano(); renderizarMaterias(); };
 
+    // ==================== MODO ALEATÓRIO (QUESTÕES) ====================
+    let modoAleatorioAtivo = false;
+    let questoesAleatorias = [];
+    let indiceAleatorioAtual = 0;
+    let simuladoTimerInterval = null;
+    let simuladoTempoRestante = 0;
+    
+    async function iniciarModoAleatorio(quantidade) {
+        await carregarQuestoes();
+        if (!questoes.length) { alert("Nenhuma questão cadastrada!"); return; }
+        
+        let filtradas = [...questoes];
+        const filtroStatus = document.getElementById("filtroStatus")?.value || "todas";
+        
+        if (filtroStatus === "naoRespondidas") filtradas = filtradas.filter(q => !respostasUsuario[q.id]?.respondida);
+        if (filtroStatus === "erradas") filtradas = filtradas.filter(q => respostasUsuario[q.id]?.acertou === false);
+        
+        if (filtradas.length === 0) { alert("Nenhuma questão com o filtro selecionado!"); return; }
+        
+        for (let i = filtradas.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [filtradas[i], filtradas[j]] = [filtradas[j], filtradas[i]];
+        }
+        
+        questoesAleatorias = filtradas.slice(0, Math.min(quantidade, filtradas.length));
+        indiceAleatorioAtual = 0;
+        modoAleatorioAtivo = true;
+        mostrarQuestaoAleatoria();
+    }
+    
+    function mostrarQuestaoAleatoria() {
+        if (!modoAleatorioAtivo || indiceAleatorioAtual >= questoesAleatorias.length) {
+            alert(`🎉 Parabéns! Você completou ${questoesAleatorias.length} questões!`);
+            encerrarModoAleatorio();
+            return;
+        }
+        
+        const quest = questoesAleatorias[indiceAleatorioAtual];
+        const resp = respostasUsuario[quest.id] || {};
+        const container = document.getElementById("questoesList");
+        
+        let alternativasHtml = Object.entries(quest.alternativas).map(([letra, texto]) => {
+            let classes = "alternativa";
+            if(resp.respondida) {
+                if(letra === quest.correta) classes += " correct-answer";
+                if(letra === resp.resposta_usuario && resp.resposta_usuario !== quest.correta) classes += " wrong-answer";
+            }
+            return `<div class="${classes}" data-letra="${letra}" data-qid="${quest.id}"><strong>${letra})</strong> ${texto}</div>`;
+        }).join('');
+        
+        container.innerHTML = `
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <span>🎲 <strong>MODO ALEATÓRIO</strong></span><br>
+                    <small>Questão ${indiceAleatorioAtual + 1} de ${questoesAleatorias.length}</small>
+                </div>
+                <div>
+                    <span style="margin-right: 15px;">✅ Acertos: ${questoesAleatorias.filter((_,i) => i < indiceAleatorioAtual && respostasUsuario[questoesAleatorias[i].id]?.acertou === true).length}</span>
+                    <button class="btn-small" id="sairAleatorioBtn" style="background: #e74c3c;">❌ Sair</button>
+                </div>
+            </div>
+            <div class="question-card">
+                <div class="question-text"><strong>📚 ${quest.materia} | ${quest.assunto}</strong><br>${quest.enunciado}</div>
+                <div class="alternativas" id="altAleatorio">${alternativasHtml}</div>
+                ${!resp.respondida ? `<button class="btn-responder" id="respAleatorioBtn">✅ Responder</button>` : ''}
+                ${resp.respondida ? `<div class="feedback ${resp.acertou ? 'correct' : 'wrong'}">${resp.acertou ? '✅ Correto!' : '❌ Errado!'} ${quest.explicacao || ''}</div><button class="btn-small" id="proxAleatorioBtn" style="margin-top: 10px;">▶ Próxima Questão</button>` : ''}
+            </div>
+        `;
+        
+        document.querySelectorAll('#altAleatorio .alternativa').forEach(el => {
+            el.addEventListener('click', () => {
+                document.querySelectorAll('#altAleatorio .alternativa').forEach(a=>a.classList.remove('selected'));
+                el.classList.add('selected');
+                window.selectedAleatorio = el.dataset.letra;
+            });
+        });
+        
+        document.getElementById("respAleatorioBtn")?.addEventListener('click', async () => {
+            let selected = window.selectedAleatorio;
+            if(!selected) { alert("Selecione uma alternativa!"); return; }
+            await salvarResposta(quest.id, selected === quest.correta, selected);
+            await carregarRespostas();
+            renderizarQuestoes();
+            carregarEstatisticas();
+            atualizarStats();
+            mostrarQuestaoAleatoria();
+        });
+        
+        document.getElementById("proxAleatorioBtn")?.addEventListener('click', () => { indiceAleatorioAtual++; mostrarQuestaoAleatoria(); });
+        document.getElementById("sairAleatorioBtn")?.addEventListener('click', () => encerrarModoAleatorio());
+    }
+    
+    function encerrarModoAleatorio() {
+        modoAleatorioAtivo = false;
+        questoesAleatorias = [];
+        indiceAleatorioAtual = 0;
+        renderizarQuestoes();
+        if(simuladoTimerInterval) { clearInterval(simuladoTimerInterval); simuladoTimerInterval = null; }
+    }
+    
+    // ==================== SIMULADO AVANÇADO ====================
+    function abrirSimuladoModal() {
+        const selectMaterias = document.getElementById("simuladoMaterias");
+        if(selectMaterias) {
+            const materiasUnicas = [...new Set(questoes.map(q => q.materia))];
+            selectMaterias.innerHTML = '<option value="todas">Todas as matérias</option>' + materiasUnicas.map(m => `<option value="${m}">${m}</option>`).join('');
+        }
+        const selectAssuntos = document.getElementById("simuladoAssuntos");
+        if(selectAssuntos) {
+            const assuntosUnicos = [...new Set(questoes.map(q => q.assunto))];
+            selectAssuntos.innerHTML = '<option value="todos">Todos os assuntos</option>' + assuntosUnicos.map(a => `<option value="${a}">${a}</option>`).join('');
+        }
+        document.getElementById("simuladoModal").style.display = "flex";
+    }
+    
+    function fecharSimuladoModal() { document.getElementById("simuladoModal").style.display = "none"; }
+    
+    async function iniciarSimulado() {
+        const quantidade = parseInt(document.getElementById("simuladoQtd")?.value) || 20;
+        const materiasSelecionadas = Array.from(document.getElementById("simuladoMaterias")?.selectedOptions || []).map(o => o.value);
+        const assuntosSelecionados = Array.from(document.getElementById("simuladoAssuntos")?.selectedOptions || []).map(o => o.value);
+        const apenasNaoRespondidas = document.getElementById("simuladoApenasNaoRespondidas")?.checked || false;
+        const apenasErradas = document.getElementById("simuladoApenasErradas")?.checked || false;
+        const comTimer = document.getElementById("simuladoTimer")?.checked || false;
+        const timerMinutos = parseInt(document.getElementById("simuladoTimerMinutos")?.value) || 30;
+        
+        await carregarQuestoes();
+        
+        let filtradas = [...questoes];
+        
+        if (!materiasSelecionadas.includes("todas") && materiasSelecionadas.length > 0) {
+            filtradas = filtradas.filter(q => materiasSelecionadas.includes(q.materia));
+        }
+        if (!assuntosSelecionados.includes("todos") && assuntosSelecionados.length > 0) {
+            filtradas = filtradas.filter(q => assuntosSelecionados.includes(q.assunto));
+        }
+        if (apenasNaoRespondidas) {
+            filtradas = filtradas.filter(q => !respostasUsuario[q.id]?.respondida);
+        }
+        if (apenasErradas) {
+            filtradas = filtradas.filter(q => respostasUsuario[q.id]?.acertou === false);
+        }
+        
+        if (filtradas.length === 0) { alert("Nenhuma questão encontrada com os filtros selecionados!"); return; }
+        
+        for (let i = filtradas.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [filtradas[i], filtradas[j]] = [filtradas[j], filtradas[i]];
+        }
+        
+        questoesAleatorias = filtradas.slice(0, Math.min(quantidade, filtradas.length));
+        indiceAleatorioAtual = 0;
+        modoAleatorioAtivo = true;
+        
+        fecharSimuladoModal();
+        
+        if (comTimer) {
+            simuladoTempoRestante = timerMinutos * 60;
+            if(simuladoTimerInterval) clearInterval(simuladoTimerInterval);
+            simuladoTimerInterval = setInterval(() => {
+                if(simuladoTempoRestante <= 0) {
+                    clearInterval(simuladoTimerInterval);
+                    alert("⏰ Tempo esgotado! Finalizando simulado.");
+                    encerrarModoAleatorio();
+                } else {
+                    simuladoTempoRestante--;
+                }
+            }, 1000);
+        }
+        
+        mostrarQuestaoAleatoria();
+    }
+    
+    function fecharResultadoModal() { document.getElementById("resultadoModal").style.display = "none"; }
+
+
     function renderizarQuestoes() {
         const materia = document.getElementById("filtroMateria")?.value || "todas";
         const assunto = document.getElementById("filtroTopico")?.value || "todos";
@@ -708,31 +898,47 @@
         }
     }
 
-    // MODO ALEATÓRIO
-    async function modoAleatorio(quantidade) {
+        // ==================== MODO ALEATÓRIO (QUESTÕES) ====================
+    let modoAleatorioAtivo = false;
+    let questoesAleatorias = [];
+    let indiceAleatorioAtual = 0;
+    let simuladoTimerInterval = null;
+    let simuladoTempoRestante = 0;
+    
+    async function iniciarModoAleatorio(quantidade) {
+        await carregarQuestoes();
         if (!questoes.length) { alert("Nenhuma questão cadastrada!"); return; }
-        const embaralhadas = [...questoes];
-        for (let i = embaralhadas.length - 1; i > 0; i--) {
+        
+        let filtradas = [...questoes];
+        const filtroStatus = document.getElementById("filtroStatus")?.value || "todas";
+        
+        if (filtroStatus === "naoRespondidas") filtradas = filtradas.filter(q => !respostasUsuario[q.id]?.respondida);
+        if (filtroStatus === "erradas") filtradas = filtradas.filter(q => respostasUsuario[q.id]?.acertou === false);
+        
+        if (filtradas.length === 0) { alert("Nenhuma questão com o filtro selecionado!"); return; }
+        
+        for (let i = filtradas.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
-            [embaralhadas[i], embaralhadas[j]] = [embaralhadas[j], embaralhadas[i]];
+            [filtradas[i], filtradas[j]] = [filtradas[j], filtradas[i]];
         }
-        const selecionadas = embaralhadas.slice(0, Math.min(quantidade, questoes.length));
-        window.questoesAleatorias = selecionadas;
-        window.indiceAleatorioAtual = 0;
-        alert(`🎲 Modo Aleatório: ${selecionadas.length} questões selecionadas!`);
+        
+        questoesAleatorias = filtradas.slice(0, Math.min(quantidade, filtradas.length));
+        indiceAleatorioAtual = 0;
+        modoAleatorioAtivo = true;
         mostrarQuestaoAleatoria();
     }
-
+    
     function mostrarQuestaoAleatoria() {
-        if (!window.questoesAleatorias || window.indiceAleatorioAtual >= window.questoesAleatorias.length) {
-            alert("🎉 Parabéns! Você completou todas as questões aleatórias!");
-            delete window.questoesAleatorias;
-            renderizarQuestoes();
+        if (!modoAleatorioAtivo || indiceAleatorioAtual >= questoesAleatorias.length) {
+            alert(`🎉 Parabéns! Você completou ${questoesAleatorias.length} questões!`);
+            encerrarModoAleatorio();
             return;
         }
-        const quest = window.questoesAleatorias[window.indiceAleatorioAtual];
+        
+        const quest = questoesAleatorias[indiceAleatorioAtual];
         const resp = respostasUsuario[quest.id] || {};
         const container = document.getElementById("questoesList");
+        
         let alternativasHtml = Object.entries(quest.alternativas).map(([letra, texto]) => {
             let classes = "alternativa";
             if(resp.respondida) {
@@ -741,18 +947,26 @@
             }
             return `<div class="${classes}" data-letra="${letra}" data-qid="${quest.id}"><strong>${letra})</strong> ${texto}</div>`;
         }).join('');
+        
         container.innerHTML = `
-            <div style="background: #f0f0f0; padding: 10px; border-radius: 10px; margin-bottom: 15px; display: flex; justify-content: space-between;">
-                <span>🎲 <strong>Modo Aleatório</strong> - ${window.indiceAleatorioAtual+1}/${window.questoesAleatorias.length}</span>
-                <button class="btn-small" id="sairAleatorioBtn">❌ Sair</button>
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <span>🎲 <strong>MODO ALEATÓRIO</strong></span><br>
+                    <small>Questão ${indiceAleatorioAtual + 1} de ${questoesAleatorias.length}</small>
+                </div>
+                <div>
+                    <span style="margin-right: 15px;">✅ Acertos: ${questoesAleatorias.filter((_,i) => i < indiceAleatorioAtual && respostasUsuario[questoesAleatorias[i].id]?.acertou === true).length}</span>
+                    <button class="btn-small" id="sairAleatorioBtn" style="background: #e74c3c;">❌ Sair</button>
+                </div>
             </div>
             <div class="question-card">
                 <div class="question-text"><strong>📚 ${quest.materia} | ${quest.assunto}</strong><br>${quest.enunciado}</div>
                 <div class="alternativas" id="altAleatorio">${alternativasHtml}</div>
                 ${!resp.respondida ? `<button class="btn-responder" id="respAleatorioBtn">✅ Responder</button>` : ''}
-                ${resp.respondida ? `<div class="feedback ${resp.acertou ? 'correct' : 'wrong'}">${resp.acertou ? '✅ Correto!' : '❌ Errado!'} ${quest.explicacao || ''}</div><button class="btn-small" id="proxAleatorioBtn">▶ Próxima</button>` : ''}
+                ${resp.respondida ? `<div class="feedback ${resp.acertou ? 'correct' : 'wrong'}">${resp.acertou ? '✅ Correto!' : '❌ Errado!'} ${quest.explicacao || ''}</div><button class="btn-small" id="proxAleatorioBtn" style="margin-top: 10px;">▶ Próxima Questão</button>` : ''}
             </div>
         `;
+        
         document.querySelectorAll('#altAleatorio .alternativa').forEach(el => {
             el.addEventListener('click', () => {
                 document.querySelectorAll('#altAleatorio .alternativa').forEach(a=>a.classList.remove('selected'));
@@ -760,19 +974,115 @@
                 window.selectedAleatorio = el.dataset.letra;
             });
         });
+        
         document.getElementById("respAleatorioBtn")?.addEventListener('click', async () => {
             let selected = window.selectedAleatorio;
             if(!selected) { alert("Selecione uma alternativa!"); return; }
             await salvarResposta(quest.id, selected === quest.correta, selected);
             await carregarRespostas();
-            window.indiceAleatorioAtual++;
-            mostrarQuestaoAleatoria();
+            renderizarQuestoes();
             carregarEstatisticas();
             atualizarStats();
+            mostrarQuestaoAleatoria();
         });
-        document.getElementById("proxAleatorioBtn")?.addEventListener('click', () => { window.indiceAleatorioAtual++; mostrarQuestaoAleatoria(); });
-        document.getElementById("sairAleatorioBtn")?.addEventListener('click', () => { delete window.questoesAleatorias; renderizarQuestoes(); });
+        
+        document.getElementById("proxAleatorioBtn")?.addEventListener('click', () => { indiceAleatorioAtual++; mostrarQuestaoAleatoria(); });
+        document.getElementById("sairAleatorioBtn")?.addEventListener('click', () => encerrarModoAleatorio());
     }
+    
+    function encerrarModoAleatorio() {
+        modoAleatorioAtivo = false;
+        questoesAleatorias = [];
+        indiceAleatorioAtual = 0;
+        renderizarQuestoes();
+        if(simuladoTimerInterval) { clearInterval(simuladoTimerInterval); simuladoTimerInterval = null; }
+    }
+    
+    // ==================== SIMULADO AVANÇADO ====================
+    function abrirSimuladoModal() {
+        const selectMaterias = document.getElementById("simuladoMaterias");
+        const materiasUnicas = [...new Set(questoes.map(q => q.materia))];
+        selectMaterias.innerHTML = '<option value="todas">Todas as matérias</option>' + materiasUnicas.map(m => `<option value="${m}">${m}</option>`).join('');
+        
+        const selectAssuntos = document.getElementById("simuladoAssuntos");
+        const assuntosUnicos = [...new Set(questoes.map(q => q.assunto))];
+        selectAssuntos.innerHTML = '<option value="todos">Todos os assuntos</option>' + assuntosUnicos.map(a => `<option value="${a}">${a}</option>`).join('');
+        
+        document.getElementById("simuladoModal").style.display = "flex";
+    }
+    
+    function fecharSimuladoModal() { document.getElementById("simuladoModal").style.display = "none"; }
+    
+    async function iniciarSimulado() {
+        const quantidade = parseInt(document.getElementById("simuladoQtd").value) || 20;
+        const materiasSelecionadas = Array.from(document.getElementById("simuladoMaterias").selectedOptions).map(o => o.value);
+        const assuntosSelecionados = Array.from(document.getElementById("simuladoAssuntos").selectedOptions).map(o => o.value);
+        const apenasNaoRespondidas = document.getElementById("simuladoApenasNaoRespondidas").checked;
+        const apenasErradas = document.getElementById("simuladoApenasErradas").checked;
+        const comTimer = document.getElementById("simuladoTimer").checked;
+        const timerMinutos = parseInt(document.getElementById("simuladoTimerMinutos").value) || 30;
+        
+        await carregarQuestoes();
+        
+        let filtradas = [...questoes];
+        
+        if (!materiasSelecionadas.includes("todas")) {
+            filtradas = filtradas.filter(q => materiasSelecionadas.includes(q.materia));
+        }
+        if (!assuntosSelecionados.includes("todos")) {
+            filtradas = filtradas.filter(q => assuntosSelecionados.includes(q.assunto));
+        }
+        if (apenasNaoRespondidas) {
+            filtradas = filtradas.filter(q => !respostasUsuario[q.id]?.respondida);
+        }
+        if (apenasErradas) {
+            filtradas = filtradas.filter(q => respostasUsuario[q.id]?.acertou === false);
+        }
+        
+        if (filtradas.length === 0) { alert("Nenhuma questão encontrada com os filtros selecionados!"); return; }
+        
+        for (let i = filtradas.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [filtradas[i], filtradas[j]] = [filtradas[j], filtradas[i]];
+        }
+        
+        questoesAleatorias = filtradas.slice(0, Math.min(quantidade, filtradas.length));
+        indiceAleatorioAtual = 0;
+        modoAleatorioAtivo = true;
+        
+        fecharSimuladoModal();
+        
+        if (comTimer) {
+            simuladoTempoRestante = timerMinutos * 60;
+            iniciarTimerSimulado();
+        }
+        
+        mostrarQuestaoAleatoria();
+    }
+    
+    function iniciarTimerSimulado() {
+        if(simuladoTimerInterval) clearInterval(simuladoTimerInterval);
+        simuladoTimerInterval = setInterval(() => {
+            if(simuladoTempoRestante <= 0) {
+                clearInterval(simuladoTimerInterval);
+                alert("⏰ Tempo esgotado! Finalizando simulado.");
+                encerrarModoAleatorio();
+            } else {
+                simuladoTempoRestante--;
+            }
+        }, 1000);
+    }
+    
+    function fecharResultadoModal() { document.getElementById("resultadoModal").style.display = "none"; }
+    
+
+
+
+
+
+
+
+
 
     // ESTATÍSTICAS COM LINKS
     async function carregarEstatisticas() {
@@ -821,6 +1131,7 @@
     function resetarTimer() { pausarTimer(); modoFoco = true; tempoRestante = 25*60; ciclos = 0; atualizarDisplay(); }
 
     // IMPORTAÇÃO
+        // IMPORTAÇÃO
     let questoesDetectadas = [];
     
     function detectarQuestoes() {
@@ -829,6 +1140,7 @@
         const materiaPadrao = document.getElementById("importMateria").value || "Geral";
         const assuntoPadrao = document.getElementById("importAssunto").value || "Geral";
         
+        // Processa gabarito
         let gabaritoMap = new Map();
         if (gabaritoTexto.trim()) {
             const linhasGab = gabaritoTexto.split('\n');
@@ -847,6 +1159,7 @@
             }
         }
         
+        // Divide o texto em blocos de questões
         const blocos = texto.split(/\n\s*\n/);
         let questoesTemp = [];
         
@@ -871,6 +1184,7 @@
                 linha = linha.trim();
                 if (!linha) continue;
                 
+                // Detecta número da questão
                 let matchNum = linha.match(/^(\d+)[\.\)]\s*(.*)/);
                 if (matchNum) {
                     numero = parseInt(matchNum[1]);
@@ -878,6 +1192,7 @@
                     continue;
                 }
                 
+                // Detecta alternativas (a), b), c), etc.)
                 let matchAlt = linha.match(/^([a-eA-E])[\.\)]\s*(.*)/);
                 if (matchAlt) {
                     emAlternativas = true;
@@ -888,9 +1203,11 @@
                     continue;
                 }
                 
+                // Se não é alternativa, continua o enunciado
                 if (!emAlternativas) {
                     questao.enunciado += " " + linha;
                 } else {
+                    // Se já está em alternativas, pode ser continuação da última alternativa
                     let ultimaLetra = alternativas[alternativas.length - 1];
                     if (ultimaLetra) {
                         questao.alternativas[ultimaLetra] += " " + linha;
@@ -898,10 +1215,12 @@
                 }
             }
             
+            // Se não detectou alternativas, é questão Certo/Errado
             if (Object.keys(questao.alternativas).length === 0) {
                 questao.alternativas = { "A": "Certo", "B": "Errado" };
             }
             
+            // Aplica gabarito se existir
             if (numero && gabaritoMap.has(numero)) {
                 let resp = gabaritoMap.get(numero);
                 if (resp === "CORRETO") {
@@ -919,7 +1238,7 @@
         }
         
         questoesDetectadas = questoesTemp;
-        mostrarPreview();
+        mostrarPreview();  // <-- CHAMADA CORRETA AQUI
     }
 
     function mostrarPreview() {
@@ -947,6 +1266,9 @@
         previewArea.style.display = "block";
     }
 
+
+    mostrarPreview();
+}
     async function importarQuestoes() {
         let importadas = 0;
         for(let i=0; i<questoesDetectadas.length; i++) {
@@ -1024,9 +1346,84 @@
             if(btn.dataset.tab === 'questoes') renderizarQuestoes();
             if(btn.dataset.tab === 'stats') carregarEstatisticas();
         }));
+        document.getElementById("modoAleatorio10BtnQS")?.addEventListener("click", () => iniciarModoAleatorio(10));
+        document.getElementById("modoAleatorio20BtnQS")?.addEventListener("click", () => iniciarModoAleatorio(20));
+        document.getElementById("modoAleatorio30BtnQS")?.addEventListener("click", () => iniciarModoAleatorio(30));
+        document.getElementById("simuladoBtn")?.addEventListener("click", abrirSimuladoModal);
+        document.getElementById("iniciarSimuladoBtn")?.addEventListener("click", iniciarSimulado);
+        document.getElementById("simuladoTimer")?.addEventListener("change", (e) => {
+            document.getElementById("simuladoTimerMinutos").disabled = !e.target.checked;
+        });
+        document.getElementById("modoAleatorio10BtnQS")?.addEventListener("click", () => iniciarModoAleatorio(10));
+        document.getElementById("modoAleatorio20BtnQS")?.addEventListener("click", () => iniciarModoAleatorio(20));
+        document.getElementById("modoAleatorio30BtnQS")?.addEventListener("click", () => iniciarModoAleatorio(30));
+        document.getElementById("simuladoBtn")?.addEventListener("click", abrirSimuladoModal);
+        document.getElementById("iniciarSimuladoBtn")?.addEventListener("click", iniciarSimulado);
+        document.getElementById("simuladoTimer")?.addEventListener("change", (e) => {
+        document.getElementById("simuladoTimerMinutos").disabled = !e.target.checked;
+        });
     }
     init();
     resetarTimer();
 </script>
+
+<!-- MODAL DO SIMULADO -->
+<div id="simuladoModal" class="modal" style="display:none;">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h3>📋 Configurar Simulado</h3>
+            <button class="close-modal" onclick="fecharSimuladoModal()">×</button>
+        </div>
+        <div class="filtro-group">
+            <label>📊 Quantidade de questões</label>
+            <input type="number" id="simuladoQtd" min="1" max="100" value="20">
+        </div>
+        <div class="filtro-group">
+            <label>📚 Matérias (deixe em branco para todas)</label>
+            <select id="simuladoMaterias" multiple style="height: 100px;">
+                <option value="todas" selected>Todas as matérias</option>
+            </select>
+            <small>Segure Ctrl para selecionar múltiplas</small>
+        </div>
+        <div class="filtro-group">
+            <label>📌 Assuntos (deixe em branco para todos)</label>
+            <select id="simuladoAssuntos" multiple style="height: 100px;">
+                <option value="todos" selected>Todos os assuntos</option>
+            </select>
+            <small>Segure Ctrl para selecionar múltiplas</small>
+        </div>
+        <div class="filtro-group">
+            <label><input type="checkbox" id="simuladoApenasNaoRespondidas"> Apenas questões NÃO respondidas</label>
+        </div>
+        <div class="filtro-group">
+            <label><input type="checkbox" id="simuladoApenasErradas"> Apenas questões que errei (revisão)</label>
+        </div>
+        <div class="filtro-group">
+            <label><input type="checkbox" id="simuladoTimer"> ⏱️ Ativar temporizador</label>
+            <input type="number" id="simuladoTimerMinutos" placeholder="Minutos" value="30" style="width: 100px; margin-top: 5px;" disabled>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button class="btn-add-questao" id="iniciarSimuladoBtn">🎯 Iniciar Simulado</button>
+            <button class="btn-small" onclick="fecharSimuladoModal()">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE RESULTADO DO SIMULADO -->
+<div id="resultadoModal" class="modal" style="display:none;">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h3>📊 Resultado do Simulado</h3>
+            <button class="close-modal" onclick="fecharResultadoModal()">×</button>
+        </div>
+        <div id="resultadoConteudo"></div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button class="btn-add-questao" id="revisarErrosBtn">🔍 Revisar apenas as que errei</button>
+            <button class="btn-small" onclick="fecharResultadoModal()">Fechar</button>
+        </div>
+    </div>
+</div>
+
+
 </body>
 </html>
