@@ -168,6 +168,17 @@ app.get('/api/estatisticas/:usuario_id', async (req, res) => {
 console.log('=== CONFIGURAÇÕES APLICADAS ===');
 console.log('Rotas registradas: /api/cadastrar, /api/login, /api/questoes');
 
+// Rota principal - serve o login.html
+app.get('/', (req, res) => {
+  res.sendFile('login.html', { root: './Frontend' });
+});
+
+// Rota para qualquer outra página HTML
+app.get('*.html', (req, res) => {
+  res.sendFile(req.path, { root: './Frontend' });
+});
+
+
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
