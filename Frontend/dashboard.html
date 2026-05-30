@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INSS Total - Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+        }
+        .stat-card .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #27ae60;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .tab-btn.active {
+            background: #27ae60;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .logout-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 INSS Total - Dashboard</h1>
+            <button class="logout-btn" onclick="logout()">🚪 Sair</button>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card"><h3>📊 Progresso</h3><div class="value" id="progresso">0%</div></div>
+            <div class="stat-card"><h3>✅ Acertos</h3><div class="value" id="acertos">0</div></div>
+            <div class="stat-card"><h3>📝 Respondidas</h3><div class="value" id="respondidas">0</div></div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="questoes">📝 Banco de Questões</button>
+            <button class="tab-btn" data-tab="add">➕ Adicionar Questão</button>
+            <button class="tab-btn" data-tab="stats">📊 Estatísticas</button>
+        </div>
+
+        <div id="tab-questoes" class="tab-content active">
+            <h3>Banco de Questões</h3>
+            <div id="questoesList">Carregando...</div>
+        </div>
+
+        <div id="tab-add" class="tab-content">
+            <h3>Adicionar Nova Questão</h3>
+            <form id="novaQuestaoForm">
+                <input type="text" id="materia" placeholder="Matéria" required><br><br>
+                <input type="text" id="assunto" placeholder="Assunto" required><br><br>
+                <textarea id="enunciado" placeholder="Enunciado" rows="3" required></textarea><br><br>
+                <input type="text" id="altA" placeholder="A)" required><br><br>
+                <input type="text" id="altB" placeholder="B)" required><br><br>
+                <input type="text" id="altC" placeholder="C)" required><br><br>
+                <input type="text" id="altD" placeholder="D)" required><br><br>
+                <input type="text" id="altE" placeholder="E) (opcional)"><br><br>
+                <input type="text" id="correta" placeholder="Correta (A/B/C/D/E)" maxlength="1" required><br><br>
+                <textarea id="explicacao" placeholder="Explicação" rows="2"></textarea><br><br>
+                <button type="submit">Salvar Questão</button>
+            </form>
+        </div>
+
+        <div id="tab-stats" class="tab-content">
+            <h3>Estatísticas por Matéria</h3>
+            <div id="estatisticasContent">Carregando...</div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin;
+        const usuario = JSON.parse(localStorage.getItem('usuario'));
+        
+        if (!usuario) {
+            window.location.href = '/';
+        }
+
+        document.getElementById('usuarioNome').textContent = usuario.nome;
+
+        function logout() {
+            localStorage.removeItem('usuario');
+            window.location.href = '/';
+        }
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+                if (btn.dataset.tab === 'questoes') carregarQuestoes();
+                if (btn.dataset.tab === 'stats') carregarEstatisticas();
+            });
+        });
+
+        async function carregarQuestoes() {
+            try {
+                const res = await fetch(`${API_URL}/api/questoes`);
+                const data = await res.json();
+                if (data.sucesso) {
+                    document.getElementById('questoesList').innerHTML = data.questoes.map(q => `
+                        <div style="border:1px solid #ddd; margin:10px 0; padding:10px">
+                            <strong>${q.materia} | ${q.assunto}</strong><br>
+                            ${q.enunciado}<br>
+                            <em>Alternativas: ${Object.entries(q.alternativas).map(([k,v]) => `${k}) ${v}`).join(' | ')}</em>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                document.getElementById('questoesList').innerHTML = 'Erro ao carregar questões';
+            }
+        }
+
+        document.getElementById('novaQuestaoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const alternativas = {
+                A: document.getElementById('altA').value,
+                B: document.getElementById('altB').value,
+                C: document.getElementById('altC').value,
+                D: document.getElementById('altD').value
+            };
+            const altE = document.getElementById('altE').value;
+            if (altE) alternativas.E = altE;
+
+            const novaQuestao = {
+                materia: document.getElementById('materia').value,
+                assunto: document.getElementById('assunto').value,
+                enunciado: document.getElementById('enunciado').value,
+                alternativas: alternativas,
+                correta: document.getElementById('correta').value.toUpperCase(),
+                explicacao: document.getElementById('explicacao').value
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/api/questoes`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(novaQuestao)
+                });
+                const data = await res.json();
+                if (data.sucesso) {
+                    alert('Questão adicionada com sucesso!');
+                    document.getElementById('novaQuestaoForm').reset();
+                } else {
+                    alert('Erro ao adicionar questão');
+                }
+            } catch (error) {
+                alert('Erro ao conectar ao servidor');
+            }
+        });
+
+        async function carregarEstatisticas() {
+            try {
+                const res = await fetch(`${API_URL}/api/estatisticas/${usuario.id}`);
+                const data = await res.json();
+                if (data.sucesso && data.estatisticas.length > 0) {
+                    document.getElementById('estatisticasContent').innerHTML = data.estatisticas.map(est => `
+                        <div style="border:1px solid #ddd; margin:10px 0; padding:10px">
+                            <strong>${est.materia}</strong><br>
+                            Respondidas: ${est.total_respondidas} | Acertos: ${est.acertos} | Taxa: ${Math.round(est.acertos/est.total_respondidas*100)}%
+                        </div>
+                    `).join('');
+                } else {
+                    document.getElementById('estatisticasContent').innerHTML = 'Nenhuma questão respondida ainda.';
+                }
+            } catch (error) {
+                document.getElementById('estatisticasContent').innerHTML = 'Erro ao carregar estatísticas';
+            }
+        }
+
+        carregarQuestoes();
+    </script>
+</body>
+</html>
