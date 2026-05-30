@@ -1,9 +1,9 @@
 const { Pool } = require('pg');
 
-// Usa a variável de ambiente diretamente (sem dotenv no Railway)
-const connectionString = process.env.DATABASE_URL;
+// TEMPORÁRIO: URL hardcoded para teste
+const connectionString = "postgresql://postgres:MXjqNoc1QFHwdSwoACnHzEEgSbMtLqBD@postgres.railway.internal:5432/railway";
 
-console.log('DATABASE_URL existe?', !!connectionString);
+console.log('Usando URL hardcoded');
 
 const pool = new Pool({
   connectionString: connectionString,
