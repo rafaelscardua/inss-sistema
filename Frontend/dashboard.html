@@ -825,7 +825,6 @@
     function resetarTimer() { pausarTimer(); modoFoco = true; tempoRestante = 25*60; ciclos = 0; atualizarDisplay(); }
 
     // IMPORTAÇÃO
-        // IMPORTAÇÃO
     let questoesDetectadas = [];
     
     function detectarQuestoes() {
@@ -834,7 +833,6 @@
         const materiaPadrao = document.getElementById("importMateria").value || "Geral";
         const assuntoPadrao = document.getElementById("importAssunto").value || "Geral";
         
-        // Processa gabarito
         let gabaritoMap = new Map();
         if (gabaritoTexto.trim()) {
             const linhasGab = gabaritoTexto.split('\n');
@@ -853,7 +851,6 @@
             }
         }
         
-        // Divide o texto em blocos de questões
         const blocos = texto.split(/\n\s*\n/);
         let questoesTemp = [];
         
@@ -878,7 +875,6 @@
                 linha = linha.trim();
                 if (!linha) continue;
                 
-                // Detecta número da questão
                 let matchNum = linha.match(/^(\d+)[\.\)]\s*(.*)/);
                 if (matchNum) {
                     numero = parseInt(matchNum[1]);
@@ -886,7 +882,6 @@
                     continue;
                 }
                 
-                // Detecta alternativas (a), b), c), etc.)
                 let matchAlt = linha.match(/^([a-eA-E])[\.\)]\s*(.*)/);
                 if (matchAlt) {
                     emAlternativas = true;
@@ -897,11 +892,9 @@
                     continue;
                 }
                 
-                // Se não é alternativa, continua o enunciado
                 if (!emAlternativas) {
                     questao.enunciado += " " + linha;
                 } else {
-                    // Se já está em alternativas, pode ser continuação da última alternativa
                     let ultimaLetra = alternativas[alternativas.length - 1];
                     if (ultimaLetra) {
                         questao.alternativas[ultimaLetra] += " " + linha;
@@ -909,12 +902,10 @@
                 }
             }
             
-            // Se não detectou alternativas, é questão Certo/Errado
             if (Object.keys(questao.alternativas).length === 0) {
                 questao.alternativas = { "A": "Certo", "B": "Errado" };
             }
             
-            // Aplica gabarito se existir
             if (numero && gabaritoMap.has(numero)) {
                 let resp = gabaritoMap.get(numero);
                 if (resp === "CORRETO") {
@@ -932,7 +923,7 @@
         }
         
         questoesDetectadas = questoesTemp;
-        mostrarPreview();  // <-- CHAMADA CORRETA AQUI
+        mostrarPreview();
     }
 
     function mostrarPreview() {
@@ -960,33 +951,6 @@
         previewArea.style.display = "block";
     }
 
-    async function importarQuestoes() {
-        let importadas = 0;
-        for(let i=0; i<questoesDetectadas.length; i++) {
-            let q = questoesDetectadas[i];
-            let correta = document.getElementById(`correta_${i}`)?.value.trim().toUpperCase();
-            if(correta && q.alternativas[correta]) {
-                q.correta = correta;
-                const res = await fetch(`${API_URL}/api/questoes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(q) });
-                if((await res.json()).sucesso) importadas++;
-            }
-        }
-        if(importadas) { await carregarQuestoes(); preencherFiltros(); renderizarQuestoes(); carregarEstatisticas(); atualizarStats(); }
-        alert(`${importadas} questões importadas!`);
-        document.getElementById("previewArea").style.display = "none";
-        document.getElementById("importTexto").value = "";
-        questoesDetectadas = [];
-    }
-    
-
-
-
-
-
-
-
-    mostrarPreview();
-}
     async function importarQuestoes() {
         let importadas = 0;
         for(let i=0; i<questoesDetectadas.length; i++) {
