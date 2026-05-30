@@ -67,6 +67,23 @@
             gap: 15px;
         }
 
+        .user-info {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
         .dark-btn {
             background: rgba(255,255,255,0.2);
             border: none;
@@ -222,19 +239,8 @@
         .delete-btn { color: #e74c3c; }
         .delete-btn:hover { background: #e74c3c20; }
         .note-btn { color: #f39c12; }
-        .note-btn:hover { background: #f39c1220; }
-        .note-indicator {
-            position: absolute;
-            top: 15px;
-            right: 100px;
-            background: #f39c12;
-            color: white;
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 10px;
-        }
 
-        .question-text { font-size: 1.05em; margin-bottom: 15px; padding-right: 100px; }
+        .question-text { font-size: 1.05em; margin-bottom: 15px; padding-right: 80px; }
         .alternativas { margin: 15px 0; }
         .alternativa {
             display: flex;
@@ -291,7 +297,6 @@
             font-family: inherit;
         }
 
-        /* MODAL */
         .modal {
             position: fixed;
             top: 0;
@@ -345,21 +350,9 @@
         }
         .btn-danger { background: #e74c3c; }
 
-        .nota-area {
-            background: #fff8e7;
-            padding: 12px;
-            border-radius: 10px;
-            margin-top: 10px;
-            font-size: 0.9em;
-            border-left: 3px solid #f39c12;
-        }
-        body.dark-mode .nota-area { background: #3d3d2a; }
-
         @media (max-width: 768px) {
             .container { padding: 10px; }
             .timer-display { font-size: 2.5em; }
-            .action-icons { top: 10px; right: 10px; }
-            .question-text { padding-right: 80px; }
         }
     </style>
 </head>
@@ -370,7 +363,11 @@
             <h1>📚 INSS Total - Estudos + Questões</h1>
             <p>Edição de questões | Notas | Cronômetro | Backup completo</p>
         </div>
-        <button class="dark-btn" id="darkModeBtn">🌙 Modo Escuro</button>
+        <div style="display: flex; gap: 10px;">
+            <span class="user-info" id="userName">Carregando...</span>
+            <button class="logout-btn" onclick="logout()">🚪 Sair</button>
+            <button class="dark-btn" id="darkModeBtn">🌙 Modo Escuro</button>
+        </div>
     </div>
 
     <div class="tabs">
@@ -383,7 +380,7 @@
         <button class="tab-btn" data-tab="stats">📊 ESTATS</button>
     </div>
 
-    <!-- PLANO DE ESTUDOS -->
+    <!-- PLANO DE ESTUDOS (mantém localStorage) -->
     <div id="tab-estudos" class="tab-content active">
         <div class="stats-grid">
             <div class="stat-card"><h3>📊 Progresso</h3><div class="value" id="progressoGeral">0%</div></div>
@@ -394,12 +391,11 @@
         <div class="action-buttons">
             <button class="btn-small" id="expandirTudo">📂 Expandir</button>
             <button class="btn-small" id="recolherTudo">📁 Recolher</button>
-            <button class="btn-small btn-danger" id="resetarRespostasBtn">🔄 Resetar Respostas</button>
         </div>
         <div id="materiasContainer"></div>
     </div>
 
-    <!-- QUESTÕES -->
+    <!-- QUESTÕES (do banco) -->
     <div id="tab-questoes" class="tab-content">
         <div class="filtros-box">
             <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
@@ -409,7 +405,7 @@
                 <div><button class="btn-responder" id="filtrarQuestoesBtn">🔍 Filtrar</button></div>
             </div>
         </div>
-        <div id="questoesList"></div>
+        <div id="questoesList">Carregando...</div>
     </div>
 
     <!-- CRONÔMETRO -->
@@ -470,6 +466,7 @@
                 <button class="btn-import" id="importarDadosBtn">📂 Restaurar Backup</button>
                 <input type="file" id="arquivoRestore" accept=".json" style="display:none;">
             </div>
+            <p style="margin-top: 15px; font-size: 0.8em;">⚠️ Backup exporta questões do banco e plano de estudos</p>
         </div>
     </div>
 
@@ -501,28 +498,126 @@
         <div class="filtro-group"><label>E)</label><input type="text" id="editAltE"></div>
         <div class="filtro-group"><label>Alternativa Correta</label><input type="text" id="editCorreta" maxlength="1"></div>
         <div class="filtro-group"><label>Explicação</label><textarea id="editExplicacao" rows="2"></textarea></div>
-        <div class="filtro-group"><label>📝 MINHA NOTA (dicas, resumos, macetes)</label><textarea id="editNota" rows="3" placeholder="Anote aqui seus resumos, dicas ou macetes sobre esta questão..."></textarea></div>
         <div style="display: flex; gap: 10px; margin-top: 20px;">
-            <button class="btn-add-questao" id="salvarEdicaoBtn">💾 Salvar Alterações</button>
+            <button class="btn-add-questao" id="salvarEdicaoBtn">💾 Salvar</button>
             <button class="btn-small" onclick="fecharModal()">Cancelar</button>
         </div>
     </div>
 </div>
 
 <script>
-    // DADOS
-    let dadosEstudo = {
-        materias: [
-            { nome: "💻 INFORMÁTICA", expandido: true, topicos: [{ nome: "Backup e Segurança", status: 0, subtopicos: [{ nome: "Tipos de backup", feito: false }] }] }
-        ]
-    };
+    // ==================== CONFIGURAÇÕES ====================
+    const API_URL = window.location.origin;
+    let usuario = null;
     let questoes = [];
-    let nextQuestaoId = 1;
-    let questoesDetectadas = [];
+    let respostasUsuario = {};
     let currentEditId = null;
     window.selectedAnswer = {};
 
-    // CRONÔMETRO
+    // ==================== AUTENTICAÇÃO ====================
+    function checkAuth() {
+        const savedUser = localStorage.getItem('usuario');
+        if (!savedUser) {
+            window.location.href = '/';
+            return false;
+        }
+        usuario = JSON.parse(savedUser);
+        document.getElementById('userName').textContent = `👤 ${usuario.nome}`;
+        return true;
+    }
+
+    function logout() {
+        localStorage.removeItem('usuario');
+        window.location.href = '/';
+    }
+
+    // ==================== DADOS DO PLANO (localStorage) ====================
+    let dadosEstudo = {
+        materias: [
+            { nome: "📖 LÍNGUA PORTUGUESA", expandido: true, topicos: [{ nome: "Compreensão e Interpretação", status: 0, subtopicos: [{ nome: "Ideias principais", feito: false }] }] },
+            { nome: "🧮 RACIOCÍNIO LÓGICO", expandido: true, topicos: [{ nome: "Estruturas Lógicas", status: 0, subtopicos: [{ nome: "Conectivos", feito: false }] }] },
+            { nome: "⚖️ LEGISLAÇÃO INSS", expandido: true, topicos: [{ nome: "Lei 8.213/91", status: 0, subtopicos: [{ nome: "Benefícios", feito: false }] }] },
+            { nome: "🏛️ DIREITO CONSTITUCIONAL", expandido: true, topicos: [{ nome: "Seguridade Social", status: 0, subtopicos: [{ nome: "Princípios", feito: false }] }] },
+            { nome: "💻 INFORMÁTICA", expandido: true, topicos: [{ nome: "Backup e Segurança", status: 0, subtopicos: [{ nome: "Tipos de backup", feito: false }] }] }
+        ]
+    };
+
+    function carregarPlanoEstudos() {
+        const salvos = localStorage.getItem("inss_estudos");
+        if (salvos) dadosEstudo = JSON.parse(salvos);
+        renderizarMaterias();
+    }
+
+    function salvarPlanoEstudos() {
+        localStorage.setItem("inss_estudos", JSON.stringify(dadosEstudo));
+        atualizarStats();
+    }
+
+    // ==================== API - QUESTÕES ====================
+    async function carregarQuestoesDoBanco() {
+        try {
+            const res = await fetch(`${API_URL}/api/questoes`);
+            const data = await res.json();
+            if (data.sucesso) {
+                questoes = data.questoes;
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Erro ao carregar questões:', error);
+            return false;
+        }
+    }
+
+    async function carregarRespostasDoUsuario() {
+        try {
+            const res = await fetch(`${API_URL}/api/respostas/${usuario.id}`);
+            const data = await res.json();
+            if (data.sucesso) {
+                respostasUsuario = data.respostas;
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Erro ao carregar respostas:', error);
+            return false;
+        }
+    }
+
+    async function salvarResposta(questaoId, acertou, respostaUsuario) {
+        try {
+            const res = await fetch(`${API_URL}/api/respostas`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    usuario_id: usuario.id,
+                    questao_id: questaoId,
+                    acertou: acertou,
+                    resposta_usuario: respostaUsuario
+                })
+            });
+            return await res.json();
+        } catch (error) {
+            console.error('Erro ao salvar resposta:', error);
+            return false;
+        }
+    }
+
+    async function adicionarQuestaoBanco(questao) {
+        try {
+            const res = await fetch(`${API_URL}/api/questoes`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(questao)
+            });
+            return await res.json();
+        } catch (error) {
+            console.error('Erro ao adicionar questão:', error);
+            return false;
+        }
+    }
+
+    // ==================== CRONÔMETRO ====================
     let timerInterval = null;
     let tempoRestante = 25 * 60;
     let modoFoco = true;
@@ -566,40 +661,7 @@
     function pausarTimer() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; } }
     function resetarTimer() { pausarTimer(); modoFoco = true; tempoRestante = 25 * 60; ciclosCompletos = 0; atualizarDisplay(); }
 
-    document.getElementById("startTimer")?.addEventListener("click", iniciarTimer);
-    document.getElementById("pauseTimer")?.addEventListener("click", pausarTimer);
-    document.getElementById("resetTimer")?.addEventListener("click", resetarTimer);
-
-    // FUNÇÕES PRINCIPAIS
-    function carregarTudo() {
-        const salvosQuestoes = localStorage.getItem("inss_questoes");
-        if (salvosQuestoes) { questoes = JSON.parse(salvosQuestoes); if (questoes.length) nextQuestaoId = Math.max(...questoes.map(q=>q.id)) + 1; }
-        const salvosEstudo = localStorage.getItem("inss_estudos");
-        if (salvosEstudo) dadosEstudo = JSON.parse(salvosEstudo);
-        renderizarTudo();
-    }
-
-    function salvarTudo() {
-        localStorage.setItem("inss_questoes", JSON.stringify(questoes));
-        localStorage.setItem("inss_estudos", JSON.stringify(dadosEstudo));
-        atualizarStats();
-    }
-
-    function atualizarStats() {
-        let totalSub = 0, completos = 0, topicosDom = 0;
-        dadosEstudo.materias.forEach(m => m.topicos.forEach(t => { if(t.status===3) topicosDom++; t.subtopicos?.forEach(s => { totalSub++; if(s.feito) completos++; }) }));
-        document.getElementById("progressoGeral").innerText = totalSub === 0 ? 0 : Math.round((completos/totalSub)*100)+"%";
-        document.getElementById("topicosDominados").innerText = topicosDom;
-        document.getElementById("subtopicosFeitos").innerText = completos;
-        let acertos = questoes.filter(q=>q.respondida && q.acertou).length;
-        document.getElementById("totalAcertos").innerText = acertos;
-        document.getElementById("totalQuestoes").innerText = questoes.length;
-        let respondidas = questoes.filter(q=>q.respondida).length;
-        let taxa = respondidas ? Math.round((acertos/respondidas)*100) : 0;
-        document.getElementById("taxaAcertos").innerText = taxa+"%";
-        document.getElementById("revisarQuestoes").innerText = questoes.filter(q=>q.respondida && !q.acertou).length;
-    }
-
+    // ==================== RENDERIZAÇÃO ====================
     function renderizarMaterias() {
         const container = document.getElementById("materiasContainer");
         if(!container) return;
@@ -635,80 +697,11 @@
             `;
             container.appendChild(div);
         });
-        document.querySelectorAll('.status-select').forEach(sel => sel.addEventListener('change', (e) => { let [m,t] = [parseInt(sel.dataset.m), parseInt(sel.dataset.t)]; dadosEstudo.materias[m].topicos[t].status = parseInt(sel.value); salvarTudo(); renderizarMaterias(); }));
-        document.querySelectorAll('.sub-check').forEach(chk => chk.addEventListener('change', (e) => { let [m,t,s] = [parseInt(chk.dataset.m), parseInt(chk.dataset.t), parseInt(chk.dataset.s)]; dadosEstudo.materias[m].topicos[t].subtopicos[s].feito = chk.checked; salvarTudo(); renderizarMaterias(); }));
+        document.querySelectorAll('.status-select').forEach(sel => sel.addEventListener('change', (e) => { let [m,t] = [parseInt(sel.dataset.m), parseInt(sel.dataset.t)]; dadosEstudo.materias[m].topicos[t].status = parseInt(sel.value); salvarPlanoEstudos(); renderizarMaterias(); }));
+        document.querySelectorAll('.sub-check').forEach(chk => chk.addEventListener('change', (e) => { let [m,t,s] = [parseInt(chk.dataset.m), parseInt(chk.dataset.t), parseInt(chk.dataset.s)]; dadosEstudo.materias[m].topicos[t].subtopicos[s].feito = chk.checked; salvarPlanoEstudos(); renderizarMaterias(); }));
     }
 
-    window.toggleMateria = (idx) => { dadosEstudo.materias[idx].expandido = !dadosEstudo.materias[idx].expandido; salvarTudo(); renderizarMaterias(); };
-
-    function excluirQuestao(id) {
-        if(confirm("🗑️ Excluir esta questão permanentemente?")) {
-            questoes = questoes.filter(q => q.id !== id);
-            salvarTudo();
-            renderizarQuestoes();
-            preencherFiltros();
-            atualizarStats();
-        }
-    }
-
-    function abrirModalEdicao(id) {
-        const quest = questoes.find(q => q.id === id);
-        if(!quest) return;
-        currentEditId = id;
-        document.getElementById("editMateria").value = quest.materia || "";
-        document.getElementById("editAssunto").value = quest.assunto || "";
-        document.getElementById("editEnunciado").value = quest.enunciado || "";
-        document.getElementById("editAltA").value = quest.alternativas.A || "";
-        document.getElementById("editAltB").value = quest.alternativas.B || "";
-        document.getElementById("editAltC").value = quest.alternativas.C || "";
-        document.getElementById("editAltD").value = quest.alternativas.D || "";
-        document.getElementById("editAltE").value = quest.alternativas.E || "";
-        document.getElementById("editCorreta").value = quest.correta || "";
-        document.getElementById("editExplicacao").value = quest.explicacao || "";
-        document.getElementById("editNota").value = quest.nota || "";
-        document.getElementById("editModal").style.display = "flex";
-    }
-
-    function fecharModal() {
-        document.getElementById("editModal").style.display = "none";
-        currentEditId = null;
-    }
-
-    function salvarEdicao() {
-        if(currentEditId === null) return;
-        const quest = questoes.find(q => q.id === currentEditId);
-        if(quest) {
-            quest.materia = document.getElementById("editMateria").value;
-            quest.assunto = document.getElementById("editAssunto").value;
-            quest.enunciado = document.getElementById("editEnunciado").value;
-            quest.alternativas = {
-                A: document.getElementById("editAltA").value,
-                B: document.getElementById("editAltB").value,
-                C: document.getElementById("editAltC").value,
-                D: document.getElementById("editAltD").value
-            };
-            let altE = document.getElementById("editAltE").value;
-            if(altE) quest.alternativas.E = altE;
-            quest.correta = document.getElementById("editCorreta").value.toUpperCase();
-            quest.explicacao = document.getElementById("editExplicacao").value;
-            quest.nota = document.getElementById("editNota").value;
-            salvarTudo();
-            renderizarQuestoes();
-            preencherFiltros();
-            fecharModal();
-            alert("✅ Questão atualizada!");
-        }
-    }
-
-    function resetarRespostas() {
-        if(confirm("🔄 Resetar TODAS as respostas? As questões serão mantidas.")) {
-            questoes.forEach(q => { q.respondida = false; q.acertou = false; q.respostaUsuario = null; });
-            salvarTudo();
-            renderizarQuestoes();
-            atualizarStats();
-            alert("✅ Respostas resetadas!");
-        }
-    }
+    window.toggleMateria = (idx) => { dadosEstudo.materias[idx].expandido = !dadosEstudo.materias[idx].expandido; salvarPlanoEstudos(); renderizarMaterias(); };
 
     function renderizarQuestoes() {
         const materiaFiltro = document.getElementById("filtroMateria")?.value || "todas";
@@ -716,61 +709,57 @@
         const statusFiltro = document.getElementById("filtroStatus")?.value || "todas";
         
         let filtradas = questoes.filter(q => (materiaFiltro === "todas" || q.materia === materiaFiltro) && (topicoFiltro === "todos" || q.assunto === topicoFiltro));
-        if(statusFiltro === "naoRespondidas") filtradas = filtradas.filter(q=>!q.respondida);
-        if(statusFiltro === "corretas") filtradas = filtradas.filter(q=>q.respondida && q.acertou);
-        if(statusFiltro === "erradas") filtradas = filtradas.filter(q=>q.respondida && !q.acertou);
+        
+        if(statusFiltro === "naoRespondidas") filtradas = filtradas.filter(q => !respostasUsuario[q.id]?.respondida);
+        if(statusFiltro === "corretas") filtradas = filtradas.filter(q => respostasUsuario[q.id]?.acertou === true);
+        if(statusFiltro === "erradas") filtradas = filtradas.filter(q => respostasUsuario[q.id]?.acertou === false);
         
         const container = document.getElementById("questoesList");
         if(!container) return;
         
+        if(filtradas.length === 0) {
+            container.innerHTML = "<p style='text-align:center; padding:40px;'>Nenhuma questão encontrada</p>";
+            return;
+        }
+        
         container.innerHTML = filtradas.map(q => {
+            const resp = respostasUsuario[q.id] || { respondida: false };
             let alternativasHtml = Object.entries(q.alternativas).map(([letra, texto]) => {
                 let classes = "alternativa";
-                if(q.respondida) {
+                if(resp.respondida) {
                     if(letra === q.correta) classes += " correct-answer";
-                    if(letra === q.respostaUsuario && q.respostaUsuario !== q.correta) classes += " wrong-answer";
+                    if(letra === resp.resposta_usuario && resp.resposta_usuario !== q.correta) classes += " wrong-answer";
                 }
                 return `<div class="${classes}" data-letra="${letra}" data-qid="${q.id}"><strong>${letra})</strong> ${texto}</div>`;
             }).join('');
             
-            let notaHtml = q.nota ? `<div class="nota-area">📝 <strong>Minha nota:</strong> ${q.nota}</div>` : '';
-            let noteIndicator = q.nota ? `<span class="note-indicator" title="Tem nota anotada">📝</span>` : '';
-            
             return `
                 <div class="question-card" id="q${q.id}">
-                    <div class="action-icons">
-                        ${noteIndicator}
-                        <button class="edit-btn" onclick="abrirModalEdicao(${q.id})" title="Editar questão">✏️</button>
-                        <button class="delete-btn" onclick="excluirQuestao(${q.id})" title="Excluir questão">🗑️</button>
-                    </div>
                     <div class="question-text"><strong>📚 ${q.materia} | ${q.assunto}</strong><br>${q.enunciado}</div>
                     <div class="alternativas">${alternativasHtml}</div>
-                    ${notaHtml}
-                    ${!q.respondida ? `<button class="btn-responder" data-id="${q.id}">✅ Responder</button>` : ''}
-                    ${q.respondida ? `<div class="feedback ${q.acertou ? 'correct' : 'wrong'}">${q.acertou ? '✅ Correto! ' : '❌ Errado! '} ${q.explicacao || ''}</div>` : ''}
+                    ${!resp.respondida ? `<button class="btn-responder" data-id="${q.id}">✅ Responder</button>` : ''}
+                    ${resp.respondida ? `<div class="feedback ${resp.acertou ? 'correct' : 'wrong'}">${resp.acertou ? '✅ Correto! ' : '❌ Errado! '} ${q.explicacao || ''}</div>` : ''}
                 </div>
             `;
         }).join('');
         
         document.querySelectorAll('.alternativa').forEach(el => el.addEventListener('click', (e) => {
-            if(!document.querySelector(`.btn-responder[data-id="${el.dataset.qid}"]`)) return;
-            document.querySelectorAll(`.alternativa[data-qid="${el.dataset.qid}"]`).forEach(a=>a.classList.remove('selected'));
-            el.classList.add('selected');
-            window.selectedAnswer[el.dataset.qid] = el.dataset.letra;
+            if(document.querySelector(`.btn-responder[data-id="${el.dataset.qid}"]`)) {
+                document.querySelectorAll(`.alternativa[data-qid="${el.dataset.qid}"]`).forEach(a=>a.classList.remove('selected'));
+                el.classList.add('selected');
+                window.selectedAnswer[el.dataset.qid] = el.dataset.letra;
+            }
         }));
         
-        document.querySelectorAll('.btn-responder').forEach(btn => btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.btn-responder').forEach(btn => btn.addEventListener('click', async (e) => {
             let id = parseInt(btn.dataset.id);
             let quest = questoes.find(q=>q.id===id);
             let selected = window.selectedAnswer[id];
             if(!selected) { alert("Selecione uma alternativa!"); return; }
             let acertou = (selected === quest.correta);
-            quest.respondida = true;
-            quest.acertou = acertou;
-            quest.respostaUsuario = selected;
-            salvarTudo();
+            await salvarResposta(id, acertou, selected);
+            await carregarRespostasDoUsuario();
             renderizarQuestoes();
-            renderizarEstatisticas();
             atualizarStats();
         }));
     }
@@ -790,30 +779,14 @@
         }
     }
 
-    // PARSER CORRIGIDO - aceita alternativas multilinhas
+    // ==================== IMPORTAÇÃO ====================
+    let questoesDetectadas = [];
+
     function detectarQuestoes() {
         const texto = document.getElementById("importTexto").value;
-        const gabaritoTexto = document.getElementById("importGabarito").value;
         const materiaPadrao = document.getElementById("importMateria").value || "Geral";
         const assuntoPadrao = document.getElementById("importAssunto").value || "Geral";
         
-        let gabaritoMap = new Map();
-        if(gabaritoTexto.trim()) {
-            for(let linha of gabaritoTexto.split('\n')) {
-                linha = linha.trim().toUpperCase();
-                let match = linha.match(/^(\d+)[\.\s\-:]+(.*)/);
-                if(match) {
-                    let num = parseInt(match[1]), resp = match[2].trim();
-                    if(resp.includes("LETRA")) { let l = resp.match(/LETRA\s*([A-E])/); if(l) resp = l[1]; }
-                    if(resp === "CORRETO") resp = "CORRETO";
-                    if(resp === "ERRADO") resp = "ERRADO";
-                    if(resp.length === 1 && /[A-E]/.test(resp)) gabaritoMap.set(num, resp);
-                    else if(resp === "CORRETO" || resp === "ERRADO") gabaritoMap.set(num, resp);
-                }
-            }
-        }
-        
-        // Parser melhorado - lê até encontrar a próxima questão
         let questoesTemp = [];
         let linhas = texto.split('\n');
         let i = 0;
@@ -830,68 +803,35 @@
                     enunciado: matchNum[2],
                     alternativas: {},
                     correta: "",
-                    explicacao: "",
-                    respondida: false,
-                    acertou: false,
-                    numero: parseInt(matchNum[1])
+                    explicacao: ""
                 };
                 i++;
-                
-                // Lê o restante da questão
                 let letraAtual = null;
                 let textoAlternativa = "";
                 
                 while(i < linhas.length) {
                     let linhaAlt = linhas[i].trim();
                     if(!linhaAlt) { i++; continue; }
-                    
-                    let matchAlternativa = linhaAlt.match(/^([a-eA-E])[\.\)]\s*(.*)/);
-                    if(matchAlternativa) {
-                        // Se tinha uma alternativa sendo construída, salva
-                        if(letraAtual && textoAlternativa) {
-                            questao.alternativas[letraAtual] = textoAlternativa.trim();
-                        }
-                        letraAtual = matchAlternativa[1].toUpperCase();
-                        textoAlternativa = matchAlternativa[2];
+                    let matchAlt = linhaAlt.match(/^([a-eA-E])[\.\)]\s*(.*)/);
+                    if(matchAlt) {
+                        if(letraAtual && textoAlternativa) questao.alternativas[letraAtual] = textoAlternativa.trim();
+                        letraAtual = matchAlt[1].toUpperCase();
+                        textoAlternativa = matchAlt[2];
+                    } else if(linhaAlt.match(/^(\d+)[\.\)]/)) {
+                        break;
+                    } else if(letraAtual) {
+                        textoAlternativa += " " + linhaAlt;
                     } else {
-                        // Verifica se é uma nova questão (começa com número)
-                        let proximaQuestao = linhaAlt.match(/^(\d+)[\.\)]/);
-                        if(proximaQuestao) {
-                            break;
-                        }
-                        // Continua a alternativa atual
-                        if(letraAtual) {
-                            textoAlternativa += " " + linhaAlt;
-                        } else {
-                            questao.enunciado += " " + linhaAlt;
-                        }
+                        questao.enunciado += " " + linhaAlt;
                     }
                     i++;
                 }
-                // Salva a última alternativa
-                if(letraAtual && textoAlternativa) {
-                    questao.alternativas[letraAtual] = textoAlternativa.trim();
-                }
-                
-                // Aplica gabarito se existir
-                if(gabaritoMap.has(questao.numero)) {
-                    let resp = gabaritoMap.get(questao.numero);
-                    if(resp === "CORRETO" || resp === "ERRADO") {
-                        if(Object.keys(questao.alternativas).length === 0) {
-                            questao.alternativas = { A: "Certo", B: "Errado" };
-                            questao.correta = resp === "CORRETO" ? "A" : "B";
-                        }
-                    } else if(questao.alternativas[resp]) {
-                        questao.correta = resp;
-                    }
-                }
-                
+                if(letraAtual && textoAlternativa) questao.alternativas[letraAtual] = textoAlternativa.trim();
                 questoesTemp.push(questao);
             } else {
                 i++;
             }
         }
-        
         questoesDetectadas = questoesTemp;
         mostrarPreview();
     }
@@ -900,121 +840,186 @@
         const previewArea = document.getElementById("previewArea");
         const previewList = document.getElementById("previewList");
         if(questoesDetectadas.length === 0) {
-            previewList.innerHTML = "<p style='color:red;'>Nenhuma questão detectada! Verifique o formato.</p>";
+            previewList.innerHTML = "<p style='color:red;'>Nenhuma questão detectada!</p>";
             previewArea.style.display = "block";
             return;
         }
         previewList.innerHTML = questoesDetectadas.map((q, idx) => `
             <div class="preview-item">
-                <strong>Questão ${q.numero || idx+1}</strong><br>
-                <strong>Enunciado:</strong> ${q.enunciado.substring(0, 200)}${q.enunciado.length > 200 ? '...' : ''}<br>
-                <strong>Alternativas:</strong> ${Object.entries(q.alternativas).map(([k,v])=>`${k}) ${v.substring(0,60)}`).join(' | ')}<br>
-                <strong>Resposta:</strong> ${q.correta || '⚠️ NÃO DETECTADA'}
+                <strong>Questão ${idx+1}</strong><br>
+                <strong>Enunciado:</strong> ${q.enunciado.substring(0, 150)}...<br>
+                <strong>Alternativas:</strong> ${Object.entries(q.alternativas).map(([k,v])=>`${k}) ${v.substring(0,40)}`).join(' | ')}<br>
+                <div class="filtro-group"><label>Correta:</label><input type="text" id="correct_${idx}" placeholder="A/B/C/D/E"></div>
             </div>
         `).join('');
         previewArea.style.display = "block";
     }
 
-    function importarQuestoes() {
+    async function importarQuestoes() {
         let importadas = 0;
-        for(let q of questoesDetectadas) {
-            if(q.correta && q.alternativas[q.correta]) {
-                q.id = nextQuestaoId++;
-                delete q.numero;
-                questoes.push(q);
-                importadas++;
+        for(let i = 0; i < questoesDetectadas.length; i++) {
+            let q = questoesDetectadas[i];
+            let correta = document.getElementById(`correct_${i}`)?.value.trim().toUpperCase();
+            if(correta && q.alternativas[correta]) {
+                q.correta = correta;
+                const result = await adicionarQuestaoBanco(q);
+                if(result.sucesso) importadas++;
             }
         }
-        salvarTudo();
-        renderizarQuestoes();
-        preencherFiltros();
+        if(importadas > 0) {
+            await carregarQuestoesDoBanco();
+            preencherFiltros();
+            renderizarQuestoes();
+        }
         alert(`${importadas} questões importadas!`);
         document.getElementById("previewArea").style.display = "none";
         document.getElementById("importTexto").value = "";
-        document.getElementById("importGabarito").value = "";
         questoesDetectadas = [];
     }
 
-    function adicionarNovaQuestao() {
+    // ==================== ADICIONAR MANUAL ====================
+    async function adicionarNovaQuestao() {
         let alt = { A:document.getElementById("novaAltA").value.trim(), B:document.getElementById("novaAltB").value.trim(), C:document.getElementById("novaAltC").value.trim(), D:document.getElementById("novaAltD").value.trim() };
         let e = document.getElementById("novaAltE").value.trim();
         if(e) alt.E = e;
         let correta = document.getElementById("novaCorreta").value.trim().toUpperCase();
         if(!alt[correta]) { alert("Alternativa correta inválida!"); return; }
-        let nova = { id: nextQuestaoId++, materia: document.getElementById("novaMateria").value.trim(), assunto: document.getElementById("novoAssunto").value.trim(), enunciado: document.getElementById("novoEnunciado").value.trim(), alternativas: alt, correta: correta, explicacao: document.getElementById("novaExplicacao").value.trim(), respondida: false, acertou: false };
-        questoes.push(nova);
-        salvarTudo();
-        renderizarQuestoes();
-        preencherFiltros();
-        document.querySelectorAll("#tab-add input, #tab-add textarea").forEach(el => el.value = "");
-        alert("✅ Questão adicionada!");
+        
+        const nova = {
+            materia: document.getElementById("novaMateria").value.trim(),
+            assunto: document.getElementById("novoAssunto").value.trim(),
+            enunciado: document.getElementById("novoEnunciado").value.trim(),
+            alternativas: alt,
+            correta: correta,
+            explicacao: document.getElementById("novaExplicacao").value.trim()
+        };
+        
+        const result = await adicionarQuestaoBanco(nova);
+        if(result.sucesso) {
+            await carregarQuestoesDoBanco();
+            preencherFiltros();
+            renderizarQuestoes();
+            document.querySelectorAll("#tab-add input, #tab-add textarea").forEach(el => el.value = "");
+            alert("✅ Questão adicionada!");
+        } else {
+            alert("❌ Erro ao adicionar questão!");
+        }
     }
 
-    function renderizarEstatisticas() {
-        let porMateria = {};
-        questoes.forEach(q => { if(!porMateria[q.materia]) porMateria[q.materia] = { total:0, acertos:0, respondidas:0 }; porMateria[q.materia].total++; if(q.respondida) { porMateria[q.materia].respondidas++; if(q.acertou) porMateria[q.materia].acertos++; } });
-        let html = `<div class="stats-grid">${Object.entries(porMateria).map(([mat, d]) => `<div class="stat-card"><h3>${mat}</h3><div class="value">${d.acertos}/${d.respondidas}</div><div class="sub">${d.respondidas ? Math.round((d.acertos/d.respondidas)*100) : 0}%</div></div>`).join('')}</div>`;
-        document.getElementById("estatisticasDetalhadas").innerHTML = html;
+    // ==================== ESTATÍSTICAS ====================
+    async function carregarEstatisticas() {
+        try {
+            const res = await fetch(`${API_URL}/api/estatisticas/${usuario.id}`);
+            const data = await res.json();
+            if(data.sucesso && data.estatisticas.length > 0) {
+                const html = `<div class="stats-grid">${data.estatisticas.map(est => `
+                    <div class="stat-card">
+                        <h3>${est.materia}</h3>
+                        <div class="value">${est.acertos}/${est.total_respondidas}</div>
+                        <div class="sub">${Math.round(est.acertos/est.total_respondidas*100)}% acertos</div>
+                    </div>
+                `).join('')}</div>`;
+                document.getElementById("estatisticasDetalhadas").innerHTML = html;
+            } else {
+                document.getElementById("estatisticasDetalhadas").innerHTML = "<p>Nenhuma questão respondida ainda.</p>";
+            }
+        } catch(error) {
+            document.getElementById("estatisticasDetalhadas").innerHTML = "<p>Erro ao carregar estatísticas</p>";
+        }
     }
 
+    function atualizarStats() {
+        let totalSub = 0, completos = 0, topicosDom = 0;
+        dadosEstudo.materias.forEach(m => m.topicos.forEach(t => { if(t.status===3) topicosDom++; t.subtopicos?.forEach(s => { totalSub++; if(s.feito) completos++; }) }));
+        document.getElementById("progressoGeral").innerText = totalSub === 0 ? 0 : Math.round((completos/totalSub)*100)+"%";
+        document.getElementById("topicosDominados").innerText = topicosDom;
+        document.getElementById("subtopicosFeitos").innerText = completos;
+        let acertos = Object.values(respostasUsuario).filter(r => r.acertou === true).length;
+        document.getElementById("totalAcertos").innerText = acertos;
+        document.getElementById("totalQuestoes").innerText = questoes.length;
+        let respondidas = Object.values(respostasUsuario).filter(r => r.respondida === true).length;
+        let taxa = respondidas ? Math.round((acertos/respondidas)*100) : 0;
+        document.getElementById("taxaAcertos").innerText = taxa+"%";
+        document.getElementById("revisarQuestoes").innerText = Object.values(respostasUsuario).filter(r => r.acertou === false).length;
+    }
+
+    // ==================== BACKUP ====================
     function exportarBackup() {
-        const dados = { questoes, planoEstudos: dadosEstudo, versao: "3.0", data: new Date().toISOString() };
+        const dados = { 
+            questoes: questoes, 
+            planoEstudos: dadosEstudo, 
+            respostas: respostasUsuario,
+            versao: "4.0", 
+            data: new Date().toISOString() 
+        };
         const blob = new Blob([JSON.stringify(dados, null, 2)], {type: "application/json"});
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
         a.download = `inss_backup_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.json`;
         a.click();
         URL.revokeObjectURL(a.href);
+        alert("✅ Backup exportado!");
     }
 
     function importarBackup(file) {
         const reader = new FileReader();
-        reader.onload = e => {
+        reader.onload = async e => {
             try {
                 const dados = JSON.parse(e.target.result);
-                if(dados.questoes && dados.planoEstudos) { questoes = dados.questoes; dadosEstudo = dados.planoEstudos; if(questoes.length) nextQuestaoId = Math.max(...questoes.map(q=>q.id)) + 1; salvarTudo(); renderizarTudo(); alert("✅ Backup restaurado!"); }
-                else alert("❌ Arquivo inválido!");
+                if(dados.questoes && dados.planoEstudos) {
+                    // Restaurar questões no banco (apenas se for admin)
+                    alert("Para restaurar questões, use a importação em lote.");
+                } else alert("❌ Arquivo inválido!");
             } catch(err) { alert("❌ Erro ao ler arquivo!"); }
         };
         reader.readAsText(file);
     }
 
-    function renderizarTudo() { renderizarMaterias(); renderizarQuestoes(); preencherFiltros(); atualizarStats(); renderizarEstatisticas(); }
-    function expandirTodas() { dadosEstudo.materias.forEach(m => m.expandido = true); salvarTudo(); renderizarMaterias(); }
-    function recolherTodas() { dadosEstudo.materias.forEach(m => m.expandido = false); salvarTudo(); renderizarMaterias(); }
-    function alternarModoEscuro() { document.body.classList.toggle("dark-mode"); localStorage.setItem("inss_dark", document.body.classList.contains("dark-mode")); }
+    // ==================== INICIALIZAÇÃO ====================
+    async function inicializar() {
+        if(!checkAuth()) return;
+        
+        carregarPlanoEstudos();
+        await carregarQuestoesDoBanco();
+        await carregarRespostasDoUsuario();
+        preencherFiltros();
+        renderizarQuestoes();
+        carregarEstatisticas();
+        atualizarStats();
+        
+        document.getElementById("expandirTudo")?.addEventListener("click", () => { dadosEstudo.materias.forEach(m => m.expandido = true); salvarPlanoEstudos(); renderizarMaterias(); });
+        document.getElementById("recolherTudo")?.addEventListener("click", () => { dadosEstudo.materias.forEach(m => m.expandido = false); salvarPlanoEstudos(); renderizarMaterias(); });
+        document.getElementById("filtrarQuestoesBtn")?.addEventListener("click", () => renderizarQuestoes());
+        document.getElementById("salvarNovaQuestao")?.addEventListener("click", adicionarNovaQuestao);
+        document.getElementById("detectarQuestoesBtn")?.addEventListener("click", detectarQuestoes);
+        document.getElementById("confirmarImportacaoBtn")?.addEventListener("click", importarQuestoes);
+        document.getElementById("exportarDadosBtn")?.addEventListener("click", exportarBackup);
+        document.getElementById("importarDadosBtn")?.addEventListener("click", () => document.getElementById("arquivoRestore")?.click());
+        document.getElementById("arquivoRestore")?.addEventListener("change", (e) => { if(e.target.files[0]) importarBackup(e.target.files[0]); });
+        
+        document.getElementById("startTimer")?.addEventListener("click", iniciarTimer);
+        document.getElementById("pauseTimer")?.addEventListener("click", pausarTimer);
+        document.getElementById("resetTimer")?.addEventListener("click", resetarTimer);
+        
+        document.getElementById("darkModeBtn")?.addEventListener("click", () => {
+            document.body.classList.toggle("dark-mode");
+            localStorage.setItem("inss_dark", document.body.classList.contains("dark-mode"));
+        });
+        if(localStorage.getItem("inss_dark") === "true") document.body.classList.add("dark-mode");
+        
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+                btn.classList.add('active');
+                document.querySelectorAll('.tab-content').forEach(tc=>tc.classList.remove('active'));
+                document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+                if(btn.dataset.tab === 'questoes') renderizarQuestoes();
+                if(btn.dataset.tab === 'stats') carregarEstatisticas();
+            });
+        });
+    }
 
-    // EVENTOS
-    document.getElementById("resetarRespostasBtn")?.addEventListener("click", resetarRespostas);
-    document.getElementById("salvarEdicaoBtn")?.addEventListener("click", salvarEdicao);
-    
-    if(localStorage.getItem("inss_dark") === "true") document.body.classList.add("dark-mode");
-    
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-        btn.classList.add('active');
-        document.querySelectorAll('.tab-content').forEach(tc=>tc.classList.remove('active'));
-        document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
-        if(btn.dataset.tab === 'questoes') { preencherFiltros(); renderizarQuestoes(); }
-        if(btn.dataset.tab === 'stats') renderizarEstatisticas();
-    }));
-    
-    document.getElementById("darkModeBtn").onclick = alternarModoEscuro;
-    document.getElementById("filtrarQuestoesBtn").onclick = () => renderizarQuestoes();
-    document.getElementById("salvarNovaQuestao").onclick = adicionarNovaQuestao;
-    document.getElementById("detectarQuestoesBtn").onclick = detectarQuestoes;
-    document.getElementById("confirmarImportacaoBtn").onclick = importarQuestoes;
-    document.getElementById("expandirTudo").onclick = expandirTodas;
-    document.getElementById("recolherTudo").onclick = recolherTodas;
-    document.getElementById("exportarDadosBtn").onclick = exportarBackup;
-    document.getElementById("importarDadosBtn").onclick = () => document.getElementById("arquivoRestore").click();
-    document.getElementById("arquivoRestore").onchange = (e) => { if(e.target.files[0]) importarBackup(e.target.files[0]); };
-    
-    window.excluirQuestao = excluirQuestao;
-    window.abrirModalEdicao = abrirModalEdicao;
-    window.fecharModal = fecharModal;
-    
-    carregarTudo();
+    inicializar();
     resetarTimer();
 </script>
 </body>
