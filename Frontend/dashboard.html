@@ -1170,7 +1170,7 @@
 
 
     mostrarPreview();
-}
+
     async function importarQuestoes() {
         let importadas = 0;
         for(let i=0; i<questoesDetectadas.length; i++) {
@@ -1259,6 +1259,7 @@
             if(btn.dataset.tab === 'questoes') renderizarQuestoes();
             if(btn.dataset.tab === 'stats') carregarEstatisticas();
         }));
+    }
     
     
     init();
