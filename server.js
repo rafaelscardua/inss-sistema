@@ -4,6 +4,11 @@ const bcrypt = require('bcryptjs');
 const { pool, initDatabase } = require('./db');
 require('dotenv').config();
 
+console.log('=== INICIANDO SERVIDOR ===');
+console.log('PORT:', process.env.PORT);
+console.log('ALLOWED_EMAILS:', process.env.ALLOWED_EMAILS);
+console.log('DATABASE_URL existe?', !!process.env.DATABASE_URL);
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -160,7 +165,8 @@ app.get('/api/estatisticas/:usuario_id', async (req, res) => {
   }
 });
 
-
+console.log('=== CONFIGURAÇÕES APLICADAS ===');
+console.log('Rotas registradas: /api/cadastrar, /api/login, /api/questoes');
 
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
