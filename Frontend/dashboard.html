@@ -898,105 +898,7 @@
         }
     }
 
-        // ==================== MODO ALEATÓRIO (QUESTÕES) ====================
-    let modoAleatorioAtivo = false;
-    let questoesAleatorias = [];
-    let indiceAleatorioAtual = 0;
-    let simuladoTimerInterval = null;
-    let simuladoTempoRestante = 0;
-    
-    async function iniciarModoAleatorio(quantidade) {
-        await carregarQuestoes();
-        if (!questoes.length) { alert("Nenhuma questão cadastrada!"); return; }
         
-        let filtradas = [...questoes];
-        const filtroStatus = document.getElementById("filtroStatus")?.value || "todas";
-        
-        if (filtroStatus === "naoRespondidas") filtradas = filtradas.filter(q => !respostasUsuario[q.id]?.respondida);
-        if (filtroStatus === "erradas") filtradas = filtradas.filter(q => respostasUsuario[q.id]?.acertou === false);
-        
-        if (filtradas.length === 0) { alert("Nenhuma questão com o filtro selecionado!"); return; }
-        
-        for (let i = filtradas.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [filtradas[i], filtradas[j]] = [filtradas[j], filtradas[i]];
-        }
-        
-        questoesAleatorias = filtradas.slice(0, Math.min(quantidade, filtradas.length));
-        indiceAleatorioAtual = 0;
-        modoAleatorioAtivo = true;
-        mostrarQuestaoAleatoria();
-    }
-    
-    function mostrarQuestaoAleatoria() {
-        if (!modoAleatorioAtivo || indiceAleatorioAtual >= questoesAleatorias.length) {
-            alert(`🎉 Parabéns! Você completou ${questoesAleatorias.length} questões!`);
-            encerrarModoAleatorio();
-            return;
-        }
-        
-        const quest = questoesAleatorias[indiceAleatorioAtual];
-        const resp = respostasUsuario[quest.id] || {};
-        const container = document.getElementById("questoesList");
-        
-        let alternativasHtml = Object.entries(quest.alternativas).map(([letra, texto]) => {
-            let classes = "alternativa";
-            if(resp.respondida) {
-                if(letra === quest.correta) classes += " correct-answer";
-                if(letra === resp.resposta_usuario && resp.resposta_usuario !== quest.correta) classes += " wrong-answer";
-            }
-            return `<div class="${classes}" data-letra="${letra}" data-qid="${quest.id}"><strong>${letra})</strong> ${texto}</div>`;
-        }).join('');
-        
-        container.innerHTML = `
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <span>🎲 <strong>MODO ALEATÓRIO</strong></span><br>
-                    <small>Questão ${indiceAleatorioAtual + 1} de ${questoesAleatorias.length}</small>
-                </div>
-                <div>
-                    <span style="margin-right: 15px;">✅ Acertos: ${questoesAleatorias.filter((_,i) => i < indiceAleatorioAtual && respostasUsuario[questoesAleatorias[i].id]?.acertou === true).length}</span>
-                    <button class="btn-small" id="sairAleatorioBtn" style="background: #e74c3c;">❌ Sair</button>
-                </div>
-            </div>
-            <div class="question-card">
-                <div class="question-text"><strong>📚 ${quest.materia} | ${quest.assunto}</strong><br>${quest.enunciado}</div>
-                <div class="alternativas" id="altAleatorio">${alternativasHtml}</div>
-                ${!resp.respondida ? `<button class="btn-responder" id="respAleatorioBtn">✅ Responder</button>` : ''}
-                ${resp.respondida ? `<div class="feedback ${resp.acertou ? 'correct' : 'wrong'}">${resp.acertou ? '✅ Correto!' : '❌ Errado!'} ${quest.explicacao || ''}</div><button class="btn-small" id="proxAleatorioBtn" style="margin-top: 10px;">▶ Próxima Questão</button>` : ''}
-            </div>
-        `;
-        
-        document.querySelectorAll('#altAleatorio .alternativa').forEach(el => {
-            el.addEventListener('click', () => {
-                document.querySelectorAll('#altAleatorio .alternativa').forEach(a=>a.classList.remove('selected'));
-                el.classList.add('selected');
-                window.selectedAleatorio = el.dataset.letra;
-            });
-        });
-        
-        document.getElementById("respAleatorioBtn")?.addEventListener('click', async () => {
-            let selected = window.selectedAleatorio;
-            if(!selected) { alert("Selecione uma alternativa!"); return; }
-            await salvarResposta(quest.id, selected === quest.correta, selected);
-            await carregarRespostas();
-            renderizarQuestoes();
-            carregarEstatisticas();
-            atualizarStats();
-            mostrarQuestaoAleatoria();
-        });
-        
-        document.getElementById("proxAleatorioBtn")?.addEventListener('click', () => { indiceAleatorioAtual++; mostrarQuestaoAleatoria(); });
-        document.getElementById("sairAleatorioBtn")?.addEventListener('click', () => encerrarModoAleatorio());
-    }
-    
-    function encerrarModoAleatorio() {
-        modoAleatorioAtivo = false;
-        questoesAleatorias = [];
-        indiceAleatorioAtual = 0;
-        renderizarQuestoes();
-        if(simuladoTimerInterval) { clearInterval(simuladoTimerInterval); simuladoTimerInterval = null; }
-    }
     
     // ==================== SIMULADO AVANÇADO ====================
     function abrirSimuladoModal() {
@@ -1311,7 +1213,7 @@
     async function salvarEdicao() { if(!currentEditId) return; const q = questoes.find(q=>q.id===currentEditId); if(q) { q.materia=document.getElementById("editMateria").value; q.assunto=document.getElementById("editAssunto").value; q.enunciado=document.getElementById("editEnunciado").value; q.alternativas={ A:document.getElementById("editAltA").value, B:document.getElementById("editAltB").value, C:document.getElementById("editAltC").value, D:document.getElementById("editAltD").value }; let e=document.getElementById("editAltE").value; if(e) q.alternativas.E=e; q.correta=document.getElementById("editCorreta").value.toUpperCase(); q.explicacao=document.getElementById("editExplicacao").value; await fetch(`${API_URL}/api/questoes/${currentEditId}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(q) }); await carregarQuestoes(); renderizarQuestoes(); carregarEstatisticas(); fecharModal(); alert("✅ Atualizada!"); } }
 
     // INICIALIZAÇÃO
-    async function init() {
+        async function init() {
         if(!checkAuth()) return;
         carregarPlano();
         await carregarQuestoes();
@@ -1337,6 +1239,17 @@
         document.getElementById("pauseTimer")?.addEventListener("click", pausarTimer);
         document.getElementById("resetTimer")?.addEventListener("click", resetarTimer);
         document.getElementById("darkModeBtn")?.addEventListener("click", () => { document.body.classList.toggle("dark-mode"); localStorage.setItem("inss_dark", document.body.classList.contains("dark-mode")); });
+        
+        // Botões da aba QUESTÕES
+        document.getElementById("modoAleatorio10BtnQS")?.addEventListener("click", () => iniciarModoAleatorio(10));
+        document.getElementById("modoAleatorio20BtnQS")?.addEventListener("click", () => iniciarModoAleatorio(20));
+        document.getElementById("modoAleatorio30BtnQS")?.addEventListener("click", () => iniciarModoAleatorio(30));
+        document.getElementById("simuladoBtn")?.addEventListener("click", abrirSimuladoModal);
+        document.getElementById("iniciarSimuladoBtn")?.addEventListener("click", iniciarSimulado);
+        document.getElementById("simuladoTimer")?.addEventListener("change", (e) => {
+            document.getElementById("simuladoTimerMinutos").disabled = !e.target.checked;
+        });
+        
         if(localStorage.getItem("inss_dark") === "true") document.body.classList.add("dark-mode");
         document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => {
             document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -1346,22 +1259,6 @@
             if(btn.dataset.tab === 'questoes') renderizarQuestoes();
             if(btn.dataset.tab === 'stats') carregarEstatisticas();
         }));
-        document.getElementById("modoAleatorio10BtnQS")?.addEventListener("click", () => iniciarModoAleatorio(10));
-        document.getElementById("modoAleatorio20BtnQS")?.addEventListener("click", () => iniciarModoAleatorio(20));
-        document.getElementById("modoAleatorio30BtnQS")?.addEventListener("click", () => iniciarModoAleatorio(30));
-        document.getElementById("simuladoBtn")?.addEventListener("click", abrirSimuladoModal);
-        document.getElementById("iniciarSimuladoBtn")?.addEventListener("click", iniciarSimulado);
-        document.getElementById("simuladoTimer")?.addEventListener("change", (e) => {
-            document.getElementById("simuladoTimerMinutos").disabled = !e.target.checked;
-        });
-        document.getElementById("modoAleatorio10BtnQS")?.addEventListener("click", () => iniciarModoAleatorio(10));
-        document.getElementById("modoAleatorio20BtnQS")?.addEventListener("click", () => iniciarModoAleatorio(20));
-        document.getElementById("modoAleatorio30BtnQS")?.addEventListener("click", () => iniciarModoAleatorio(30));
-        document.getElementById("simuladoBtn")?.addEventListener("click", abrirSimuladoModal);
-        document.getElementById("iniciarSimuladoBtn")?.addEventListener("click", iniciarSimulado);
-        document.getElementById("simuladoTimer")?.addEventListener("change", (e) => {
-        document.getElementById("simuladoTimerMinutos").disabled = !e.target.checked;
-        });
     }
     init();
     resetarTimer();
