@@ -1,7 +1,7 @@
 const { Pool } = require('pg');
 
 // TEMPORÁRIO: URL hardcoded para teste
-const connectionString = "postgresql://postgres:MXjqNoc1QFHwdSwoACnHzEEgSbMtLqBD@postgres.railway.internal:5432/railway";
+const connectionString = "postgresql://postgres:MXjqNocIQFHwdSwoACnHzEEgSbMtLqBD@postgres.railway.internal:5432/railway";
 
 console.log('Usando URL hardcoded');
 
