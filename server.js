@@ -17,8 +17,17 @@ initDatabase();
 
 // ==================== ROTAS DE USUÁRIO ====================
 
-// Cadastro
+// Cadastro (apenas se permitido)
 app.post('/api/cadastrar', async (req, res) => {
+  const allowRegistration = process.env.ALLOW_REGISTRATION === 'true';
+  
+  if (!allowRegistration) {
+    return res.status(403).json({ 
+      sucesso: false, 
+      erro: 'Cadastros temporariamente desativados. Contate o administrador.' 
+    });
+  }
+  
   const { nome, email, senha } = req.body;
   try {
     const senhaHash = await bcrypt.hash(senha, 10);
