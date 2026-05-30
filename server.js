@@ -9,7 +9,8 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static('../frontend'));
+app.use(express.static(__dirname + '/Frontend'));
+app.use(express.static('Frontend'));
 
 // Inicializar banco de dados
 initDatabase();
@@ -146,7 +147,14 @@ app.get('/api/estatisticas/:usuario_id', async (req, res) => {
   }
 });
 
-// Iniciar servidor
+// Servir arquivos estáticos da pasta Frontend
+app.use(express.static(__dirname + '/Frontend'));
+
+// Rota principal
+app.get('/', (req, res) => {
+  res.sendFile('login.html', { root: __dirname + '/Frontend' });
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
