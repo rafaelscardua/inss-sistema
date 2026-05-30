@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INSS Total - Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            width: 90%;
+            max-width: 450px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+        }
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            background: #ecf0f1;
+            color: #2c3e50;
+        }
+        .tab-btn.active {
+            background: #27ae60;
+            color: white;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        button[type="submit"] {
+            width: 100%;
+            padding: 12px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button[type="submit"]:hover {
+            background: #2980b9;
+        }
+        .error {
+            color: #e74c3c;
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        .form-panel {
+            display: none;
+        }
+        .form-panel.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 INSS Total</h1>
+        <div class="subtitle">Sistema de Estudos Multi-usuário</div>
+        
+        <div class="tab-buttons">
+            <button class="tab-btn active" data-tab="login">🔐 Entrar</button>
+            <button class="tab-btn" data-tab="cadastro">📝 Cadastrar</button>
+        </div>
+
+        <div id="login-panel" class="form-panel active">
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>E-mail</label>
+                    <input type="email" id="loginEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Senha</label>
+                    <input type="password" id="loginSenha" required>
+                </div>
+                <button type="submit">Entrar</button>
+                <div id="loginError" class="error"></div>
+            </form>
+        </div>
+
+        <div id="cadastro-panel" class="form-panel">
+            <form id="cadastroForm">
+                <div class="form-group">
+                    <label>Nome</label>
+                    <input type="text" id="cadastroNome" required>
+                </div>
+                <div class="form-group">
+                    <label>E-mail</label>
+                    <input type="email" id="cadastroEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Senha</label>
+                    <input type="password" id="cadastroSenha" required>
+                </div>
+                <button type="submit">Cadastrar</button>
+                <div id="cadastroError" class="error"></div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin;
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                document.querySelectorAll('.form-panel').forEach(p => p.classList.remove('active'));
+                document.getElementById(`${btn.dataset.tab}-panel`).classList.add('active');
+            });
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const senha = document.getElementById('loginSenha').value;
+            try {
+                const res = await fetch(`${API_URL}/api/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, senha })
+                });
+                const data = await res.json();
+                if (data.sucesso) {
+                    localStorage.setItem('usuario', JSON.stringify(data.usuario));
+                    window.location.href = '/dashboard.html';
+                } else {
+                    document.getElementById('loginError').textContent = data.erro;
+                }
+            } catch (error) {
+                document.getElementById('loginError').textContent = 'Erro ao conectar ao servidor';
+            }
+        });
+
+        document.getElementById('cadastroForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const nome = document.getElementById('cadastroNome').value;
+            const email = document.getElementById('cadastroEmail').value;
+            const senha = document.getElementById('cadastroSenha').value;
+            try {
+                const res = await fetch(`${API_URL}/api/cadastrar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nome, email, senha })
+                });
+                const data = await res.json();
+                if (data.sucesso) {
+                    alert('Cadastro realizado! Faça login.');
+                    document.querySelector('.tab-btn[data-tab="login"]').click();
+                } else {
+                    document.getElementById('cadastroError').textContent = data.erro;
+                }
+            } catch (error) {
+                document.getElementById('cadastroError').textContent = 'Erro ao conectar ao servidor';
+            }
+        });
+    </script>
+</body>
+</html>
