@@ -18,7 +18,7 @@ app.use(express.static(__dirname + '/Frontend'));
 app.use(express.static('Frontend'));
 
 // Inicializar banco de dados
-initDatabase();
+initDatabase().catch(err => console.error('Erro ao inicializar banco:', err));
 
 // ==================== ROTAS DE USUÁRIO ====================
 
