@@ -103,6 +103,26 @@ app.get('/api/questoes', async (req, res) => {
   }
 });
 
+
+// Criar nova questão (POST)
+app.post('/api/questoes', async (req, res) => {
+  const { materia, assunto, enunciado, alternativas, correta, explicacao } = req.body;
+  try {
+    const result = await pool.query(
+      `INSERT INTO questoes_base (materia, assunto, enunciado, alternativas, correta, explicacao) 
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [materia, assunto, enunciado, alternativas, correta, explicacao || '']
+    );
+    res.json({ sucesso: true, questao: result.rows[0] });
+  } catch (error) {
+    console.error('Erro ao criar questão:', error);
+    res.status(500).json({ sucesso: false, erro: 'Erro ao criar questão' });
+  }
+});
+
+
+
+
 // ==================== ROTAS DE RESPOSTAS ====================
 
 // Registrar resposta
