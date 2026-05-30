@@ -404,7 +404,9 @@
         <div id="materiasContainer"></div>
     </div>
 
-    <!-- QUESTÕES -->
+
+
+        <!-- QUESTÕES -->
     <div id="tab-questoes" class="tab-content">
         <div class="filtros-box">
             <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
@@ -413,25 +415,19 @@
                 <div class="filtro-group" style="flex:1;"><label>🎲 Status</label><select id="filtroStatus"><option value="todas">Todas</option><option value="naoRespondidas">Não respondidas</option><option value="corretas">Corretas</option><option value="erradas">Erradas</option></select></div>
                 <div><button class="btn-responder" id="filtrarQuestoesBtn">🔍 Filtrar</button></div>
             </div>
+            <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
+                <button class="btn-small" id="modoAleatorio10BtnQS">🎲 10 questões</button>
+                <button class="btn-small" id="modoAleatorio20BtnQS">🎲 20 questões</button>
+                <button class="btn-small" id="modoAleatorio30BtnQS">🎲 30 questões</button>
+                <button class="btn-small btn-import" id="simuladoBtn">📋 SIMULADO AVANÇADO</button>
+            </div>
         </div>
         <div id="questoesList"></div>
     </div>
 
-    <!-- CRONÔMETRO -->
-    <div id="tab-cronometro" class="tab-content">
-        <div class="cronometro-box">
-            <h2>🍅 Pomodoro Timer</h2>
-            <div class="timer-display" id="timerDisplay">25:00</div>
-            <div class="timer-buttons">
-                <button class="btn-start" id="startTimer">▶ Iniciar</button>
-                <button class="btn-pause" id="pauseTimer">⏸ Pausar</button>
-                <button class="btn-reset" id="resetTimer">🔄 Resetar</button>
-            </div>
-            <div style="margin-top: 20px;">
-                <p>⏱️ 25 min foco → 5 min pausa → após 4 ciclos, pausa longa de 15 min</p>
-            </div>
-        </div>
-    </div>
+
+
+
 
     <!-- IMPORTAÇÃO -->
     <div id="tab-importar" class="tab-content">
