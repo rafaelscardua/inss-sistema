@@ -1,9 +1,15 @@
 const { Pool } = require('pg');
 
-// TEMPORÁRIO: URL hardcoded para teste
-const connectionString = "postgresql://postgres:CzEDhLkLAzrcDFeTFlDITQSXyIfeZpIe@postgres.railway.internal:5432/railway";
+// Usa a variável de ambiente (NÃO hardcoded!)
+const connectionString = process.env.DATABASE_URL;
 
-console.log('Usando URL hardcoded');
+console.log('DATABASE_URL existe?', !!connectionString);
+console.log('Primeiros caracteres:', connectionString ? connectionString.substring(0, 50) + '...' : 'NÃO DEFINIDA');
+
+if (!connectionString) {
+  console.error('❌ DATABASE_URL não definida! O Railway deve fornecer esta variável.');
+  process.exit(1);
+}
 
 const pool = new Pool({
   connectionString: connectionString,
