@@ -1,16 +1,20 @@
 const { Pool } = require('pg');
-require('dotenv').config();
+
+// Usa a variável de ambiente diretamente (sem dotenv no Railway)
+const connectionString = process.env.DATABASE_URL;
+
+console.log('DATABASE_URL existe?', !!connectionString);
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: connectionString,
   ssl: { rejectUnauthorized: false }
 });
 
-// Criar todas as tabelas
 async function initDatabase() {
   const client = await pool.connect();
   try {
-    // Tabela de usuários
+    console.log('Conectando ao banco...');
+    
     await client.query(`
       CREATE TABLE IF NOT EXISTS usuarios (
         id SERIAL PRIMARY KEY,
@@ -21,7 +25,6 @@ async function initDatabase() {
       )
     `);
 
-    // Tabela de questões base
     await client.query(`
       CREATE TABLE IF NOT EXISTS questoes_base (
         id SERIAL PRIMARY KEY,
@@ -35,7 +38,6 @@ async function initDatabase() {
       )
     `);
 
-    // Tabela de respostas dos usuários
     await client.query(`
       CREATE TABLE IF NOT EXISTS respostas_usuario (
         id SERIAL PRIMARY KEY,
@@ -49,7 +51,6 @@ async function initDatabase() {
       )
     `);
 
-    // Tabela de notas pessoais
     await client.query(`
       CREATE TABLE IF NOT EXISTS notas_usuario (
         id SERIAL PRIMARY KEY,
@@ -62,7 +63,8 @@ async function initDatabase() {
 
     console.log('✅ Banco de dados inicializado com sucesso!');
   } catch (error) {
-    console.error('❌ Erro ao inicializar banco:', error);
+    console.error('❌ Erro ao inicializar banco:', error.message);
+    throw error;
   } finally {
     client.release();
   }
