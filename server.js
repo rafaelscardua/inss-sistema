@@ -17,18 +17,22 @@ initDatabase();
 
 // ==================== ROTAS DE USUÁRIO ====================
 
-// Cadastro (apenas se permitido)
+// Cadastro
+// Cadastro com lista de emails permitidos
 app.post('/api/cadastrar', async (req, res) => {
-  const allowRegistration = process.env.ALLOW_REGISTRATION === 'true';
+  const { nome, email, senha } = req.body;
   
-  if (!allowRegistration) {
+  // Verifica se email está na lista de permitidos
+  const allowedEmails = process.env.ALLOWED_EMAILS ? process.env.ALLOWED_EMAILS.split(',') : [];
+  const isAllowed = allowedEmails.includes(email);
+  
+  if (!isAllowed) {
     return res.status(403).json({ 
       sucesso: false, 
-      erro: 'Cadastros temporariamente desativados. Contate o administrador.' 
+      erro: 'Email não autorizado. Contate o administrador para se cadastrar.' 
     });
   }
   
-  const { nome, email, senha } = req.body;
   try {
     const senhaHash = await bcrypt.hash(senha, 10);
     const result = await pool.query(
@@ -156,13 +160,7 @@ app.get('/api/estatisticas/:usuario_id', async (req, res) => {
   }
 });
 
-// Servir arquivos estáticos da pasta Frontend
-app.use(express.static(__dirname + '/Frontend'));
 
-// Rota principal
-app.get('/', (req, res) => {
-  res.sendFile('login.html', { root: __dirname + '/Frontend' });
-});
 
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
