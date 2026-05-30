@@ -9,9 +9,9 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static('frontend'));
+app.use(express.static('../frontend'));
 
-// Inicializar banco
+// Inicializar banco de dados
 initDatabase();
 
 // ==================== ROTAS DE USUÁRIO ====================
@@ -56,26 +56,13 @@ app.post('/api/login', async (req, res) => {
 
 // ==================== ROTAS DE QUESTÕES ====================
 
-// Criar questão (admin/sistema)
-app.post('/api/questoes', async (req, res) => {
-  const { materia, assunto, enunciado, alternativas, correta, explicacao } = req.body;
-  try {
-    const result = await pool.query(
-      'INSERT INTO questoes_base (materia, assunto, enunciado, alternativas, correta, explicacao) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [materia, assunto, enunciado, alternativas, correta, explicacao]
-    );
-    res.json({ sucesso: true, questao: result.rows[0] });
-  } catch (error) {
-    res.status(500).json({ sucesso: false, erro: 'Erro ao criar questão' });
-  }
-});
-
-// Listar questões (com filtro)
+// Listar questões
 app.get('/api/questoes', async (req, res) => {
   const { materia, assunto } = req.query;
   let query = 'SELECT * FROM questoes_base';
   let params = [];
   let conditions = [];
+  
   if (materia && materia !== 'todas') {
     conditions.push(`materia = $${params.length + 1}`);
     params.push(materia);
@@ -88,6 +75,7 @@ app.get('/api/questoes', async (req, res) => {
     query += ' WHERE ' + conditions.join(' AND ');
   }
   query += ' ORDER BY id';
+  
   try {
     const result = await pool.query(query, params);
     res.json({ sucesso: true, questoes: result.rows });
@@ -96,27 +84,9 @@ app.get('/api/questoes', async (req, res) => {
   }
 });
 
-// Importar múltiplas questões em lote
-app.post('/api/questoes/lote', async (req, res) => {
-  const { questoes } = req.body;
-  let importadas = 0;
-  for (const q of questoes) {
-    try {
-      await pool.query(
-        'INSERT INTO questoes_base (materia, assunto, enunciado, alternativas, correta, explicacao) VALUES ($1, $2, $3, $4, $5, $6)',
-        [q.materia, q.assunto, q.enunciado, q.alternativas, q.correta, q.explicacao || '']
-      );
-      importadas++;
-    } catch (error) {
-      console.error('Erro ao importar questão:', error);
-    }
-  }
-  res.json({ sucesso: true, importadas });
-});
+// ==================== ROTAS DE RESPOSTAS ====================
 
-// ==================== ROTAS DE RESPOSTAS DO USUÁRIO ====================
-
-// Registrar resposta de uma questão
+// Registrar resposta
 app.post('/api/respostas', async (req, res) => {
   const { usuario_id, questao_id, acertou, resposta_usuario } = req.body;
   try {
@@ -143,7 +113,11 @@ app.get('/api/respostas/:usuario_id', async (req, res) => {
     );
     const respostas = {};
     result.rows.forEach(r => {
-      respostas[r.questao_id] = { respondida: r.respondida, acertou: r.acertou, resposta_usuario: r.resposta_usuario };
+      respostas[r.questao_id] = { 
+        respondida: r.respondida, 
+        acertou: r.acertou, 
+        resposta_usuario: r.resposta_usuario 
+      };
     });
     res.json({ sucesso: true, respostas });
   } catch (error) {
@@ -151,35 +125,7 @@ app.get('/api/respostas/:usuario_id', async (req, res) => {
   }
 });
 
-// ==================== ROTAS DE NOTAS ====================
-
-app.post('/api/notas', async (req, res) => {
-  const { usuario_id, questao_id, nota } = req.body;
-  try {
-    await pool.query(
-      `INSERT INTO notas_usuario (usuario_id, questao_id, nota) VALUES ($1, $2, $3)
-       ON CONFLICT (usuario_id, questao_id) DO UPDATE SET nota = $3`,
-      [usuario_id, questao_id, nota]
-    );
-    res.json({ sucesso: true });
-  } catch (error) {
-    res.status(500).json({ sucesso: false, erro: 'Erro ao salvar nota' });
-  }
-});
-
-app.get('/api/notas/:usuario_id', async (req, res) => {
-  const { usuario_id } = req.params;
-  try {
-    const result = await pool.query('SELECT questao_id, nota FROM notas_usuario WHERE usuario_id = $1', [usuario_id]);
-    const notas = {};
-    result.rows.forEach(r => { notas[r.questao_id] = r.nota; });
-    res.json({ sucesso: true, notas });
-  } catch (error) {
-    res.status(500).json({ sucesso: false, erro: 'Erro ao buscar notas' });
-  }
-});
-
-// ==================== ESTATÍSTICAS DO USUÁRIO ====================
+// ==================== ESTATÍSTICAS ====================
 
 app.get('/api/estatisticas/:usuario_id', async (req, res) => {
   const { usuario_id } = req.params;

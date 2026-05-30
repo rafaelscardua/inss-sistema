@@ -1,7 +1,7 @@
 {
   "name": "inss-sistema-multiusuario",
   "version": "1.0.0",
-  "description": "Sistema de estudos INSS com multi-usuário",
+  "description": "Sistema de estudos INSS multi-usuário",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

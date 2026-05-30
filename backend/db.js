@@ -6,7 +6,7 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-// Criar tabelas
+// Criar todas as tabelas
 async function initDatabase() {
   const client = await pool.connect();
   try {
@@ -21,7 +21,7 @@ async function initDatabase() {
       )
     `);
 
-    // Tabela de questões (base compartilhada)
+    // Tabela de questões base
     await client.query(`
       CREATE TABLE IF NOT EXISTS questoes_base (
         id SERIAL PRIMARY KEY,
@@ -49,7 +49,7 @@ async function initDatabase() {
       )
     `);
 
-    // Tabela de notas pessoais dos usuários
+    // Tabela de notas pessoais
     await client.query(`
       CREATE TABLE IF NOT EXISTS notas_usuario (
         id SERIAL PRIMARY KEY,
@@ -57,18 +57,6 @@ async function initDatabase() {
         questao_id INTEGER REFERENCES questoes_base(id) ON DELETE CASCADE,
         nota TEXT,
         UNIQUE(usuario_id, questao_id)
-      )
-    `);
-
-    // Tabela de progresso nos estudos (tópicos)
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS progresso_usuario (
-        id SERIAL PRIMARY KEY,
-        usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
-        materia VARCHAR(100) NOT NULL,
-        topico VARCHAR(100) NOT NULL,
-        status INTEGER DEFAULT 0,
-        UNIQUE(usuario_id, materia, topico)
       )
     `);
 
