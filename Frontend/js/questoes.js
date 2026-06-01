@@ -42,65 +42,58 @@ function renderizarQuestoes() {
         return; 
     }
     
-    container.innerHTML = filtradas.map(q => {
+    let html = '';
+    for(let i = 0; i < filtradas.length; i++) {
+        const q = filtradas[i];
         const resp = respostasUsuario[q.id] || {};
-        let alternativasHtml = Object.entries(q.alternativas).map(([letra, texto]) => {
+        
+        let alternativasHtml = '';
+        for(let [letra, texto] of Object.entries(q.alternativas)) {
             let classes = "alternativa";
             if(resp.respondida) {
                 if(letra === q.correta) classes += " correct-answer";
                 if(letra === resp.resposta_usuario && resp.resposta_usuario !== q.correta) classes += " wrong-answer";
             }
-            return `<div class="${classes}" data-letra="${letra}" data-qid="${q.id}"><strong>${letra})</strong> ${texto}</div>`;
-        }).join('');
+            alternativasHtml += `<div class="${classes}" data-letra="${letra}" data-qid="${q.id}"><strong>${letra})</strong> ${texto}</div>`;
+        }
         
-        return `
-    <div class="question-card" id="q${q.id}">
-        <div class="action-icons">
-            <button class="edit-btn" onclick="abrirModalEdicao(${q.id})">✏️</button>
-            <button class="delete-btn" onclick="excluirQuestao(${q.id})">🗑️</button>
-        </div>
-        ...
-    </div>
-`   ;
-
-    }).join('');
+        html += `
+            <div class="question-card" id="q${q.id}">
+                <div class="action-icons">
+                    <button class="edit-btn" onclick="abrirModalEdicao(${q.id})">✏️</button>
+                    <button class="delete-btn" onclick="excluirQuestao(${q.id})">🗑️</button>
+                </div>
+                <div class="question-text"><strong>📚 ${q.materia} | ${q.assunto}</strong><br>${q.enunciado}</div>
+                <div class="alternativas" id="alt-${q.id}">${alternativasHtml}</div>
+                ${!resp.respondida ? `<button class="btn-responder" data-id="${q.id}">✅ Responder</button>` : ''}
+                ${resp.respondida ? `<div class="feedback ${resp.acertou ? 'correct' : 'wrong'}">${resp.acertou ? '✅ Correto! ' : '❌ Errado! '} ${q.explicacao || ''}</div>` : ''}
+            </div>
+        `;
+    }
+    container.innerHTML = html;
     
-    // Eventos das alternativas
-    document.querySelectorAll('.alternativa').forEach(el => {
-        if(!el.hasListener) {
-            el.addEventListener('click', (e) => {
-                if(document.querySelector(`.btn-responder[data-id="${el.dataset.qid}"]`)) {
-                    document.querySelectorAll(`.alternativa[data-qid="${el.dataset.qid}"]`).forEach(a=>a.classList.remove('selected'));
-                    el.classList.add('selected');
-                    window.selectedAnswer[el.dataset.qid] = el.dataset.letra;
-                }
-            });
-            el.hasListener = true;
-        }
-    });
-    
-    // Eventos dos botões responder
+    // Reatribuir eventos
     document.querySelectorAll('.btn-responder').forEach(btn => {
-        if(!btn.hasListener) {
-            btn.addEventListener('click', async (e) => {
-                let id = parseInt(btn.dataset.id);
-                let quest = questoes.find(q=>q.id===id);
-                if (!window.selectedAnswer || !window.selectedAnswer[id]) {
-                    alert("Selecione uma alternativa primeiro!");
-                    return;
-                }
-                let selected = window.selectedAnswer[id];
-                let acertou = (selected === quest.correta);
-                await salvarResposta(id, acertou, selected);
-                await carregarRespostas();
-                renderizarQuestoes();
-                carregarEstatisticas();
-                atualizarStats();
-            });
-            btn.hasListener = true;
-        }
+        btn.addEventListener('click', async (e) => {
+            const id = parseInt(btn.dataset.id);
+            const quest = questoes.find(q => q.id === id);
+            const selectedDiv = document.querySelector(`#alt-${id} .alternativa.selected`);
+            if(!selectedDiv) {
+                alert("Selecione uma alternativa primeiro!");
+                return;
+            }
+            const selected = selectedDiv.dataset.letra;
+            const acertou = (selected === quest.correta);
+            await salvarResposta(id, acertou, selected);
+            await carregarRespostas();
+            renderizarQuestoes();
+            carregarEstatisticas();
+            atualizarStats();
+        });
     });
 }
+
+
 
 function preencherFiltros() {
     let materias = [...new Set(questoes.map(q=>q.materia))];
