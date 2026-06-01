@@ -1,6 +1,24 @@
 <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
+
+
+        #adminUsuariosList {
+    color: inherit;
+}
+
+#adminUsuariosList .question-card {
+    background: var(--card-bg, white);
+    color: var(--text-color, #2c3e50);
+}
+
+/* Para o modo escuro */
+body.dark-mode #adminUsuariosList .question-card {
+    background: #2d2d44;
+    color: #e0e0e0;
+}
+
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
