@@ -54,16 +54,15 @@ function renderizarQuestoes() {
         }).join('');
         
         return `
-            <div class="question-card" id="q${q.id}">
-                <div class="action-icons">
-                    <button class="edit-btn" onclick="abrirModalEdicao(${q.id})">✏️</button>
-                </div>
-                <div class="question-text"><strong>📚 ${q.materia} | ${q.assunto}</strong><br>${q.enunciado}</div>
-                <div class="alternativas">${alternativasHtml}</div>
-                ${!resp.respondida ? `<button class="btn-responder" data-id="${q.id}">✅ Responder</button>` : ''}
-                ${resp.respondida ? `<div class="feedback ${resp.acertou ? 'correct' : 'wrong'}">${resp.acertou ? '✅ Correto! ' : '❌ Errado! '} ${q.explicacao || ''}</div>` : ''}
-            </div>
-        `;
+    <div class="question-card" id="q${q.id}">
+        <div class="action-icons">
+            <button class="edit-btn" onclick="abrirModalEdicao(${q.id})">✏️</button>
+            <button class="delete-btn" onclick="excluirQuestao(${q.id})">🗑️</button>
+        </div>
+        ...
+    </div>
+`   ;
+
     }).join('');
     
     // Eventos das alternativas
