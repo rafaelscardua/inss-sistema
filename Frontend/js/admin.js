@@ -24,44 +24,22 @@ function renderizarAdminPainel() {
     for (let i = 0; i < adminUsuarios.length; i++) {
         const usr = adminUsuarios[i];
         html += `
-            <div id="user-card-${usr.id}" style="background: white; border-radius: 15px; padding: 20px; margin-bottom: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); cursor: pointer;">
+            <div style="background: white; border-radius: 15px; padding: 20px; margin-bottom: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); cursor: pointer;" onclick="verDetalhesUsuario(${usr.id}, '${usr.nome}')">
                 <strong style="color: #2c3e50;">👤 ${usr.nome}</strong><br>
                 <small style="color: #7f8c8d;">📧 ${usr.email}</small><br>
                 <small style="color: #7f8c8d;">📅 Cadastro: ${new Date(usr.data_criacao).toLocaleDateString()}</small><br>
-                <button id="btn-detalhes-${usr.id}" style="background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 8px; margin-top: 10px; cursor: pointer;">📊 Ver Detalhes</button>
+                <button style="background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 8px; margin-top: 10px; cursor: pointer;" onclick="event.stopPropagation(); verDetalhesUsuario(${usr.id}, '${usr.nome}')">📊 Ver Detalhes</button>
             </div>
         `;
     }
     html += '</div>';
     container.innerHTML = html;
     
-    // Adicionar event listeners para os botões
-    for (let i = 0; i < adminUsuarios.length; i++) {
-        const usr = adminUsuarios[i];
-        const btn = document.getElementById(`btn-detalhes-${usr.id}`);
-        if (btn) {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                verDetalhesUsuario(usr.id, usr.nome);
-            });
-        }
-        const card = document.getElementById(`user-card-${usr.id}`);
-        if (card) {
-            card.addEventListener('click', () => {
-                verDetalhesUsuario(usr.id, usr.nome);
-            });
-        }
-    }
-    
     console.log("Admin renderizado com", adminUsuarios.length, "usuários");
 }
 
-
-
-
 async function carregarAdminUsuarios() {
     try {
-        // Pega o usuário do localStorage diretamente
         const usuarioSalvo = localStorage.getItem('usuario');
         if (!usuarioSalvo) {
             console.log('Usuário não logado');
@@ -69,7 +47,7 @@ async function carregarAdminUsuarios() {
         }
         const usuario = JSON.parse(usuarioSalvo);
         
-        console.log('Enviando email:', usuario.email); // Debug
+        console.log('Enviando email:', usuario.email);
         
         const res = await fetch(`${API_URL}/api/admin/usuarios`, {
             headers: { 
@@ -77,56 +55,21 @@ async function carregarAdminUsuarios() {
             }
         });
         const data = await res.json();
-        console.log('Resposta:', data); // Debug
+        console.log('Resposta:', data);
         
         if (data.sucesso) {
             adminUsuarios = data.usuarios;
             renderizarAdminPainel();
         } else {
-            document.getElementById("adminUsuariosList").innerHTML = "<p>Acesso negado ou erro ao carregar usuários.</p>";
+            const container = document.getElementById("adminUsuariosList");
+            if(container) container.innerHTML = "<p>Acesso negado ou erro ao carregar usuários.</p>";
         }
     } catch(e) {
         console.error(e);
-        document.getElementById("adminUsuariosList").innerHTML = "<p>Erro ao carregar dados.</p>";
+        const container = document.getElementById("adminUsuariosList");
+        if(container) container.innerHTML = "<p>Erro ao carregar dados.</p>";
     }
 }
-
-function renderizarAdminPainel() {
-    const container = document.getElementById("adminUsuariosList");
-    if (!container) {
-        console.log("Container adminUsuariosList não encontrado");
-        return;
-    }
-    
-    const totalUsuariosElem = document.getElementById("adminTotalUsuarios");
-    const totalQuestoesElem = document.getElementById("adminTotalQuestoes");
-    
-    if (totalUsuariosElem) totalUsuariosElem.innerText = adminUsuarios.length;
-    if (totalQuestoesElem) totalQuestoesElem.innerText = questoes?.length || 0;
-    
-    if (adminUsuarios.length === 0) {
-        container.innerHTML = "<p>Nenhum usuário cadastrado ainda.</p>";
-        return;
-    }
-    
-    let html = '<div style="display: flex; flex-direction: column; gap: 15px;">';
-    for (let i = 0; i < adminUsuarios.length; i++) {
-        const usr = adminUsuarios[i];
-        html += `
-            <div class="question-card" style="margin-bottom: 10px; cursor: pointer;" onclick="verDetalhesUsuario(${usr.id}, '${usr.nome}')">
-                <strong>👤 ${usr.nome}</strong><br>
-                <small>📧 ${usr.email}</small><br>
-                <small>📅 Cadastro: ${new Date(usr.data_criacao).toLocaleDateString()}</small>
-                <button class="btn-small" style="margin-top: 10px; display: block;" onclick="event.stopPropagation(); verDetalhesUsuario(${usr.id}, '${usr.nome}')">📊 Ver Detalhes</button>
-            </div>
-        `;
-    }
-    html += '</div>';
-    container.innerHTML = html;
-    
-    console.log("Admin renderizado com", adminUsuarios.length, "usuários");
-}
-
 
 async function verDetalhesUsuario(usuarioId, usuarioNome) {
     try {
@@ -150,7 +93,6 @@ async function verDetalhesUsuario(usuarioId, usuarioNome) {
 }
 
 function mostrarModalDetalhes(usuarioNome, estatisticas, erros) {
-    // Remove qualquer modal existente
     const modalExistente = document.querySelector('.modal-admin');
     if (modalExistente) modalExistente.remove();
     
