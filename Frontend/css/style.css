@@ -409,4 +409,20 @@ body.dark-mode #adminUsuariosList .question-card {
         body.dark-mode #adminUsuariosList small {
             color: #aaa !important;
         }
+    .container {
+    min-height: 100vh;
+    height: auto;
+    overflow: visible;
+    }
+
+    #tab-admin {
+    display: block !important;
+    min-height: 500px !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 20px !important;
+    background: var(--bg-color, white);
+    }
+
+
     </style>
