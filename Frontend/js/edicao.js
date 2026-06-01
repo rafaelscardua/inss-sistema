@@ -24,6 +24,34 @@ function fecharModal() {
     currentEditId=null; 
 }
 
+// ==================== EXCLUIR QUESTÃO ====================
+
+async function excluirQuestao(id) {
+    if(confirm("🗑️ Tem certeza que deseja excluir esta questão permanentemente?")) {
+        try {
+            const res = await fetch(`${API_URL}/api/questoes/${id}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await res.json();
+            if (data.sucesso) {
+                await carregarQuestoes();
+                renderizarQuestoes();
+                preencherFiltros();
+                atualizarStats();
+                alert("✅ Questão excluída com sucesso!");
+            } else {
+                alert("❌ Erro ao excluir questão!");
+            }
+        } catch(e) {
+            console.error(e);
+            alert("❌ Erro ao excluir questão!");
+        }
+    }
+}
+
+
+
 async function salvarEdicao() { 
     if(!currentEditId) return; 
     const q = questoes.find(q=>q.id===currentEditId); 

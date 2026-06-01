@@ -269,6 +269,22 @@ app.get('/api/admin/estatisticas/:usuario_id', async (req, res) => {
     }
 });
 
+// Excluir questão (DELETE)
+app.delete('/api/questoes/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        // Primeiro exclui as respostas associadas
+        await pool.query('DELETE FROM respostas_usuario WHERE questao_id = $1', [id]);
+        // Depois exclui a questão
+        await pool.query('DELETE FROM questoes_base WHERE id = $1', [id]);
+        res.json({ sucesso: true });
+    } catch (error) {
+        console.error('Erro ao excluir questão:', error);
+        res.status(500).json({ sucesso: false, erro: 'Erro ao excluir questão' });
+    }
+});
+
+
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
