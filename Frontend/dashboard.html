@@ -316,13 +316,6 @@
 
             // Event listeners
 
-            if (btn.dataset.tab === 'admin') {
-                if (usuario.email === 'rafaelscardua@gmail.com') {
-                    carregarAdminUsuarios();
-                } else {
-                    document.getElementById("tab-admin").innerHTML = "<p style='text-align:center;padding:40px;'>🔒 Acesso restrito ao administrador</p>";
-                }
-            }
             document.getElementById("expandirTudo")?.addEventListener("click", () => { dadosEstudo.materias.forEach(m => m.expandido = true); salvarPlano(); renderizarMaterias(); });
             document.getElementById("recolherTudo")?.addEventListener("click", () => { dadosEstudo.materias.forEach(m => m.expandido = false); salvarPlano(); renderizarMaterias(); });
             document.getElementById("filtrarQuestoesBtn")?.addEventListener("click", renderizarQuestoes);
