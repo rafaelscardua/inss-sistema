@@ -2,6 +2,45 @@
 
 let adminUsuarios = [];
 
+function renderizarAdminPainel() {
+    const container = document.getElementById("adminUsuariosList");
+    if (!container) {
+        console.log("Container adminUsuariosList não encontrado");
+        return;
+    }
+    
+    const totalUsuariosElem = document.getElementById("adminTotalUsuarios");
+    const totalQuestoesElem = document.getElementById("adminTotalQuestoes");
+    
+    if (totalUsuariosElem) totalUsuariosElem.innerText = adminUsuarios.length;
+    if (totalQuestoesElem) totalQuestoesElem.innerText = questoes?.length || 0;
+    
+    if (adminUsuarios.length === 0) {
+        container.innerHTML = "<p>Nenhum usuário cadastrado ainda.</p>";
+        return;
+    }
+    
+    let html = '<div style="display: flex; flex-direction: column; gap: 15px;">';
+    for (let i = 0; i < adminUsuarios.length; i++) {
+        const usr = adminUsuarios[i];
+        html += `
+            <div style="background: white; border-radius: 15px; padding: 20px; margin-bottom: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); cursor: pointer;" onclick="verDetalhesUsuario(${usr.id}, '${usr.nome}')">
+                <strong style="color: #2c3e50;">👤 ${usr.nome}</strong><br>
+                <small style="color: #7f8c8d;">📧 ${usr.email}</small><br>
+                <small style="color: #7f8c8d;">📅 Cadastro: ${new Date(usr.data_criacao).toLocaleDateString()}</small><br>
+                <button style="background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 8px; margin-top: 10px; cursor: pointer;" onclick="event.stopPropagation(); verDetalhesUsuario(${usr.id}, '${usr.nome}')">📊 Ver Detalhes</button>
+            </div>
+        `;
+    }
+    html += '</div>';
+    container.innerHTML = html;
+    
+    console.log("Admin renderizado com", adminUsuarios.length, "usuários");
+}
+
+
+
+
 async function carregarAdminUsuarios() {
     try {
         // Pega o usuário do localStorage diretamente
