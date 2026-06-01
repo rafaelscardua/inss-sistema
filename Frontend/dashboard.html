@@ -214,6 +214,7 @@
 <script src="js/importacao.js"></script>
 <script src="js/backup.js"></script>
 <script src="js/edicao.js"></script>
+<script src="js/admin.js"></script>
 
 <script>
     // ==================== INICIALIZAÇÃO ====================
@@ -235,8 +236,8 @@
         }
         
         // Event listeners
-        
-                    if(btn.dataset.tab === 'admin') {
+
+            if(tabBtn.dataset.tab === 'admin') {
                 if(usuario.email === 'rafaelscardua@gmail.com') {
                     carregarAdminUsuarios();
                 } else {
@@ -270,15 +271,28 @@
         
         if(localStorage.getItem("inss_dark") === "true") document.body.classList.add("dark-mode");
         
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => {
-            document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-            btn.classList.add('active');
-            document.querySelectorAll('.tab-content').forEach(tc=>tc.classList.remove('active'));
-            document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
-            if(btn.dataset.tab === 'questoes') renderizarQuestoes();
-            if(btn.dataset.tab === 'stats') carregarEstatisticas();
-        }));
-    }
+               document.querySelectorAll('.tab-btn').forEach(tabBtn => {
+            tabBtn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+                tabBtn.classList.add('active');
+                document.querySelectorAll('.tab-content').forEach(tc=>tc.classList.remove('active'));
+                document.getElementById(`tab-${tabBtn.dataset.tab}`).classList.add('active');
+                
+                if(tabBtn.dataset.tab === 'questoes') renderizarQuestoes();
+                if(tabBtn.dataset.tab === 'stats') carregarEstatisticas();
+                
+                // ADMIN
+                if(tabBtn.dataset.tab === 'admin') {
+                    if(usuario.email === 'rafaelscardua@gmail.com') {
+                        if(typeof carregarAdminUsuarios === 'function') {
+                            carregarAdminUsuarios();
+                        }
+                    } else {
+                        document.getElementById("tab-admin").innerHTML = "<p style='text-align:center;padding:40px;'>🔒 Acesso restrito ao administrador</p>";
+                    }
+                }
+            });
+        });
     
     // Função para adicionar nova questão (não movida para módulo ainda)
     async function adicionarNovaQuestao() {
@@ -313,6 +327,5 @@
     init();
     resetarTimer();
 </script>
-<script src="js/admin.js"></script>
 </body>
 </html>
