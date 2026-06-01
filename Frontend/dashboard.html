@@ -405,6 +405,43 @@
         resetarTimer();
     </script>
     </script>
+    <script>
+    // ADMIN FLUTUANTE
+    setTimeout(() => {
+        const usuarioSalvo = localStorage.getItem('usuario');
+        if (!usuarioSalvo) return;
+        const usuario = JSON.parse(usuarioSalvo);
+        if (usuario.email !== 'rafaelscardua@gmail.com') return;
+        
+        const btn = document.createElement("button");
+        btn.innerHTML = "👑 ADMIN";
+        btn.style.cssText = "position:fixed; bottom:20px; right:20px; background:#27ae60; color:white; border:none; padding:12px 20px; border-radius:30px; cursor:pointer; z-index:99999; font-weight:bold;";
+        document.body.appendChild(btn);
+        
+        btn.onclick = () => {
+            const modal = document.createElement("div");
+            modal.style.cssText = "position:fixed; bottom:80px; right:20px; width:380px; background:white; border-radius:15px; z-index:99999; padding:15px; border:2px solid #27ae60;";
+            modal.innerHTML = `<div style="display:flex; justify-content:space-between;"><h3>👑 ADMIN</h3><button onclick="this.parentElement.parentElement.remove()" style="background:red; color:white; border:none; border-radius:50%; width:25px; cursor:pointer;">×</button></div><div id="admin-lista-float">Carregando...</div>`;
+            document.body.appendChild(modal);
+            
+            if(typeof carregarAdminUsuarios === 'function') carregarAdminUsuarios();
+            
+            let tentativas = 0;
+            const interval = setInterval(() => {
+                tentativas++;
+                if(window.adminUsuarios && window.adminUsuarios.length > 0) {
+                    clearInterval(interval);
+                    const container = document.getElementById("admin-lista-float");
+                    if(container) {
+                        container.innerHTML = window.adminUsuarios.map(u => `<div style="background:#f5f5f5; padding:10px; margin-bottom:10px;"><strong>${u.nome}</strong><br><small>${u.email}</small><br><button onclick="verDetalhesUsuario(${u.id}, '${u.nome}')">Ver Detalhes</button></div>`).join('');
+                    }
+                } else if(tentativas > 20) {
+                    clearInterval(interval);
+                }
+            }, 500);
+        };
+    }, 1000);
+</script>
 </body>
 
 </html>
