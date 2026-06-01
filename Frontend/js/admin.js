@@ -132,6 +132,10 @@ async function verDetalhesUsuario(usuarioId, usuarioNome) {
 }
 
 function mostrarModalDetalhes(usuarioNome, estatisticas, erros) {
+    // Remove qualquer modal existente
+    const modalExistente = document.querySelector('.modal-admin');
+    if (modalExistente) modalExistente.remove();
+    
     const estatisticasHtml = estatisticas.map(est => `
         <div style="border-bottom: 1px solid #ddd; padding: 10px;">
             <strong>${est.materia || 'Sem matéria'}</strong><br>
@@ -141,7 +145,7 @@ function mostrarModalDetalhes(usuarioNome, estatisticas, erros) {
     `).join('') || "<p>Nenhuma questão respondida.</p>";
     
     const errosHtml = erros.map(err => `
-        <div style="border-bottom: 1px solid #ddd; padding: 10px; cursor: pointer;" onclick="window.parent.irParaQuestaoAdmin(${err.id})">
+        <div style="border-bottom: 1px solid #ddd; padding: 10px; cursor: pointer;" onclick="irParaQuestaoAdmin(${err.id})">
             <strong>${err.materia} | ${err.assunto}</strong><br>
             <small>${err.enunciado.substring(0, 100)}...</small><br>
             <span style="color: #e74c3c;">❌ Respondeu: ${err.resposta_usuario} (Correta: ${err.correta})</span>
@@ -149,20 +153,37 @@ function mostrarModalDetalhes(usuarioNome, estatisticas, erros) {
     `).join('') || "<p>Nenhum erro registrado.</p>";
     
     const modal = document.createElement('div');
-    modal.className = 'modal';
-    modal.style.display = 'flex';
-    modal.innerHTML = `
-        <div class="modal-content" style="max-width: 600px;">
-            <div class="modal-header">
-                <h3>📊 ${usuarioNome} - Estatísticas</h3>
-                <button class="close-modal" onclick="this.closest('.modal').remove()">×</button>
-            </div>
-            <h4>📚 Desempenho por Matéria</h4>
-            ${estatisticasHtml}
-            <h4 style="margin-top: 20px;">❌ Últimos Erros (máx 50)</h4>
-            ${errosHtml}
-        </div>
+    modal.className = 'modal-admin';
+    modal.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        border-radius: 20px;
+        padding: 25px;
+        width: 90%;
+        max-width: 600px;
+        max-height: 80vh;
+        overflow-y: auto;
+        z-index: 100000;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
     `;
+    
+    modal.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+            <h3 style="margin: 0; color: #2c3e50;">📊 ${usuarioNome} - Estatísticas</h3>
+            <button onclick="this.closest('.modal-admin').remove()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+        </div>
+        <h4 style="color: #2c3e50;">📚 Desempenho por Matéria</h4>
+        <div style="max-height: 200px; overflow-y: auto;">${estatisticasHtml}</div>
+        <h4 style="color: #2c3e50;">❌ Últimos Erros (máx 50)</h4>
+        <div style="max-height: 300px; overflow-y: auto;">${errosHtml}</div>
+    `;
+    
     document.body.appendChild(modal);
 }
 
