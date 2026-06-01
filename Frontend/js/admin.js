@@ -24,16 +24,34 @@ function renderizarAdminPainel() {
     for (let i = 0; i < adminUsuarios.length; i++) {
         const usr = adminUsuarios[i];
         html += `
-            <div style="background: white; border-radius: 15px; padding: 20px; margin-bottom: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); cursor: pointer;" onclick="verDetalhesUsuario(${usr.id}, '${usr.nome}')">
+            <div id="user-card-${usr.id}" style="background: white; border-radius: 15px; padding: 20px; margin-bottom: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); cursor: pointer;">
                 <strong style="color: #2c3e50;">👤 ${usr.nome}</strong><br>
                 <small style="color: #7f8c8d;">📧 ${usr.email}</small><br>
                 <small style="color: #7f8c8d;">📅 Cadastro: ${new Date(usr.data_criacao).toLocaleDateString()}</small><br>
-                <button style="background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 8px; margin-top: 10px; cursor: pointer;" onclick="event.stopPropagation(); verDetalhesUsuario(${usr.id}, '${usr.nome}')">📊 Ver Detalhes</button>
+                <button id="btn-detalhes-${usr.id}" style="background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 8px; margin-top: 10px; cursor: pointer;">📊 Ver Detalhes</button>
             </div>
         `;
     }
     html += '</div>';
     container.innerHTML = html;
+    
+    // Adicionar event listeners para os botões
+    for (let i = 0; i < adminUsuarios.length; i++) {
+        const usr = adminUsuarios[i];
+        const btn = document.getElementById(`btn-detalhes-${usr.id}`);
+        if (btn) {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                verDetalhesUsuario(usr.id, usr.nome);
+            });
+        }
+        const card = document.getElementById(`user-card-${usr.id}`);
+        if (card) {
+            card.addEventListener('click', () => {
+                verDetalhesUsuario(usr.id, usr.nome);
+            });
+        }
+    }
     
     console.log("Admin renderizado com", adminUsuarios.length, "usuários");
 }
