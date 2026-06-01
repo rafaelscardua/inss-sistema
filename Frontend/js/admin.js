@@ -155,22 +155,22 @@ function mostrarModalDetalhes(usuarioNome, estatisticas, erros) {
     const modal = document.createElement('div');
     modal.className = 'modal-admin';
     modal.style.cssText = `
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: white;
-        border-radius: 20px;
-        padding: 25px;
-        width: 90%;
-        max-width: 600px;
-        max-height: 80vh;
-        overflow-y: auto;
-        z-index: 100000;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        background: white !important;
+        border-radius: 20px !important;
+        padding: 25px !important;
+        width: 90% !important;
+        max-width: 600px !important;
+        max-height: 80vh !important;
+        overflow-y: auto !important;
+        z-index: 999999 !important;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 15px !important;
     `;
     
     modal.innerHTML = `
