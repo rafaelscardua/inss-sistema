@@ -36,33 +36,40 @@ async function carregarAdminUsuarios() {
 
 function renderizarAdminPainel() {
     const container = document.getElementById("adminUsuariosList");
-    if (!container) return;
+    if (!container) {
+        console.log("Container adminUsuariosList não encontrado");
+        return;
+    }
     
-    document.getElementById("adminTotalUsuarios").innerText = adminUsuarios.length;
-    document.getElementById("adminTotalQuestoes").innerText = questoes?.length || 0;
+    const totalUsuariosElem = document.getElementById("adminTotalUsuarios");
+    const totalQuestoesElem = document.getElementById("adminTotalQuestoes");
+    
+    if (totalUsuariosElem) totalUsuariosElem.innerText = adminUsuarios.length;
+    if (totalQuestoesElem) totalQuestoesElem.innerText = questoes?.length || 0;
     
     if (adminUsuarios.length === 0) {
         container.innerHTML = "<p>Nenhum usuário cadastrado ainda.</p>";
         return;
     }
     
-    container.innerHTML = `
-        <div style="display: flex; flex-direction: column; gap: 15px;">
-            ${adminUsuarios.map(usr => `
-                <div class="question-card" style="cursor: pointer;" onclick="verDetalhesUsuario(${usr.id}, '${usr.nome}')">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <strong>👤 ${usr.nome}</strong><br>
-                            <small>📧 ${usr.email}</small><br>
-                            <small>📅 Cadastro: ${new Date(usr.data_criacao).toLocaleDateString()}</small>
-                        </div>
-                        <button class="btn-small" onclick="event.stopPropagation(); verDetalhesUsuario(${usr.id}, '${usr.nome}')">📊 Ver Detalhes</button>
-                    </div>
-                </div>
-            `).join('')}
-        </div>
-    `;
+    let html = '<div style="display: flex; flex-direction: column; gap: 15px;">';
+    for (let i = 0; i < adminUsuarios.length; i++) {
+        const usr = adminUsuarios[i];
+        html += `
+            <div class="question-card" style="margin-bottom: 10px; cursor: pointer;" onclick="verDetalhesUsuario(${usr.id}, '${usr.nome}')">
+                <strong>👤 ${usr.nome}</strong><br>
+                <small>📧 ${usr.email}</small><br>
+                <small>📅 Cadastro: ${new Date(usr.data_criacao).toLocaleDateString()}</small>
+                <button class="btn-small" style="margin-top: 10px; display: block;" onclick="event.stopPropagation(); verDetalhesUsuario(${usr.id}, '${usr.nome}')">📊 Ver Detalhes</button>
+            </div>
+        `;
+    }
+    html += '</div>';
+    container.innerHTML = html;
+    
+    console.log("Admin renderizado com", adminUsuarios.length, "usuários");
 }
+
 
 async function verDetalhesUsuario(usuarioId, usuarioNome) {
     try {
