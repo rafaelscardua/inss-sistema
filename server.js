@@ -198,6 +198,76 @@ app.get('*.html', (req, res) => {
   res.sendFile(req.path, { root: './Frontend' });
 });
 
+// ==================== ROTAS DE ADMIN ====================
+
+// Middleware para verificar se é admin
+async function isAdmin(email) {
+    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    return email === adminEmail;
+}
+
+// Listar todos os usuários (apenas admin)
+app.get('/api/admin/usuarios', async (req, res) => {
+    try {
+        // Pega o email do usuário logado (vem do frontend via header)
+        const userEmail = req.headers['x-user-email'];
+        if (!await isAdmin(userEmail)) {
+            return res.status(403).json({ sucesso: false, erro: 'Acesso negado' });
+        }
+        
+        const result = await pool.query(
+            'SELECT id, nome, email, data_criacao FROM usuarios ORDER BY nome'
+        );
+        res.json({ sucesso: true, usuarios: result.rows });
+    } catch (error) {
+        res.status(500).json({ sucesso: false, erro: 'Erro ao buscar usuários' });
+    }
+});
+
+// Estatísticas detalhadas de um usuário específico (apenas admin)
+app.get('/api/admin/estatisticas/:usuario_id', async (req, res) => {
+    const { usuario_id } = req.params;
+    try {
+        const userEmail = req.headers['x-user-email'];
+        if (!await isAdmin(userEmail)) {
+            return res.status(403).json({ sucesso: false, erro: 'Acesso negado' });
+        }
+        
+        // Busca estatísticas por matéria do usuário
+        const result = await pool.query(`
+            SELECT 
+                q.materia,
+                COUNT(CASE WHEN r.respondida THEN 1 END) as total_respondidas,
+                SUM(CASE WHEN r.acertou THEN 1 ELSE 0 END) as acertos
+            FROM usuarios u
+            LEFT JOIN respostas_usuario r ON u.id = r.usuario_id
+            LEFT JOIN questoes_base q ON r.questao_id = q.id
+            WHERE u.id = $1
+            GROUP BY q.materia
+            ORDER BY q.materia
+        `, [usuario_id]);
+        
+        // Busca questões que o usuário errou
+        const errosResult = await pool.query(`
+            SELECT 
+                q.id, q.materia, q.assunto, q.enunciado, q.correta,
+                r.resposta_usuario, r.data_resposta
+            FROM respostas_usuario r
+            JOIN questoes_base q ON r.questao_id = q.id
+            WHERE r.usuario_id = $1 AND r.acertou = false
+            ORDER BY r.data_resposta DESC
+            LIMIT 50
+        `, [usuario_id]);
+        
+        res.json({ 
+            sucesso: true, 
+            estatisticas: result.rows,
+            erros: errosResult.rows
+        });
+    } catch (error) {
+        res.status(500).json({ sucesso: false, erro: 'Erro ao buscar estatísticas' });
+    }
+});
 
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
