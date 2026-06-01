@@ -28,6 +28,7 @@
         <button class="tab-btn" data-tab="add">➕ ADICIONAR</button>
         <button class="tab-btn" data-tab="backup">💾 BACKUP</button>
         <button class="tab-btn" data-tab="stats">📊 ESTATS</button>
+        <button class="tab-btn" data-tab="admin">👑 ADMIN</button>
     </div>
 
     <!-- PLANO DE ESTUDOS -->
@@ -135,6 +136,23 @@
             <div style="flex: 1;"><h3 style="color: #27ae60;">✅ Questões que você ACERTOU</h3><div id="listaAcertos" class="lista-questoes">Carregando...</div></div>
             <div style="flex: 1;"><h3 style="color: #e74c3c;">❌ Questões que você ERROU (revisar!)</h3><div id="listaErros" class="lista-questoes">Carregando...</div></div>
         </div>
+
+
+            <!-- PAINEL ADMIN -->
+    <div id="tab-admin" class="tab-content">
+        <div class="filtros-box">
+            <h3>👑 Painel do Administrador</h3>
+            <p>Visualize o desempenho de todos os usuários</p>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card"><h3>📊 Total de Usuários</h3><div class="value" id="adminTotalUsuarios">0</div></div>
+            <div class="stat-card"><h3>📝 Total de Questões</h3><div class="value" id="adminTotalQuestoes">0</div></div>
+            <div class="stat-card"><h3>✅ Acertos Totais</h3><div class="value" id="adminTotalAcertos">0</div></div>
+        </div>
+        
+        <div id="adminUsuariosList"></div>
+    </div>
     </div>
 </div>
 
@@ -179,6 +197,11 @@
     </div>
 </div>
 
+
+
+
+
+
 <!-- CARREGAMENTO DOS MÓDULOS -->
 <script src="js/config.js"></script>
 <script src="js/auth.js"></script>
@@ -204,8 +227,22 @@
         renderizarQuestoes();
         carregarEstatisticas();
         atualizarStats();
+
+
+                // Se for admin, carrega dados do painel
+        if(usuario.email === 'rafaelscardua@gmail.com') {
+            await carregarAdminUsuarios();
+        }
         
         // Event listeners
+        
+                    if(btn.dataset.tab === 'admin') {
+                if(usuario.email === 'rafaelscardua@gmail.com') {
+                    carregarAdminUsuarios();
+                } else {
+                    document.getElementById("tab-admin").innerHTML = "<p style='text-align:center;padding:40px;'>🔒 Acesso restrito ao administrador</p>";
+                }
+            }
         document.getElementById("expandirTudo")?.addEventListener("click", () => { dadosEstudo.materias.forEach(m=>m.expandido=true); salvarPlano(); renderizarMaterias(); });
         document.getElementById("recolherTudo")?.addEventListener("click", () => { dadosEstudo.materias.forEach(m=>m.expandido=false); salvarPlano(); renderizarMaterias(); });
         document.getElementById("filtrarQuestoesBtn")?.addEventListener("click", renderizarQuestoes);
@@ -276,5 +313,6 @@
     init();
     resetarTimer();
 </script>
+<script src="js/admin.js"></script>
 </body>
 </html>
