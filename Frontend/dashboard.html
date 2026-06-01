@@ -335,9 +335,7 @@
 
 
         // ==================== INICIALIZAÇÃO ====================
-        async function init() {
-
-
+                async function init() {
             if (!checkAuth()) return;
             carregarPlano();
             await carregarQuestoes();
@@ -348,30 +346,52 @@
             carregarEstatisticas();
             atualizarStats();
 
-
             // Se for admin, carrega dados do painel
-            if (usuario.email === 'rafaelscardua@gmail.com') {
-                await carregarAdminUsuarios();
+            if (usuario && usuario.email === 'rafaelscardua@gmail.com') {
+                if (typeof carregarAdminUsuarios === 'function') {
+                    await carregarAdminUsuarios();
+                }
             }
 
-            // Event listeners
-
-            document.getElementById("expandirTudo")?.addEventListener("click", () => { dadosEstudo.materias.forEach(m => m.expandido = true); salvarPlano(); renderizarMaterias(); });
-            document.getElementById("recolherTudo")?.addEventListener("click", () => { dadosEstudo.materias.forEach(m => m.expandido = false); salvarPlano(); renderizarMaterias(); });
+            // ========== EVENT LISTENERS ==========
+            
+            // Abas PLANO
+            document.getElementById("expandirTudo")?.addEventListener("click", () => { 
+                dadosEstudo.materias.forEach(m => m.expandido = true); 
+                salvarPlano(); 
+                renderizarMaterias(); 
+            });
+            document.getElementById("recolherTudo")?.addEventListener("click", () => { 
+                dadosEstudo.materias.forEach(m => m.expandido = false); 
+                salvarPlano(); 
+                renderizarMaterias(); 
+            });
+            
+            // Aba QUESTÕES
             document.getElementById("filtrarQuestoesBtn")?.addEventListener("click", renderizarQuestoes);
             document.getElementById("salvarNovaQuestao")?.addEventListener("click", adicionarNovaQuestao);
             document.getElementById("detectarQuestoesBtn")?.addEventListener("click", detectarQuestoes);
             document.getElementById("confirmarImportacaoBtn")?.addEventListener("click", importarQuestoes);
+            
+            // Aba BACKUP
             document.getElementById("exportarDadosBtn")?.addEventListener("click", exportarBackup);
             document.getElementById("importarDadosBtn")?.addEventListener("click", () => document.getElementById("arquivoRestore").click());
-            document.getElementById("arquivoRestore")?.addEventListener("change", (e) => { if (e.target.files[0]) importarBackup(e.target.files[0]); });
-            document.getElementById("salvarEdicaoBtn")?.addEventListener("click", salvarEdicao);
+            document.getElementById("arquivoRestore")?.addEventListener("change", (e) => { 
+                if (e.target.files[0]) importarBackup(e.target.files[0]); 
+            });
+            
+            // CRONÔMETRO
             document.getElementById("startTimer")?.addEventListener("click", iniciarTimer);
             document.getElementById("pauseTimer")?.addEventListener("click", pausarTimer);
             document.getElementById("resetTimer")?.addEventListener("click", resetarTimer);
-            document.getElementById("darkModeBtn")?.addEventListener("click", () => { document.body.classList.toggle("dark-mode"); localStorage.setItem("inss_dark", document.body.classList.contains("dark-mode")); });
-
-            // Botões da aba QUESTÕES
+            
+            // Modo escuro
+            document.getElementById("darkModeBtn")?.addEventListener("click", () => { 
+                document.body.classList.toggle("dark-mode"); 
+                localStorage.setItem("inss_dark", document.body.classList.contains("dark-mode")); 
+            });
+            
+            // Botões da aba QUESTÕES (modo aleatório)
             document.getElementById("modoAleatorio10BtnQS")?.addEventListener("click", () => iniciarModoAleatorio(10));
             document.getElementById("modoAleatorio20BtnQS")?.addEventListener("click", () => iniciarModoAleatorio(20));
             document.getElementById("modoAleatorio30BtnQS")?.addEventListener("click", () => iniciarModoAleatorio(30));
@@ -380,34 +400,32 @@
             document.getElementById("simuladoTimer")?.addEventListener("change", (e) => {
                 document.getElementById("simuladoTimerMinutos").disabled = !e.target.checked;
             });
-
+            
+            // Edição
+            document.getElementById("salvarEdicaoBtn")?.addEventListener("click", salvarEdicao);
+            
+            // Modo escuro inicial
             if (localStorage.getItem("inss_dark") === "true") document.body.classList.add("dark-mode");
-
+            
+            // TABS
             document.querySelectorAll('.tab-btn').forEach(tabBtn => {
                 tabBtn.addEventListener('click', () => {
                     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                     tabBtn.classList.add('active');
                     document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
                     document.getElementById(`tab-${tabBtn.dataset.tab}`).classList.add('active');
-
+                    
                     if (tabBtn.dataset.tab === 'questoes') renderizarQuestoes();
                     if (tabBtn.dataset.tab === 'stats') carregarEstatisticas();
-
-                    // ADMIN
-                    if (tabBtn.dataset.tab === 'admin') {
-                        if (usuario.email === 'rafaelscardua@gmail.com') {
-                            if (typeof carregarAdminUsuarios === 'function') {
-                                carregarAdminUsuarios();
-                            }
-                        } else {
-                            document.getElementById("tab-admin").innerHTML = "<p style='text-align:center;padding:40px;'>🔒 Acesso restrito ao administrador</p>";
+                    
+                    if (tabBtn.dataset.tab === 'admin' && usuario && usuario.email === 'rafaelscardua@gmail.com') {
+                        if (typeof carregarAdminUsuarios === 'function') {
+                            carregarAdminUsuarios();
                         }
                     }
                 });
             });
-        }  // ← FECHA A FUNÇÃO init()
-
-        init();
+        }
         resetarTimer();
     </script>
 
