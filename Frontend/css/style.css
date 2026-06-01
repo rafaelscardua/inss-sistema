@@ -375,4 +375,38 @@ body.dark-mode #adminUsuariosList .question-card {
             .container { padding: 10px; }
             .timer-display { font-size: 2.5em; }
         }
+        
+        /* Estilos específicos para o Painel Admin - FORA DO MEDIA */
+        #adminUsuariosList {
+            padding: 20px;
+        }
+        
+        #adminUsuariosList > div {
+            background: white !important;
+            border-radius: 15px !important;
+            padding: 20px !important;
+            margin-bottom: 15px !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important;
+        }
+        
+        #adminUsuariosList strong {
+            color: #2c3e50 !important;
+        }
+        
+        #adminUsuariosList small {
+            color: #7f8c8d !important;
+        }
+        
+        /* Modo escuro */
+        body.dark-mode #adminUsuariosList > div {
+            background: #2d2d44 !important;
+        }
+        
+        body.dark-mode #adminUsuariosList strong {
+            color: #e0e0e0 !important;
+        }
+        
+        body.dark-mode #adminUsuariosList small {
+            color: #aaa !important;
+        }
     </style>
