@@ -424,5 +424,16 @@ body.dark-mode #adminUsuariosList .question-card {
     background: var(--bg-color, white);
     }
 
+    /* Forçar página a ter altura suficiente */
+html, body {
+    height: auto !important;
+    min-height: 100vh !important;
+}
+
+.container {
+    height: auto !important;
+    min-height: 100vh !important;
+    padding-bottom: 100px !important;
+}
 
     </style>
