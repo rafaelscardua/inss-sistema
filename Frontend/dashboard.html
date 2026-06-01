@@ -269,9 +269,9 @@
             document.getElementById("simuladoTimerMinutos").disabled = !e.target.checked;
         });
         
-        if(localStorage.getItem("inss_dark") === "true") document.body.classList.add("dark-mode");
+               if(localStorage.getItem("inss_dark") === "true") document.body.classList.add("dark-mode");
         
-               document.querySelectorAll('.tab-btn').forEach(tabBtn => {
+        document.querySelectorAll('.tab-btn').forEach(tabBtn => {
             tabBtn.addEventListener('click', () => {
                 document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
                 tabBtn.classList.add('active');
@@ -293,6 +293,11 @@
                 }
             });
         });
+    }  // ← FECHA A FUNÇÃO init()
+    
+    init();
+    resetarTimer();
+</script>
     
     // Função para adicionar nova questão (não movida para módulo ainda)
     async function adicionarNovaQuestao() {
