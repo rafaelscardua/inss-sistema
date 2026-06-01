@@ -4,10 +4,24 @@ let adminUsuarios = [];
 
 async function carregarAdminUsuarios() {
     try {
+        // Pega o usuário do localStorage diretamente
+        const usuarioSalvo = localStorage.getItem('usuario');
+        if (!usuarioSalvo) {
+            console.log('Usuário não logado');
+            return;
+        }
+        const usuario = JSON.parse(usuarioSalvo);
+        
+        console.log('Enviando email:', usuario.email); // Debug
+        
         const res = await fetch(`${API_URL}/api/admin/usuarios`, {
-            headers: { 'x-user-email': usuario.email }
+            headers: { 
+                'x-user-email': usuario.email
+            }
         });
         const data = await res.json();
+        console.log('Resposta:', data); // Debug
+        
         if (data.sucesso) {
             adminUsuarios = data.usuarios;
             renderizarAdminPainel();
@@ -20,10 +34,46 @@ async function carregarAdminUsuarios() {
     }
 }
 
+function renderizarAdminPainel() {
+    const container = document.getElementById("adminUsuariosList");
+    if (!container) return;
+    
+    document.getElementById("adminTotalUsuarios").innerText = adminUsuarios.length;
+    document.getElementById("adminTotalQuestoes").innerText = questoes?.length || 0;
+    
+    if (adminUsuarios.length === 0) {
+        container.innerHTML = "<p>Nenhum usuário cadastrado ainda.</p>";
+        return;
+    }
+    
+    container.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            ${adminUsuarios.map(usr => `
+                <div class="question-card" style="cursor: pointer;" onclick="verDetalhesUsuario(${usr.id}, '${usr.nome}')">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong>👤 ${usr.nome}</strong><br>
+                            <small>📧 ${usr.email}</small><br>
+                            <small>📅 Cadastro: ${new Date(usr.data_criacao).toLocaleDateString()}</small>
+                        </div>
+                        <button class="btn-small" onclick="event.stopPropagation(); verDetalhesUsuario(${usr.id}, '${usr.nome}')">📊 Ver Detalhes</button>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
 async function verDetalhesUsuario(usuarioId, usuarioNome) {
     try {
+        const usuarioSalvo = localStorage.getItem('usuario');
+        if (!usuarioSalvo) return;
+        const usuario = JSON.parse(usuarioSalvo);
+        
         const res = await fetch(`${API_URL}/api/admin/estatisticas/${usuarioId}`, {
-            headers: { 'x-user-email': usuario.email }
+            headers: { 
+                'x-user-email': usuario.email
+            }
         });
         const data = await res.json();
         if (data.sucesso) {
@@ -68,31 +118,6 @@ function mostrarModalDetalhes(usuarioNome, estatisticas, erros) {
         </div>
     `;
     document.body.appendChild(modal);
-}
-
-function renderizarAdminPainel() {
-    const container = document.getElementById("adminUsuariosList");
-    if (!container) return;
-    
-    document.getElementById("adminTotalUsuarios").innerText = adminUsuarios.length;
-    document.getElementById("adminTotalQuestoes").innerText = questoes.length;
-    
-    container.innerHTML = `
-        <div style="display: flex; flex-direction: column; gap: 15px;">
-            ${adminUsuarios.map(usr => `
-                <div class="question-card" style="cursor: pointer;" onclick="verDetalhesUsuario(${usr.id}, '${usr.nome}')">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <strong>👤 ${usr.nome}</strong><br>
-                            <small>📧 ${usr.email}</small><br>
-                            <small>📅 Cadastro: ${new Date(usr.data_criacao).toLocaleDateString()}</small>
-                        </div>
-                        <button class="btn-small" onclick="event.stopPropagation(); verDetalhesUsuario(${usr.id}, '${usr.nome}')">📊 Ver Detalhes</button>
-                    </div>
-                </div>
-            `).join('')}
-        </div>
-    `;
 }
 
 function irParaQuestaoAdmin(questaoId) {
