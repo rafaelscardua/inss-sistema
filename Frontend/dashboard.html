@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Sistema de Questões - Dashboard</title>
+    <title>INSS Total - Dashboard</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -12,7 +12,7 @@
     <div class="container">
         <div class="header">
             <div>
-                <h1>📚 Sistema de Questões - Dashboard</h1>
+                <h1>📚 INSS Total - Dashboard</h1>
                 <p>Modo Aleatório | Estatísticas com Links | Multi-usuário</p>
             </div>
             <div style="display: flex; gap: 10px;">
@@ -86,137 +86,131 @@
             <div id="questoesList"></div>
         </div>
 
+        <!-- CRONÔMETRO -->
+        <div id="tab-cronometro" class="tab-content">
+            <div class="cronometro-box">
+                <h2>🍅 Pomodoro Timer</h2>
+                <div class="timer-display" id="timerDisplay">25:00</div>
+                <div class="timer-buttons">
+                    <button class="btn-start" id="startTimer">▶ Iniciar</button>
+                    <button class="btn-pause" id="pauseTimer">⏸ Pausar</button>
+                    <button class="btn-reset" id="resetTimer">🔄 Resetar</button>
+                </div>
+                <div style="margin-top: 20px;">
+                    <p>⏱️ 25 min foco → 5 min pausa → após 4 ciclos, pausa longa de 15 min</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- IMPORTAÇÃO -->
+        <div id="tab-importar" class="tab-content">
+            <div class="import-box">
+                <h3>📥 Importar Questões</h3>
+                <div class="filtro-group"><label>📚 Matéria padrão</label><input type="text" id="importMateria"
+                        value="Informática"></div>
+                <div class="filtro-group"><label>📌 Assunto padrão</label><input type="text" id="importAssunto"
+                        value="Backup"></div>
+                <div class="filtro-group"><label>📋 Questões (cole aqui)</label><textarea id="importTexto" rows="10"
+                        placeholder="Cole as questões..."></textarea></div>
+                <div class="filtro-group"><label>📋 Gabarito (opcional)</label><textarea id="importGabarito" rows="4"
+                        placeholder="1. B&#10;2. D&#10;3. CORRETO"></textarea></div>
+                <button class="btn-import" id="detectarQuestoesBtn">🔍 Detectar</button>
+            </div>
+            <div id="previewArea" style="display:none;">
+                <div class="import-box">
+                    <div id="previewList"></div><button class="btn-add-questao" id="confirmarImportacaoBtn">✅
+                        Importar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ADICIONAR MANUAL -->
+        <div id="tab-add" class="tab-content">
+            <div class="question-card">
+                <h3>➕ Nova Questão</h3>
+                <div class="filtro-group"><label>Matéria</label><input type="text" id="novaMateria"></div>
+                <div class="filtro-group"><label>Assunto</label><input type="text" id="novoAssunto"></div>
+                <div class="filtro-group"><label>Enunciado</label><textarea id="novoEnunciado" rows="3"></textarea>
+                </div>
+                <div class="filtro-group"><label>A)</label><input type="text" id="novaAltA"></div>
+                <div class="filtro-group"><label>B)</label><input type="text" id="novaAltB"></div>
+                <div class="filtro-group"><label>C)</label><input type="text" id="novaAltC"></div>
+                <div class="filtro-group"><label>D)</label><input type="text" id="novaAltD"></div>
+                <div class="filtro-group"><label>E)</label><input type="text" id="novaAltE"></div>
+                <div class="filtro-group"><label>Correta</label><input type="text" id="novaCorreta" maxlength="1"></div>
+                <div class="filtro-group"><label>Explicação</label><textarea id="novaExplicacao" rows="2"></textarea>
+                </div>
+                <button class="btn-add-questao" id="salvarNovaQuestao">💾 Salvar</button>
+            </div>
+        </div>
+
+        <!-- BACKUP -->
+        <div id="tab-backup" class="tab-content">
+            <div class="backup-box">
+                <h3>💾 Backup</h3>
+                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <button class="btn-backup" id="exportarDadosBtn">💾 Exportar Backup</button>
+                    <button class="btn-import" id="importarDadosBtn">📂 Restaurar Backup</button>
+                    <input type="file" id="arquivoRestore" accept=".json" style="display:none;">
+                </div>
+            </div>
+        </div>
+
         <!-- ESTATÍSTICAS COMPLETAS -->
         <div id="tab-stats" class="tab-content">
             <div class="stats-grid">
-                    <div class="stat-card">
-                        <h3>Total Questões</h3>
-                        <div class="value" id="totalQuestoes">0</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Taxa Acertos</h3>
-                        <div class="value" id="taxaAcertos">0%</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Para Revisar</h3>
-                        <div class="value" id="revisarQuestoes">0</div>
-                    </div>
-                </div>
-                <div id="estatisticasDetalhadas"></div>
-                <div style="display: flex; gap: 20px; margin-top: 30px; flex-wrap: wrap;">
-                    <div style="flex: 1;">
-                        <h3 style="color: #27ae60;">✅ Questões que você ACERTOU</h3>
-                        <div id="listaAcertos" class="lista-questoes">Carregando...</div>
-                    </div>
-                    <div style="flex: 1;">
-                        <h3 style="color: #e74c3c;">❌ Questões que você ERROU (revisar!)</h3>
-                        <div id="listaErros" class="lista-questoes">Carregando...</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- PAINEL ADMIN -->
-        <div id="tab-admin" class="tab-content">
-            <div class="filtros-box">
-                <h3>👑 Painel do Administrador</h3>
-                <p>Visualize o desempenho de todos os usuários</p>
-            </div>
-
-            <div class="stats-grid">
                 <div class="stat-card">
-                    <h3>📊 Total de Usuários</h3>
-                    <div class="value" id="adminTotalUsuarios">0</div>
+                    <h3>Total Questões</h3>
+                    <div class="value" id="totalQuestoes">0</div>
                 </div>
                 <div class="stat-card">
-                    <h3>📝 Total de Questões</h3>
-                    <div class="value" id="adminTotalQuestoes">0</div>
+                    <h3>Taxa Acertos</h3>
+                    <div class="value" id="taxaAcertos">0%</div>
                 </div>
                 <div class="stat-card">
-                    <h3>✅ Acertos Totais</h3>
-                    <div class="value" id="adminTotalAcertos">0</div>
+                    <h3>Para Revisar</h3>
+                    <div class="value" id="revisarQuestoes">0</div>
+                </div>
+            </div>
+            <div id="estatisticasDetalhadas"></div>
+            <div style="display: flex; gap: 20px; margin-top: 30px; flex-wrap: wrap;">
+                <div style="flex: 1;">
+                    <h3 style="color: #27ae60;">✅ Questões que você ACERTOU</h3>
+                    <div id="listaAcertos" class="lista-questoes">Carregando...</div>
+                </div>
+                <div style="flex: 1;">
+                    <h3 style="color: #e74c3c;">❌ Questões que você ERROU (revisar!)</h3>
+                    <div id="listaErros" class="lista-questoes">Carregando...</div>
                 </div>
             </div>
 
-            <div id="adminUsuariosList"></div>
-        </div>
-    </div>
-    
 
-    <!-- CRONÔMETRO -->
-    <div id="tab-cronometro" class="tab-content">
-        <div class="cronometro-box">
-            <h2>🍅 Pomodoro Timer</h2>
-            <div class="timer-display" id="timerDisplay">25:00</div>
-            <div class="timer-buttons">
-                <button class="btn-start" id="startTimer">▶ Iniciar</button>
-                <button class="btn-pause" id="pauseTimer">⏸ Pausar</button>
-                <button class="btn-reset" id="resetTimer">🔄 Resetar</button>
-            </div>
-            <div style="margin-top: 20px;">
-                <p>⏱️ 25 min foco → 5 min pausa → após 4 ciclos, pausa longa de 15 min</p>
-            </div>
-        </div>
-    </div>
+            <!-- PAINEL ADMIN -->
+            <div id="tab-admin" class="tab-content">
+                <div class="filtros-box">
+                    <h3>👑 Painel do Administrador</h3>
+                    <p>Visualize o desempenho de todos os usuários</p>
+                </div>
 
-    <!-- IMPORTAÇÃO -->
-    <div id="tab-importar" class="tab-content">
-        <div class="import-box">
-            <h3>📥 Importar Questões</h3>
-            <div class="filtro-group"><label>📚 Matéria padrão</label><input type="text" id="importMateria"
-                    value="Informática"></div>
-            <div class="filtro-group"><label>📌 Assunto padrão</label><input type="text" id="importAssunto"
-                    value="Backup"></div>
-            <div class="filtro-group"><label>📋 Questões (cole aqui)</label><textarea id="importTexto" rows="10"
-                    placeholder="Cole as questões..."></textarea></div>
-            <div class="filtro-group"><label>📋 Gabarito (opcional)</label><textarea id="importGabarito" rows="4"
-                    placeholder="1. B&#10;2. D&#10;3. CORRETO"></textarea></div>
-            <button class="btn-import" id="detectarQuestoesBtn">🔍 Detectar</button>
-        </div>
-        <div id="previewArea" style="display:none;">
-            <div class="import-box">
-                <div id="previewList"></div><button class="btn-add-questao" id="confirmarImportacaoBtn">✅
-                    Importar</button>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>📊 Total de Usuários</h3>
+                        <div class="value" id="adminTotalUsuarios">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>📝 Total de Questões</h3>
+                        <div class="value" id="adminTotalQuestoes">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>✅ Acertos Totais</h3>
+                        <div class="value" id="adminTotalAcertos">0</div>
+                    </div>
+                </div>
+
+                <div id="adminUsuariosList"></div>
             </div>
         </div>
     </div>
-
-    <!-- ADICIONAR MANUAL -->
-    <div id="tab-add" class="tab-content">
-        <div class="question-card">
-            <h3>➕ Nova Questão</h3>
-            <div class="filtro-group"><label>Matéria</label><input type="text" id="novaMateria"></div>
-            <div class="filtro-group"><label>Assunto</label><input type="text" id="novoAssunto"></div>
-            <div class="filtro-group"><label>Enunciado</label><textarea id="novoEnunciado" rows="3"></textarea>
-            </div>
-            <div class="filtro-group"><label>A)</label><input type="text" id="novaAltA"></div>
-            <div class="filtro-group"><label>B)</label><input type="text" id="novaAltB"></div>
-            <div class="filtro-group"><label>C)</label><input type="text" id="novaAltC"></div>
-            <div class="filtro-group"><label>D)</label><input type="text" id="novaAltD"></div>
-            <div class="filtro-group"><label>E)</label><input type="text" id="novaAltE"></div>
-            <div class="filtro-group"><label>Correta</label><input type="text" id="novaCorreta" maxlength="1"></div>
-            <div class="filtro-group"><label>Explicação</label><textarea id="novaExplicacao" rows="2"></textarea>
-            </div>
-            <button class="btn-add-questao" id="salvarNovaQuestao">💾 Salvar</button>
-        </div>
-    </div>
-
-    <!-- BACKUP -->
-    <div id="tab-backup" class="tab-content">
-        <div class="backup-box">
-            <h3>💾 Backup</h3>
-            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-                <button class="btn-backup" id="exportarDadosBtn">💾 Exportar Backup</button>
-                <button class="btn-import" id="importarDadosBtn">📂 Restaurar Backup</button>
-                <input type="file" id="arquivoRestore" accept=".json" style="display:none;">
-            </div>
-        </div>
-    </div>
-
-</div>
-
-
-
 
     <!-- MODAL DE EDIÇÃO -->
     <div id="editModal" class="modal" style="display:none;">
@@ -303,39 +297,41 @@
 
     <script>
 
-        // Função para adicionar nova questão
-        async function adicionarNovaQuestao() {
-            let alt = { A: document.getElementById("novaAltA").value.trim(), B: document.getElementById("novaAltB").value.trim(), C: document.getElementById("novaAltC").value.trim(), D: document.getElementById("novaAltD").value.trim() };
-            let e = document.getElementById("novaAltE").value.trim(); if (e) alt.E = e;
-            let correta = document.getElementById("novaCorreta").value.trim().toUpperCase();
-            if (!alt[correta]) { alert("Alternativa correta inválida!"); return; }
-            const nova = {
-                materia: document.getElementById("novaMateria").value.trim(),
-                assunto: document.getElementById("novoAssunto").value.trim(),
-                enunciado: document.getElementById("novoEnunciado").value.trim(),
-                alternativas: alt,
-                correta: correta,
-                explicacao: document.getElementById("novaExplicacao").value.trim()
-            };
-            const res = await fetch(`${API_URL}/api/questoes`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(nova)
-            });
-            if ((await res.json()).sucesso) {
-                await carregarQuestoes();
-                preencherFiltros();
-                renderizarQuestoes();
-                alert("✅ Questão adicionada!");
-            } else {
-                alert("❌ Erro!");
-            }
-            document.querySelectorAll("#tab-add input, #tab-add textarea").forEach(el => el.value = "");
+    // Função para adicionar nova questão
+    async function adicionarNovaQuestao() {
+        let alt = { A:document.getElementById("novaAltA").value.trim(), B:document.getElementById("novaAltB").value.trim(), C:document.getElementById("novaAltC").value.trim(), D:document.getElementById("novaAltD").value.trim() };
+        let e = document.getElementById("novaAltE").value.trim(); if(e) alt.E = e;
+        let correta = document.getElementById("novaCorreta").value.trim().toUpperCase();
+        if(!alt[correta]) { alert("Alternativa correta inválida!"); return; }
+        const nova = { 
+            materia: document.getElementById("novaMateria").value.trim(), 
+            assunto: document.getElementById("novoAssunto").value.trim(), 
+            enunciado: document.getElementById("novoEnunciado").value.trim(), 
+            alternativas: alt, 
+            correta: correta, 
+            explicacao: document.getElementById("novaExplicacao").value.trim() 
+        };
+        const res = await fetch(`${API_URL}/api/questoes`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify(nova) 
+        });
+        if((await res.json()).sucesso) { 
+            await carregarQuestoes(); 
+            preencherFiltros(); 
+            renderizarQuestoes(); 
+            alert("✅ Questão adicionada!"); 
+        } else {
+            alert("❌ Erro!"); 
         }
+        document.querySelectorAll("#tab-add input, #tab-add textarea").forEach(el => el.value = "");
+    }
 
-
+        
         // ==================== INICIALIZAÇÃO ====================
-                async function init() {
+        async function init() {
+            
+
             if (!checkAuth()) return;
             carregarPlano();
             await carregarQuestoes();
@@ -346,52 +342,30 @@
             carregarEstatisticas();
             atualizarStats();
 
+
             // Se for admin, carrega dados do painel
-            if (usuario && usuario.email === 'rafaelscardua@gmail.com') {
-                if (typeof carregarAdminUsuarios === 'function') {
-                    await carregarAdminUsuarios();
-                }
+            if (usuario.email === 'rafaelscardua@gmail.com') {
+                await carregarAdminUsuarios();
             }
 
-            // ========== EVENT LISTENERS ==========
-            
-            // Abas PLANO
-            document.getElementById("expandirTudo")?.addEventListener("click", () => { 
-                dadosEstudo.materias.forEach(m => m.expandido = true); 
-                salvarPlano(); 
-                renderizarMaterias(); 
-            });
-            document.getElementById("recolherTudo")?.addEventListener("click", () => { 
-                dadosEstudo.materias.forEach(m => m.expandido = false); 
-                salvarPlano(); 
-                renderizarMaterias(); 
-            });
-            
-            // Aba QUESTÕES
+            // Event listeners
+
+            document.getElementById("expandirTudo")?.addEventListener("click", () => { dadosEstudo.materias.forEach(m => m.expandido = true); salvarPlano(); renderizarMaterias(); });
+            document.getElementById("recolherTudo")?.addEventListener("click", () => { dadosEstudo.materias.forEach(m => m.expandido = false); salvarPlano(); renderizarMaterias(); });
             document.getElementById("filtrarQuestoesBtn")?.addEventListener("click", renderizarQuestoes);
             document.getElementById("salvarNovaQuestao")?.addEventListener("click", adicionarNovaQuestao);
             document.getElementById("detectarQuestoesBtn")?.addEventListener("click", detectarQuestoes);
             document.getElementById("confirmarImportacaoBtn")?.addEventListener("click", importarQuestoes);
-            
-            // Aba BACKUP
             document.getElementById("exportarDadosBtn")?.addEventListener("click", exportarBackup);
             document.getElementById("importarDadosBtn")?.addEventListener("click", () => document.getElementById("arquivoRestore").click());
-            document.getElementById("arquivoRestore")?.addEventListener("change", (e) => { 
-                if (e.target.files[0]) importarBackup(e.target.files[0]); 
-            });
-            
-            // CRONÔMETRO
+            document.getElementById("arquivoRestore")?.addEventListener("change", (e) => { if (e.target.files[0]) importarBackup(e.target.files[0]); });
+            document.getElementById("salvarEdicaoBtn")?.addEventListener("click", salvarEdicao);
             document.getElementById("startTimer")?.addEventListener("click", iniciarTimer);
             document.getElementById("pauseTimer")?.addEventListener("click", pausarTimer);
             document.getElementById("resetTimer")?.addEventListener("click", resetarTimer);
-            
-            // Modo escuro
-            document.getElementById("darkModeBtn")?.addEventListener("click", () => { 
-                document.body.classList.toggle("dark-mode"); 
-                localStorage.setItem("inss_dark", document.body.classList.contains("dark-mode")); 
-            });
-            
-            // Botões da aba QUESTÕES (modo aleatório)
+            document.getElementById("darkModeBtn")?.addEventListener("click", () => { document.body.classList.toggle("dark-mode"); localStorage.setItem("inss_dark", document.body.classList.contains("dark-mode")); });
+
+            // Botões da aba QUESTÕES
             document.getElementById("modoAleatorio10BtnQS")?.addEventListener("click", () => iniciarModoAleatorio(10));
             document.getElementById("modoAleatorio20BtnQS")?.addEventListener("click", () => iniciarModoAleatorio(20));
             document.getElementById("modoAleatorio30BtnQS")?.addEventListener("click", () => iniciarModoAleatorio(30));
@@ -400,129 +374,36 @@
             document.getElementById("simuladoTimer")?.addEventListener("change", (e) => {
                 document.getElementById("simuladoTimerMinutos").disabled = !e.target.checked;
             });
-            
-            // Edição
-            document.getElementById("salvarEdicaoBtn")?.addEventListener("click", salvarEdicao);
-            
-            // Modo escuro inicial
+
             if (localStorage.getItem("inss_dark") === "true") document.body.classList.add("dark-mode");
-            
-            // TABS
+
             document.querySelectorAll('.tab-btn').forEach(tabBtn => {
                 tabBtn.addEventListener('click', () => {
                     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                     tabBtn.classList.add('active');
                     document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
                     document.getElementById(`tab-${tabBtn.dataset.tab}`).classList.add('active');
-                    
+
                     if (tabBtn.dataset.tab === 'questoes') renderizarQuestoes();
                     if (tabBtn.dataset.tab === 'stats') carregarEstatisticas();
-                    
-                    if (tabBtn.dataset.tab === 'admin' && usuario && usuario.email === 'rafaelscardua@gmail.com') {
-                        if (typeof carregarAdminUsuarios === 'function') {
-                            carregarAdminUsuarios();
+
+                    // ADMIN
+                    if (tabBtn.dataset.tab === 'admin') {
+                        if (usuario.email === 'rafaelscardua@gmail.com') {
+                            if (typeof carregarAdminUsuarios === 'function') {
+                                carregarAdminUsuarios();
+                            }
+                        } else {
+                            document.getElementById("tab-admin").innerHTML = "<p style='text-align:center;padding:40px;'>🔒 Acesso restrito ao administrador</p>";
                         }
                     }
                 });
             });
-        }
+        }  // ← FECHA A FUNÇÃO init()
+
+        init();
         resetarTimer();
     </script>
-
-    </script>
-    <script>
-        // ==================== ADMIN FLUTUANTE ====================
-        document.addEventListener('DOMContentLoaded', function () {
-            // Aguardar um pouco para garantir que tudo carregou
-            setTimeout(() => {
-                // Verificar se o botão já existe
-                if (document.getElementById("admin-float-btn")) return;
-
-                // Criar botão ADMIN flutuante
-                const adminFloatBtn = document.createElement("button");
-                adminFloatBtn.id = "admin-float-btn";
-                adminFloatBtn.innerHTML = "👑 ADMIN";
-                adminFloatBtn.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                background: #27ae60;
-                color: white;
-                border: none;
-                padding: 12px 20px;
-                border-radius: 30px;
-                cursor: pointer;
-                z-index: 99999;
-                font-weight: bold;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            `;
-                document.body.appendChild(adminFloatBtn);
-
-                // Criar modal ao clicar
-                adminFloatBtn.onclick = () => {
-                    // Remover modal existente
-                    const existingModal = document.getElementById("admin-flutuante-modal");
-                    if (existingModal) existingModal.remove();
-
-                    const modal = document.createElement("div");
-                    modal.id = "admin-flutuante-modal";
-                    modal.style.cssText = `
-                    position: fixed;
-                    bottom: 80px;
-                    right: 20px;
-                    width: 380px;
-                    background: white;
-                    border-radius: 15px;
-                    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-                    z-index: 99999;
-                    padding: 15px;
-                    max-height: 70vh;
-                    overflow-y: auto;
-                    border: 2px solid #27ae60;
-                `;
-
-                    modal.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">
-                        <h3 style="margin: 0;">👑 ADMIN</h3>
-                        <button onclick="this.parentElement.parentElement.remove()" style="background: #e74c3c; color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer;">×</button>
-                    </div>
-                    <div id="admin-lista-container">
-                        <p>Carregando usuários...</p>
-                    </div>
-                `;
-                    document.body.appendChild(modal);
-
-                    // Carregar usuários se a função existir
-                    if (typeof carregarAdminUsuarios === 'function') {
-                        carregarAdminUsuarios();
-                    }
-
-                    // Atualizar lista quando os dados estiverem prontos
-                    let tentativas = 0;
-                    const checkInterval = setInterval(() => {
-                        tentativas++;
-                        if (window.adminUsuarios && window.adminUsuarios.length > 0) {
-                            clearInterval(checkInterval);
-                            const container = document.getElementById("admin-lista-container");
-                            if (container) {
-                                container.innerHTML = window.adminUsuarios.map(usr => `
-                                <div style="background: #f5f5f5; padding: 12px; margin-bottom: 12px; border-radius: 10px;">
-                                    <strong>👤 ${usr.nome}</strong><br>
-                                    <small>📧 ${usr.email}</small><br>
-                                    <small>📅 ${new Date(usr.data_criacao).toLocaleDateString()}</small><br>
-                                    <button onclick="verDetalhesUsuario(${usr.id}, '${usr.nome}')" style="background: #3498db; color: white; border: none; padding: 6px 12px; border-radius: 5px; margin-top: 8px; cursor: pointer;">📊 Ver Detalhes</button>
-                                </div>
-                            `).join('');
-                            }
-                        } else if (tentativas > 20) {
-                            clearInterval(checkInterval);
-                            const container = document.getElementById("admin-lista-container");
-                            if (container) container.innerHTML = "<p>Erro ao carregar usuários. Tente novamente.</p>";
-                        }
-                    }, 500);
-                };
-            }, 1000);
-        });
     </script>
 </body>
 
