@@ -404,40 +404,6 @@
         init();
         resetarTimer();
     </script>
-
-    // Função para adicionar nova questão (não movida para módulo ainda)
-    async function adicionarNovaQuestao() {
-    let alt = { A:document.getElementById("novaAltA").value.trim(), B:document.getElementById("novaAltB").value.trim(),
-    C:document.getElementById("novaAltC").value.trim(), D:document.getElementById("novaAltD").value.trim() };
-    let e = document.getElementById("novaAltE").value.trim(); if(e) alt.E = e;
-    let correta = document.getElementById("novaCorreta").value.trim().toUpperCase();
-    if(!alt[correta]) { alert("Alternativa correta inválida!"); return; }
-    const nova = {
-    materia: document.getElementById("novaMateria").value.trim(),
-    assunto: document.getElementById("novoAssunto").value.trim(),
-    enunciado: document.getElementById("novoEnunciado").value.trim(),
-    alternativas: alt,
-    correta: correta,
-    explicacao: document.getElementById("novaExplicacao").value.trim()
-    };
-    const res = await fetch(`${API_URL}/api/questoes`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(nova)
-    });
-    if((await res.json()).sucesso) {
-    await carregarQuestoes();
-    preencherFiltros();
-    renderizarQuestoes();
-    alert("✅ Questão adicionada!");
-    } else {
-    alert("❌ Erro!");
-    }
-    document.querySelectorAll("#tab-add input, #tab-add textarea").forEach(el => el.value = "");
-    }
-
-    init();
-    resetarTimer();
     </script>
 </body>
 
