@@ -60,6 +60,7 @@ function renderizarQuestoes() {
                 <div class="action-icons">
                     <button class="edit-btn" onclick="abrirModalEdicao(${q.id})">✏️</button>
                     <button class="delete-btn" onclick="excluirQuestao(${q.id})">🗑️</button>
+                    ${resp.respondida ? `<button class="reset-btn" onclick="resetarResposta(${q.id})" title="Resetar resposta">🔄</button>` : ''}
                 </div>
                 <div class="question-text"><strong>📚 ${q.materia} | ${q.assunto}</strong><br>${q.enunciado}</div>
                 <div class="alternativas" id="alt-${q.id}">${alternativasHtml}</div>
@@ -68,6 +69,34 @@ function renderizarQuestoes() {
             </div>
         `;
     }).join('');
+
+async function resetarResposta(questaoId) {
+    if(confirm("🔄 Tem certeza que deseja resetar sua resposta para esta questão? Você poderá respondê-la novamente.")) {
+        try {
+            // Envia resposta vazia para resetar
+            await fetch(`${API_URL}/api/respostas`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    usuario_id: usuario.id,
+                    questao_id: questaoId,
+                    acertou: false,
+                    resposta_usuario: ''
+                })
+            });
+            await carregarRespostas();
+            renderizarQuestoes();
+            carregarEstatisticas();
+            atualizarStats();
+            alert("✅ Resposta resetada! Você pode responder novamente.");
+        } catch(e) {
+            console.error(e);
+            alert("❌ Erro ao resetar resposta");
+        }
+    }
+}
+
+
     
     // Eventos das alternativas
     document.querySelectorAll('.alternativa').forEach(el => {
