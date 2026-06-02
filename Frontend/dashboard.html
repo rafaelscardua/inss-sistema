@@ -442,16 +442,16 @@
     }, 1000);
 </script>
 <script>
+    
+    <script>
     // ==================== ADMIN FLUTUANTE ====================
     (function() {
         setTimeout(() => {
-            // Verificar se é admin
             const usuarioSalvo = localStorage.getItem('usuario');
             if (!usuarioSalvo) return;
             const usuario = JSON.parse(usuarioSalvo);
             if (usuario.email !== 'rafaelscardua@gmail.com') return;
             
-            // Criar botão ADMIN
             const btn = document.createElement("button");
             btn.id = "admin-float-btn";
             btn.innerHTML = "👑 ADMIN";
@@ -459,34 +459,15 @@
             document.body.appendChild(btn);
             
             btn.onclick = async () => {
-                // Fechar modal existente
                 const existing = document.getElementById("admin-flutuante-final");
                 if(existing) existing.remove();
                 
-                // Criar modal
                 const modal = document.createElement("div");
                 modal.id = "admin-flutuante-final";
                 modal.style.cssText = "position:fixed; bottom:80px; right:20px; width:400px; background:white; border-radius:15px; z-index:99999; padding:15px; border:2px solid #27ae60; max-height:70vh; overflow-y:auto; box-shadow:0 5px 20px rgba(0,0,0,0.3);";
-                modal.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                        <h3 style="margin:0;">👑 ADMIN</h3>
-                        <button id="close-admin-modal" style="background:#e74c3c; color:white; border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:16px;">✕</button>
-                    </div>
-                    <div id="admin-lista-final">Carregando...</div>
-                `;
+                modal.innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>👑 ADMIN</h3><button onclick="this.parentElement.remove()" style="background:#e74c3c; color:white; border:none; border-radius:50%; width:25px; cursor:pointer;">×</button></div><div id="admin-lista-final">Carregando...</div>`;
                 document.body.appendChild(modal);
                 
-                // Fechar ao clicar no X
-                document.getElementById("close-admin-modal").onclick = () => {
-                    modal.remove();
-                };
-                
-                // Fechar ao clicar fora do modal
-                modal.addEventListener('click', (e) => {
-                    if(e.target === modal) modal.remove();
-                });
-                
-                // Buscar usuários
                 try {
                     const res = await fetch('/api/admin/usuarios', {
                         headers: { 'x-user-email': usuario.email }
@@ -499,15 +480,15 @@
                                 <strong>👤 ${u.nome}</strong><br>
                                 <small>📧 ${u.email}</small><br>
                                 <small>📅 Cadastro: ${new Date(u.data_criacao).toLocaleDateString()}</small><br>
-                                <button onclick="verDetalhesUsuario(${u.id}, '${u.nome}')" style="background:#3498db; color:white; border:none; padding:6px 12px; border-radius:5px; margin-top:8px; cursor:pointer;">📊 Ver Detalhes</button>
+                                <button onclick="verDetalhesUsuario(${u.id}, '${u.nome}')" style="background:#3498db; color:white; border:none; padding:6px 12px; border-radius:5px; margin-top:5px; cursor:pointer; margin-right:5px;">📊 Detalhes</button>
+                                <button onclick="excluirUsuario(${u.id}, '${u.nome}')" style="background:#e74c3c; color:white; border:none; padding:6px 12px; border-radius:5px; margin-top:5px; cursor:pointer;">🗑️ Excluir</button>
                             </div>
                         `).join('');
                     } else {
                         container.innerHTML = "<p>Nenhum usuário encontrado.</p>";
                     }
                 } catch(e) {
-                    const container = document.getElementById("admin-lista-final");
-                    if(container) container.innerHTML = "<p>Erro ao carregar usuários.</p>";
+                    document.getElementById("admin-lista-final").innerHTML = "<p>Erro ao carregar usuários.</p>";
                 }
             };
         }, 1500);
