@@ -538,6 +538,48 @@
     }
 </script>
 
+
+<script>
+    // Função global para resetar resposta
+    window.resetarResposta = async function(questaoId) {
+        if(!confirm("🔄 Resetar sua resposta para esta questão?")) return;
+        
+        try {
+            const usuarioSalvo = localStorage.getItem('usuario');
+            if(!usuarioSalvo) {
+                alert("Usuário não encontrado");
+                return;
+            }
+            const usuario = JSON.parse(usuarioSalvo);
+            
+            const response = await fetch('/api/respostas', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    usuario_id: usuario.id,
+                    questao_id: questaoId,
+                    acertou: false,
+                    resposta_usuario: null
+                })
+            });
+            
+            if(response.ok) {
+                // Recarregar dados e interface
+                await carregarRespostas();
+                renderizarQuestoes();
+                carregarEstatisticas();
+                atualizarStats();
+                alert("✅ Resposta resetada! Você pode responder novamente.");
+            } else {
+                alert("❌ Erro ao resetar resposta");
+            }
+        } catch(e) {
+            console.error(e);
+            alert("❌ Erro ao resetar resposta");
+        }
+    };
+</script>
+
 </body>
 
 </html>
