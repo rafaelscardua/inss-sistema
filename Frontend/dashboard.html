@@ -512,6 +512,68 @@
         }
     </script>
 
+    <script>
+function popularSelectsImportacao() {
+    // Aguardar as questões carregarem
+    setTimeout(() => {
+        if(typeof questoes !== 'undefined' && questoes.length > 0) {
+            // Popular matérias
+            const materiaSelect = document.getElementById("importMateriaSelect");
+            const materias = [...new Set(questoes.map(q => q.materia))];
+            
+            materias.forEach(m => {
+                // Verificar se a opção já existe
+                let existe = false;
+                for(let i = 0; i < materiaSelect.options.length; i++) {
+                    if(materiaSelect.options[i].value === m) {
+                        existe = true;
+                        break;
+                    }
+                }
+                if(!existe && m) {
+                    const option = document.createElement("option");
+                    option.value = m;
+                    option.textContent = m;
+                    materiaSelect.appendChild(option);
+                }
+            });
+            
+            // Popular assuntos
+            const assuntoSelect = document.getElementById("importAssuntoSelect");
+            const assuntos = [...new Set(questoes.map(q => q.assunto))];
+            
+            assuntos.forEach(a => {
+                let existe = false;
+                for(let i = 0; i < assuntoSelect.options.length; i++) {
+                    if(assuntoSelect.options[i].value === a) {
+                        existe = true;
+                        break;
+                    }
+                }
+                if(!existe && a) {
+                    const option = document.createElement("option");
+                    option.value = a;
+                    option.textContent = a;
+                    assuntoSelect.appendChild(option);
+                }
+            });
+        }
+    }, 500);
+}
+
+// Chamar a função quando a página carregar
+document.addEventListener('DOMContentLoaded', function() {
+    popularSelectsImportacao();
+});
+
+// Também chamar quando o usuário mudar de aba (por via das dúvidas)
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        setTimeout(popularSelectsImportacao, 300);
+    });
+});
+</script>
+
 </body>
 
 </html>
