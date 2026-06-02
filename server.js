@@ -374,6 +374,24 @@ app.delete('/api/questoes/:id', async (req, res) => {
 });
 
 
+// Atualizar questão (PUT)
+app.put('/api/questoes/:id', async (req, res) => {
+    const { id } = req.params;
+    const { materia, assunto, enunciado, alternativas, correta, explicacao } = req.body;
+    try {
+        await pool.query(
+            `UPDATE questoes_base 
+             SET materia = $1, assunto = $2, enunciado = $3, alternativas = $4, correta = $5, explicacao = $6
+             WHERE id = $7`,
+            [materia, assunto, enunciado, alternativas, correta, explicacao || '', id]
+        );
+        res.json({ sucesso: true });
+    } catch (error) {
+        console.error('Erro ao atualizar questão:', error);
+        res.status(500).json({ sucesso: false, erro: 'Erro ao atualizar questão' });
+    }
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
