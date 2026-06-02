@@ -105,10 +105,24 @@
         <div id="tab-importar" class="tab-content">
             <div class="import-box">
                 <h3>📥 Importar Questões</h3>
-                <div class="filtro-group"><label>📚 Matéria padrão</label><input type="text" id="importMateria"
-                        value="Informática"></div>
-                <div class="filtro-group"><label>📌 Assunto padrão</label><input type="text" id="importAssunto"
-                        value="Backup"></div>
+                <div class="filtro-group">
+                    <label>📚 Matéria padrão</label>
+                    <select id="importMateriaSelect" onchange="toggleMateriaInput()">
+                        <option value="">-- Selecione --</option>
+                        <option value="nova">+ Nova matéria...</option>
+                    </select>
+                    <input type="text" id="importMateriaNova" placeholder="Digite nova matéria"
+                        style="display:none; margin-top:5px;">
+                </div>
+                <div class="filtro-group">
+                    <label>📌 Assunto padrão</label>
+                    <select id="importAssuntoSelect" onchange="toggleAssuntoInput()">
+                        <option value="">-- Selecione --</option>
+                        <option value="nova">+ Novo assunto...</option>
+                    </select>
+                    <input type="text" id="importAssuntoNova" placeholder="Digite novo assunto"
+                        style="display:none; margin-top:5px;">
+                </div>
                 <div class="filtro-group"><label>📋 Questões (cole aqui)</label><textarea id="importTexto" rows="10"
                         placeholder="Cole as questões..."></textarea></div>
                 <div class="filtro-group"><label>📋 Gabarito (opcional)</label><textarea id="importGabarito" rows="4"
@@ -296,40 +310,40 @@
 
     <script>
 
-    // Função para adicionar nova questão
-    async function adicionarNovaQuestao() {
-        let alt = { A:document.getElementById("novaAltA").value.trim(), B:document.getElementById("novaAltB").value.trim(), C:document.getElementById("novaAltC").value.trim(), D:document.getElementById("novaAltD").value.trim() };
-        let e = document.getElementById("novaAltE").value.trim(); if(e) alt.E = e;
-        let correta = document.getElementById("novaCorreta").value.trim().toUpperCase();
-        if(!alt[correta]) { alert("Alternativa correta inválida!"); return; }
-        const nova = { 
-            materia: document.getElementById("novaMateria").value.trim(), 
-            assunto: document.getElementById("novoAssunto").value.trim(), 
-            enunciado: document.getElementById("novoEnunciado").value.trim(), 
-            alternativas: alt, 
-            correta: correta, 
-            explicacao: document.getElementById("novaExplicacao").value.trim() 
-        };
-        const res = await fetch(`${API_URL}/api/questoes`, { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify(nova) 
-        });
-        if((await res.json()).sucesso) { 
-            await carregarQuestoes(); 
-            preencherFiltros(); 
-            renderizarQuestoes(); 
-            alert("✅ Questão adicionada!"); 
-        } else {
-            alert("❌ Erro!"); 
+        // Função para adicionar nova questão
+        async function adicionarNovaQuestao() {
+            let alt = { A: document.getElementById("novaAltA").value.trim(), B: document.getElementById("novaAltB").value.trim(), C: document.getElementById("novaAltC").value.trim(), D: document.getElementById("novaAltD").value.trim() };
+            let e = document.getElementById("novaAltE").value.trim(); if (e) alt.E = e;
+            let correta = document.getElementById("novaCorreta").value.trim().toUpperCase();
+            if (!alt[correta]) { alert("Alternativa correta inválida!"); return; }
+            const nova = {
+                materia: document.getElementById("novaMateria").value.trim(),
+                assunto: document.getElementById("novoAssunto").value.trim(),
+                enunciado: document.getElementById("novoEnunciado").value.trim(),
+                alternativas: alt,
+                correta: correta,
+                explicacao: document.getElementById("novaExplicacao").value.trim()
+            };
+            const res = await fetch(`${API_URL}/api/questoes`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(nova)
+            });
+            if ((await res.json()).sucesso) {
+                await carregarQuestoes();
+                preencherFiltros();
+                renderizarQuestoes();
+                alert("✅ Questão adicionada!");
+            } else {
+                alert("❌ Erro!");
+            }
+            document.querySelectorAll("#tab-add input, #tab-add textarea").forEach(el => el.value = "");
         }
-        document.querySelectorAll("#tab-add input, #tab-add textarea").forEach(el => el.value = "");
-    }
 
-        
+
         // ==================== INICIALIZAÇÃO ====================
         async function init() {
-            
+
 
             if (!checkAuth()) return;
             carregarPlano();
@@ -404,130 +418,99 @@
         resetarTimer();
     </script>
     </script>
-    
 
-<script>
-    // ADMIN FLUTUANTE ÚNICO E CORRETO
-    (function() {
-        setTimeout(() => {
-            const usuarioSalvo = localStorage.getItem('usuario');
-            if (!usuarioSalvo) return;
-            const usuario = JSON.parse(usuarioSalvo);
-            if (usuario.email !== 'rafaelscardua@gmail.com') return;
-            
-            const btn = document.createElement("button");
-            btn.id = "admin-float-btn";
-            btn.innerHTML = "👑 ADMIN";
-            btn.style.cssText = "position:fixed; bottom:20px; right:20px; background:#27ae60; color:white; border:none; padding:12px 20px; border-radius:30px; cursor:pointer; z-index:99999; font-weight:bold;";
-            document.body.appendChild(btn);
-            
-            btn.onclick = async () => {
-                const modalExistente = document.getElementById("admin-flutuante-final");
-                if(modalExistente) modalExistente.remove();
-                
-                const modal = document.createElement("div");
-                modal.id = "admin-flutuante-final";
-                modal.style.cssText = "position:fixed; bottom:80px; right:20px; width:400px; background:white; border-radius:15px; z-index:99999; padding:15px; border:2px solid #27ae60; max-height:70vh; overflow-y:auto;";
-                modal.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                        <h3 style="margin:0;">👑 ADMIN</h3>
-                        <button onclick="this.closest('#admin-flutuante-final').remove()" style="background:#e74c3c; color:white; border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:16px;">✕</button>
-                    </div>
-                    <div id="admin-lista-final">Carregando...</div>
-                `;
-                document.body.appendChild(modal);
-                
+
+
+
+
+    <script>
+        async function resetarResposta(questaoId) {
+            if (confirm("🔄 Tem certeza que deseja resetar sua resposta para esta questão?")) {
                 try {
-                    const res = await fetch('/api/admin/usuarios', {
-                        headers: { 'x-user-email': usuario.email }
+                    const usuarioSalvo = localStorage.getItem('usuario');
+                    const usuario = JSON.parse(usuarioSalvo);
+                    await fetch('/api/respostas', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            usuario_id: usuario.id,
+                            questao_id: questaoId,
+                            acertou: false,
+                            resposta_usuario: ''
+                        })
                     });
-                    const data = await res.json();
-                    const container = document.getElementById("admin-lista-final");
-                    if(data.sucesso && data.usuarios.length > 0) {
-                        container.innerHTML = data.usuarios.map(u => `
-                            <div style="background:#f5f5f5; padding:12px; margin-bottom:12px; border-radius:8px;">
-                                <strong>👤 ${u.nome}</strong><br>
-                                <small>📧 ${u.email}</small><br>
-                                <small>📅 Cadastro: ${new Date(u.data_criacao).toLocaleDateString()}</small><br>
-                                <button onclick="verDetalhesUsuario(${u.id}, '${u.nome}')" style="background:#3498db; color:white; border:none; padding:6px 12px; border-radius:5px; margin-right:5px;">📊 Detalhes</button>
-                                <button onclick="excluirUsuario(${u.id}, '${u.nome}')" style="background:#e74c3c; color:white; border:none; padding:6px 12px; border-radius:5px;">🗑️ Excluir</button>
-                            </div>
-                        `).join('');
-                    } else {
-                        container.innerHTML = "<p>Nenhum usuário encontrado.</p>";
-                    }
-                } catch(e) {
-                    document.getElementById("admin-lista-final").innerHTML = "<p>Erro ao carregar usuários.</p>";
+                    location.reload();
+                } catch (e) {
+                    alert("❌ Erro ao resetar resposta");
                 }
-            };
-        }, 1000);
-    })();
-</script>    
-    
+            }
+        }
+    </script>
 
-<script>
-    async function resetarResposta(questaoId) {
-        if(confirm("🔄 Tem certeza que deseja resetar sua resposta para esta questão?")) {
+
+    <script>
+        window.resetarResposta = async function (questaoId) {
+            if (!confirm("🔄 Resetar sua resposta para esta questão?")) return;
+
             try {
                 const usuarioSalvo = localStorage.getItem('usuario');
+                if (!usuarioSalvo) {
+                    alert("Usuário não encontrado");
+                    return;
+                }
                 const usuario = JSON.parse(usuarioSalvo);
-                await fetch('/api/respostas', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        usuario_id: usuario.id,
-                        questao_id: questaoId,
-                        acertou: false,
-                        resposta_usuario: ''
-                    })
+
+                // Método 1: Tentar deletar
+                const res = await fetch(`/api/respostas/usuario/${usuario.id}/questao/${questaoId}`, {
+                    method: 'DELETE'
                 });
-                location.reload();
-            } catch(e) {
-                alert("❌ Erro ao resetar resposta");
+
+                // Se não funcionar, recarregar as questões
+                await carregarQuestoes();
+                await carregarRespostas();
+                renderizarQuestoes();
+                carregarEstatisticas();
+                atualizarStats();
+                alert("✅ Resposta resetada!");
+
+            } catch (e) {
+                console.error(e);
+                alert("❌ Erro ao resetar");
+            }
+        };
+    </script>
+
+    <script>
+        function fecharAdminModal() {
+            const modal = document.getElementById("admin-flutuante-modal");
+            if (modal) modal.remove();
+        }
+    </script>
+    <script>
+        function toggleMateriaInput() {
+            const select = document.getElementById("importMateriaSelect");
+            const input = document.getElementById("importMateriaNova");
+            if (select.value === "nova") {
+                input.style.display = "block";
+                input.value = "";
+                input.focus();
+            } else {
+                input.style.display = "none";
             }
         }
-    }
-</script>
 
-
-<script>
-    window.resetarResposta = async function(questaoId) {
-        if(!confirm("🔄 Resetar sua resposta para esta questão?")) return;
-        
-        try {
-            const usuarioSalvo = localStorage.getItem('usuario');
-            if(!usuarioSalvo) {
-                alert("Usuário não encontrado");
-                return;
+        function toggleAssuntoInput() {
+            const select = document.getElementById("importAssuntoSelect");
+            const input = document.getElementById("importAssuntoNova");
+            if (select.value === "nova") {
+                input.style.display = "block";
+                input.value = "";
+                input.focus();
+            } else {
+                input.style.display = "none";
             }
-            const usuario = JSON.parse(usuarioSalvo);
-            
-            // Método 1: Tentar deletar
-            const res = await fetch(`/api/respostas/usuario/${usuario.id}/questao/${questaoId}`, {
-                method: 'DELETE'
-            });
-            
-            // Se não funcionar, recarregar as questões
-            await carregarQuestoes();
-            await carregarRespostas();
-            renderizarQuestoes();
-            carregarEstatisticas();
-            atualizarStats();
-            alert("✅ Resposta resetada!");
-            
-        } catch(e) {
-            console.error(e);
-            alert("❌ Erro ao resetar");
         }
-    };
-</script>
-
-<script>
-function fecharAdminModal() {
-    const modal = document.getElementById("admin-flutuante-modal");
-    if(modal) modal.remove();
-}
-</script>
+    </script>
 
 </body>
 
