@@ -44,7 +44,6 @@ function renderizarQuestoes() {
 
     container.innerHTML = filtradas.map(q => {
         const resp = respostasUsuario[q.id] || {};
-        // FILTRAR alternativas vazias - REMOVE C e D sem texto
         const alternativasValidas = Object.entries(q.alternativas).filter(([letra, texto]) => texto && texto.trim() !== "");
         let alternativasHtml = alternativasValidas.map(([letra, texto]) => {
             let classes = "alternativa";
@@ -70,34 +69,6 @@ function renderizarQuestoes() {
         `;
     }).join('');
 
-    async function resetarResposta(questaoId) {
-        if (confirm("🔄 Tem certeza que deseja resetar sua resposta para esta questão? Você poderá respondê-la novamente.")) {
-            try {
-                // Envia resposta vazia para resetar
-                await fetch(`${API_URL}/api/respostas`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        usuario_id: usuario.id,
-                        questao_id: questaoId,
-                        acertou: false,
-                        resposta_usuario: ''
-                    })
-                });
-                await carregarRespostas();
-                renderizarQuestoes();
-                carregarEstatisticas();
-                atualizarStats();
-                alert("✅ Resposta resetada! Você pode responder novamente.");
-            } catch (e) {
-                console.error(e);
-                alert("❌ Erro ao resetar resposta");
-            }
-        }
-    }
-
-
-
     // Eventos das alternativas
     document.querySelectorAll('.alternativa').forEach(el => {
         el.onclick = () => {
@@ -109,29 +80,47 @@ function renderizarQuestoes() {
         };
     });
 
-    // Eventos dos botões responder
+    // Eventos dos botões responder - CORRIGIDO
     document.querySelectorAll('.btn-responder').forEach(btn => {
-        // Em vez de recarregar todas as questões, apenas atualiza a visualização da questão atual
-        const questElement = document.getElementById(`q${id}`);
-        if (questElement) {
-            // Marcar a alternativa selecionada
-            const alternativas = questElement.querySelectorAll('.alternativa');
-            alternativas.forEach(alt => {
-                const letra = alt.dataset.letra;
-                alt.classList.remove('selected');
-                if (letra === selected) alt.classList.add('selected');
-                if (letra === quest.correta) alt.classList.add('correct-answer');
-                if (letra === selected && selected !== quest.correta) alt.classList.add('wrong-answer');
-            });
-            // Adicionar feedback
-            const feedbackDiv = document.createElement('div');
-            feedbackDiv.className = `feedback ${acertou ? 'correct' : 'wrong'}`;
-            feedbackDiv.innerHTML = acertou ? '✅ Correto!' : `❌ Errado! A resposta correta é ${quest.correta}.`;
-            questElement.appendChild(feedbackDiv);
-            // Remover botão responder
-            const btnResponder = questElement.querySelector('.btn-responder');
-            if (btnResponder) btnResponder.remove();
-        }
+        btn.onclick = async () => {
+            const id = parseInt(btn.dataset.id);
+            const selected = window.selectedAnswer ? window.selectedAnswer[id] : null;
+            if (!selected) {
+                alert("Selecione uma alternativa primeiro!");
+                return;
+            }
+            const quest = questoes.find(q => q.id === id);
+            const acertou = (selected === quest.correta);
+            
+            // Salvar resposta
+            await salvarResposta(id, acertou, selected);
+            await carregarRespostas();
+            
+            // Atualizar apenas a questão respondida (sem recarregar tudo)
+            const questElement = document.getElementById(`q${id}`);
+            if (questElement) {
+                // Marcar as alternativas
+                const alternativas = questElement.querySelectorAll('.alternativa');
+                alternativas.forEach(alt => {
+                    const letra = alt.dataset.letra;
+                    alt.classList.remove('selected');
+                    if (letra === quest.correta) alt.classList.add('correct-answer');
+                    if (letra === selected && selected !== quest.correta) alt.classList.add('wrong-answer');
+                });
+                // Adicionar feedback
+                const feedbackDiv = document.createElement('div');
+                feedbackDiv.className = `feedback ${acertou ? 'correct' : 'wrong'}`;
+                feedbackDiv.innerHTML = acertou ? '✅ Correto!' : `❌ Errado! A resposta correta é ${quest.correta}.`;
+                questElement.appendChild(feedbackDiv);
+                // Remover botão responder
+                const btnResponder = questElement.querySelector('.btn-responder');
+                if (btnResponder) btnResponder.remove();
+            }
+            
+            // Atualizar estatísticas
+            carregarEstatisticas();
+            atualizarStats();
+        };
     });
 }
 
@@ -147,5 +136,31 @@ function preencherFiltros() {
             renderizarQuestoes();
         };
         selectMateria.dispatchEvent(new Event('change'));
+    }
+}
+
+// Função resetarResposta (fora da renderizarQuestoes)
+async function resetarResposta(questaoId) {
+    if (confirm("🔄 Tem certeza que deseja resetar sua resposta para esta questão? Você poderá respondê-la novamente.")) {
+        try {
+            await fetch(`${API_URL}/api/respostas`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    usuario_id: usuario.id,
+                    questao_id: questaoId,
+                    acertou: false,
+                    resposta_usuario: ''
+                })
+            });
+            await carregarRespostas();
+            renderizarQuestoes();
+            carregarEstatisticas();
+            atualizarStats();
+            alert("✅ Resposta resetada! Você pode responder novamente.");
+        } catch (e) {
+            console.error(e);
+            alert("❌ Erro ao resetar resposta");
+        }
     }
 }
