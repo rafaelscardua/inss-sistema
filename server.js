@@ -284,6 +284,21 @@ app.delete('/api/questoes/:id', async (req, res) => {
     }
 });
 
+// Deletar resposta de um usuário para uma questão específica (mantém a questão)
+app.delete('/api/respostas/usuario/:usuarioId/questao/:questaoId', async (req, res) => {
+    const { usuarioId, questaoId } = req.params;
+    try {
+        await pool.query(
+            'DELETE FROM respostas_usuario WHERE usuario_id = $1 AND questao_id = $2',
+            [usuarioId, questaoId]
+        );
+        res.json({ sucesso: true, mensagem: 'Resposta deletada' });
+    } catch (error) {
+        console.error('Erro ao deletar resposta:', error);
+        res.status(500).json({ sucesso: false, erro: 'Erro ao deletar resposta' });
+    }
+});
+
 // Atualizar questão (PUT)
 app.put('/api/questoes/:id', async (req, res) => {
     const { id } = req.params;
@@ -301,6 +316,9 @@ app.put('/api/questoes/:id', async (req, res) => {
         res.status(500).json({ sucesso: false, erro: 'Erro ao atualizar questão' });
     }
 });
+
+
+
 
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
