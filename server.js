@@ -4,6 +4,23 @@ const bcrypt = require('bcryptjs');
 const { pool, initDatabase } = require('./db');
 require('dotenv').config();
 
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+
+// Criar pasta uploads se não existir
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+}
+
+// Configurar multer
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, uploadDir),
+    filename: (req, file, cb) => cb(null, Date.now() + '_' + file.originalname)
+});
+const upload = multer({ storage });
+
 console.log('=== INICIANDO SERVIDOR ===');
 console.log('PORT:', process.env.PORT);
 console.log('ALLOWED_EMAILS:', process.env.ALLOWED_EMAILS);
@@ -391,6 +408,95 @@ app.put('/api/questoes/:id', async (req, res) => {
         res.status(500).json({ sucesso: false, erro: 'Erro ao atualizar questão' });
     }
 });
+
+// ==================== ROTAS DE ANEXOS ====================
+
+// Listar anexos de um tópico
+app.get('/api/anexos/:materia/:topico', async (req, res) => {
+    const { materia, topico } = req.params;
+    try {
+        const result = await pool.query(
+            'SELECT * FROM anexos_topico WHERE materia = $1 AND topico = $2 ORDER BY data_upload DESC',
+            [decodeURIComponent(materia), decodeURIComponent(topico)]
+        );
+        res.json({ sucesso: true, anexos: result.rows });
+    } catch (error) {
+        res.status(500).json({ sucesso: false, erro: 'Erro ao buscar anexos' });
+    }
+});
+
+// Upload de anexo (apenas ADMIN)
+app.post('/api/anexos/upload', async (req, res) => {
+    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    const userEmail = req.headers['x-user-email'];
+    
+    if (userEmail !== adminEmail) {
+        return res.status(403).json({ sucesso: false, erro: 'Apenas administrador pode adicionar anexos' });
+    }
+    
+    upload.single('arquivo')(req, res, async (err) => {
+        if (err) return res.status(500).json({ sucesso: false, erro: 'Erro no upload' });
+        
+        const { materia, topico } = req.body;
+        const arquivo = req.file;
+        
+        try {
+            await pool.query(
+                `INSERT INTO anexos_topico (materia, topico, nome_original, nome_arquivo, tamanho_bytes) 
+                 VALUES ($1, $2, $3, $4, $5)`,
+                [materia, topico, arquivo.originalname, arquivo.filename, arquivo.size]
+            );
+            res.json({ sucesso: true, anexo: { nome: arquivo.originalname, tamanho: arquivo.size } });
+        } catch (error) {
+            res.status(500).json({ sucesso: false, erro: 'Erro ao salvar anexo' });
+        }
+    });
+});
+
+// Download de anexo
+app.get('/api/anexos/download/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('SELECT * FROM anexos_topico WHERE id = $1', [id]);
+        if (result.rows.length === 0) return res.status(404).json({ erro: 'Arquivo não encontrado' });
+        
+        const anexo = result.rows[0];
+        const filePath = path.join(uploadDir, anexo.nome_arquivo);
+        
+        if (!fs.existsSync(filePath)) return res.status(404).json({ erro: 'Arquivo não encontrado' });
+        
+        res.download(filePath, anexo.nome_original);
+    } catch (error) {
+        res.status(500).json({ erro: 'Erro ao baixar arquivo' });
+    }
+});
+
+// Excluir anexo (apenas ADMIN)
+app.delete('/api/anexos/:id', async (req, res) => {
+    const { id } = req.params;
+    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    const userEmail = req.headers['x-user-email'];
+    
+    if (userEmail !== adminEmail) {
+        return res.status(403).json({ sucesso: false, erro: 'Apenas administrador pode excluir anexos' });
+    }
+    
+    try {
+        const result = await pool.query('SELECT * FROM anexos_topico WHERE id = $1', [id]);
+        if (result.rows.length === 0) return res.status(404).json({ erro: 'Anexo não encontrado' });
+        
+        const anexo = result.rows[0];
+        const filePath = path.join(uploadDir, anexo.nome_arquivo);
+        
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        
+        await pool.query('DELETE FROM anexos_topico WHERE id = $1', [id]);
+        res.json({ sucesso: true });
+    } catch (error) {
+        res.status(500).json({ erro: 'Erro ao excluir anexo' });
+    }
+});
+
 
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);

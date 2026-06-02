@@ -67,13 +67,25 @@ async function initDatabase() {
       )
     `);
 
-    console.log('✅ Banco de dados inicializado com sucesso!');
-  } catch (error) {
-    console.error('❌ Erro ao inicializar banco:', error.message);
-    throw error;
-  } finally {
-    client.release();
-  }
+   // Tabela de anexos
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS anexos_topico (
+                id SERIAL PRIMARY KEY,
+                materia VARCHAR(100) NOT NULL,
+                topico VARCHAR(100) NOT NULL,
+                nome_original VARCHAR(255) NOT NULL,
+                nome_arquivo VARCHAR(255) NOT NULL,
+                tamanho_bytes INTEGER NOT NULL,
+                data_upload TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        console.log('✅ Banco de dados inicializado com sucesso!');
+    } catch (error) {
+        console.error('❌ Erro ao inicializar banco:', error);
+    } finally {
+        client.release();
+    }
 }
 
 module.exports = { pool, initDatabase };
