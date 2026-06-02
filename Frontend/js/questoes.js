@@ -99,63 +99,6 @@ function renderizarQuestoes() {
         };
     });
 }
-    
-    container.innerHTML = filtradas.map(q => {
-        const resp = respostasUsuario[q.id] || {};
-        let alternativasHtml = Object.entries(q.alternativas).map(([letra, texto]) => {
-            let classes = "alternativa";
-            if(resp.respondida) {
-                if(letra === q.correta) classes += " correct-answer";
-                if(letra === resp.resposta_usuario && resp.resposta_usuario !== q.correta) classes += " wrong-answer";
-            }
-            return `<div class="${classes}" data-letra="${letra}" data-qid="${q.id}"><strong>${letra})</strong> ${texto}</div>`;
-        }).join('');
-        
-        return `
-            <div class="question-card" id="q${q.id}">
-                <div class="action-icons">
-                    <button class="edit-btn" onclick="abrirModalEdicao(${q.id})">✏️</button>
-                    <button class="delete-btn" onclick="excluirQuestao(${q.id})">🗑️</button>
-                </div>
-                <div class="question-text"><strong>📚 ${q.materia} | ${q.assunto}</strong><br>${q.enunciado}</div>
-                <div class="alternativas" id="alt-${q.id}">${alternativasHtml}</div>
-                ${!resp.respondida ? `<button class="btn-responder" data-id="${q.id}">✅ Responder</button>` : ''}
-                ${resp.respondida ? `<div class="feedback ${resp.acertou ? 'correct' : 'wrong'}">${resp.acertou ? '✅ Correto! ' : '❌ Errado! '} ${q.explicacao || ''}</div>` : ''}
-            </div>
-        `;
-    }).join('');
-    
-    // CORREÇÃO: Anexar eventos diretamente
-    document.querySelectorAll('.alternativa').forEach(el => {
-        el.onclick = () => {
-            const qid = el.dataset.qid;
-            document.querySelectorAll(`.alternativa[data-qid="${qid}"]`).forEach(a => a.classList.remove('selected'));
-            el.classList.add('selected');
-            window.selectedAnswer = window.selectedAnswer || {};
-            window.selectedAnswer[qid] = el.dataset.letra;
-        };
-    });
-    
-    document.querySelectorAll('.btn-responder').forEach(btn => {
-        btn.onclick = async () => {
-            const id = parseInt(btn.dataset.id);
-            const selected = window.selectedAnswer ? window.selectedAnswer[id] : null;
-            if(!selected) {
-                alert("Selecione uma alternativa primeiro!");
-                return;
-            }
-            const quest = questoes.find(q => q.id === id);
-            const acertou = (selected === quest.correta);
-            await salvarResposta(id, acertou, selected);
-            await carregarRespostas();
-            renderizarQuestoes();
-            carregarEstatisticas();
-            atualizarStats();
-        };
-    });
-}
-
-
 
 function preencherFiltros() {
     let materias = [...new Set(questoes.map(q=>q.materia))];
