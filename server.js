@@ -317,6 +317,93 @@ app.put('/api/questoes/:id', async (req, res) => {
     }
 });
 
+// ==================== ADMIN - EXCLUIR USUÁRIO ====================
+
+// Middleware para verificar se é admin
+async function isAdmin(email) {
+    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    return email === adminEmail;
+}
+
+// Excluir usuário (apenas ADMIN)
+app.delete('/api/admin/excluir-usuario/:id', async (req, res) => {
+    const { id } = req.params;
+    const { senha } = req.body;
+    const adminEmail = req.headers['x-user-email'];
+    
+    // Verificar se é admin
+    if(!await isAdmin(adminEmail)) {
+        return res.status(403).json({ sucesso: false, erro: 'Acesso negado' });
+    }
+    
+    // Verificar senha do admin
+    const adminResult = await pool.query('SELECT senha FROM usuarios WHERE email = $1', [adminEmail]);
+    if(adminResult.rows.length === 0) {
+        return res.status(401).json({ sucesso: false, erro: 'Admin não encontrado' });
+    }
+    
+    const senhaValida = await bcrypt.compare(senha, adminResult.rows[0].senha);
+    if(!senhaValida) {
+        return res.status(401).json({ sucesso: false, erro: 'Senha incorreta' });
+    }
+    
+    try {
+        // Excluir respostas do usuário
+        await pool.query('DELETE FROM respostas_usuario WHERE usuario_id = $1', [id]);
+        // Excluir notas do usuário
+        await pool.query('DELETE FROM notas_usuario WHERE usuario_id = $1', [id]);
+        // Excluir progresso do usuário
+        await pool.query('DELETE FROM progresso_usuario WHERE usuario_id = $1', [id]);
+        // Excluir usuário
+        await pool.query('DELETE FROM usuarios WHERE id = $1', [id]);
+        
+        res.json({ sucesso: true, mensagem: 'Usuário excluído com sucesso' });
+    } catch (error) {
+        console.error('Erro ao excluir usuário:', error);
+        res.status(500).json({ sucesso: false, erro: 'Erro ao excluir usuário' });
+    }
+});
+
+// ==================== ADMIN - EXCLUIR USUÁRIO ====================
+
+// Excluir usuário (apenas ADMIN)
+app.delete('/api/admin/excluir-usuario/:id', async (req, res) => {
+    const { id } = req.params;
+    const { senha } = req.body;
+    const adminEmail = req.headers['x-user-email'];
+    
+    console.log("Tentativa de excluir usuário:", id);
+    console.log("Admin email:", adminEmail);
+    
+    // Verificar se é admin
+    const adminEmailValido = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    if(adminEmail !== adminEmailValido) {
+        return res.status(403).json({ sucesso: false, erro: 'Acesso negado' });
+    }
+    
+    try {
+        // Excluir respostas do usuário
+        await pool.query('DELETE FROM respostas_usuario WHERE usuario_id = $1', [id]);
+        console.log("Respostas excluídas");
+        
+        // Excluir notas do usuário
+        await pool.query('DELETE FROM notas_usuario WHERE usuario_id = $1', [id]);
+        console.log("Notas excluídas");
+        
+        // Excluir progresso do usuário
+        await pool.query('DELETE FROM progresso_usuario WHERE usuario_id = $1', [id]);
+        console.log("Progresso excluído");
+        
+        // Excluir usuário
+        await pool.query('DELETE FROM usuarios WHERE id = $1', [id]);
+        console.log("Usuário excluído");
+        
+        res.json({ sucesso: true, mensagem: 'Usuário excluído com sucesso' });
+    } catch (error) {
+        console.error('Erro ao excluir usuário:', error);
+        res.status(500).json({ sucesso: false, erro: 'Erro ao excluir usuário' });
+    }
+});
 
 
 
