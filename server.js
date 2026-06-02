@@ -305,7 +305,7 @@ app.delete('/api/admin/excluir-usuario/:id', async (req, res) => {
     try {
         await pool.query('DELETE FROM respostas_usuario WHERE usuario_id = $1', [id]);
         await pool.query('DELETE FROM notas_usuario WHERE usuario_id = $1', [id]);
-        await pool.query('DELETE FROM progresso_usuario WHERE usuario_id = $1', [id]);
+    //    await pool.query('DELETE FROM progresso_usuario WHERE usuario_id = $1', [id]);
         await pool.query('DELETE FROM usuarios WHERE id = $1', [id]);
         
         console.log("Usuário excluído com sucesso!");
@@ -345,7 +345,7 @@ app.delete('/api/admin/excluir-usuario/:id', async (req, res) => {
         console.log("Notas excluídas");
         
         // Excluir progresso do usuário
-        await pool.query('DELETE FROM progresso_usuario WHERE usuario_id = $1', [id]);
+    //    await pool.query('DELETE FROM progresso_usuario WHERE usuario_id = $1', [id]);
         console.log("Progresso excluído");
         
         // Excluir usuário
@@ -359,7 +359,25 @@ app.delete('/api/admin/excluir-usuario/:id', async (req, res) => {
     }
 });
 
-
+// Criar tabela progresso_usuario (se não existir)
+app.post('/api/admin/criar-tabela-progresso', async (req, res) => {
+    try {
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS progresso_usuario (
+                id SERIAL PRIMARY KEY,
+                usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+                materia VARCHAR(100) NOT NULL,
+                topico VARCHAR(100) NOT NULL,
+                status INTEGER DEFAULT 0,
+                UNIQUE(usuario_id, materia, topico)
+            )
+        `);
+        res.json({ sucesso: true, mensagem: 'Tabela progresso_usuario criada com sucesso!' });
+    } catch (error) {
+        console.error('Erro ao criar tabela:', error);
+        res.status(500).json({ sucesso: false, erro: error.message });
+    }
+});
 
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
