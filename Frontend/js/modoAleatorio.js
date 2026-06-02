@@ -4,14 +4,25 @@ async function iniciarModoAleatorio(quantidade) {
     await carregarQuestoes();
     if (!questoes.length) { alert("Nenhuma questão cadastrada!"); return; }
     
+    // NÃO filtrar por respondidas - pegar TODAS as questões
     let filtradas = [...questoes];
+    
+    // Aplica filtro de status APENAS se não for "todas"
     const filtroStatus = document.getElementById("filtroStatus")?.value || "todas";
     
-    if (filtroStatus === "naoRespondidas") filtradas = filtradas.filter(q => !respostasUsuario[q.id]?.respondida);
-    if (filtroStatus === "erradas") filtradas = filtradas.filter(q => respostasUsuario[q.id]?.acertou === false);
+    if (filtroStatus === "corretas") {
+        filtradas = filtradas.filter(q => respostasUsuario[q.id]?.acertou === true);
+    } else if (filtroStatus === "erradas") {
+        filtradas = filtradas.filter(q => respostasUsuario[q.id]?.acertou === false);
+    }
+    // "naoRespondidas" e "todas" - não filtra
     
-    if (filtradas.length === 0) { alert("Nenhuma questão com o filtro selecionado!"); return; }
+    if (filtradas.length === 0) { 
+        alert("Nenhuma questão encontrada com o filtro selecionado!"); 
+        return; 
+    }
     
+    // Embaralhar
     for (let i = filtradas.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [filtradas[i], filtradas[j]] = [filtradas[j], filtradas[i]];
@@ -31,17 +42,26 @@ function mostrarQuestaoAleatoria() {
     }
     
     const quest = questoesAleatorias[indiceAleatorioAtual];
-    const resp = respostasUsuario[quest.id] || {};
+    const resp = respostasUsuario[quest.id] || { respondida: false };
     const container = document.getElementById("questoesList");
     
     let alternativasHtml = Object.entries(quest.alternativas).map(([letra, texto]) => {
         let classes = "alternativa";
+        // Mostrar visualmente se já foi respondida (mas permite re-responder)
         if(resp.respondida) {
             if(letra === quest.correta) classes += " correct-answer";
             if(letra === resp.resposta_usuario && resp.resposta_usuario !== quest.correta) classes += " wrong-answer";
         }
         return `<div class="${classes}" data-letra="${letra}" data-qid="${quest.id}"><strong>${letra})</strong> ${texto}</div>`;
     }).join('');
+    
+    // Exibir feedback se já foi respondida, mas SEMPRE mostrar botão responder
+    const feedbackHtml = resp.respondida ? `
+        <div class="feedback ${resp.acertou ? 'correct' : 'wrong'}">
+            ${resp.acertou ? '✅ Resposta anterior: CORRETA' : '❌ Resposta anterior: ERRADA'}
+            <br><small>Responda novamente para atualizar!</small>
+        </div>
+    ` : '';
     
     container.innerHTML = `
         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
@@ -57,32 +77,54 @@ function mostrarQuestaoAleatoria() {
         <div class="question-card">
             <div class="question-text"><strong>📚 ${quest.materia} | ${quest.assunto}</strong><br>${quest.enunciado}</div>
             <div class="alternativas" id="altAleatorio">${alternativasHtml}</div>
-            ${!resp.respondida ? `<button class="btn-responder" id="respAleatorioBtn">✅ Responder</button>` : ''}
-            ${resp.respondida ? `<div class="feedback ${resp.acertou ? 'correct' : 'wrong'}">${resp.acertou ? '✅ Correto!' : '❌ Errado!'} ${quest.explicacao || ''}</div><button class="btn-small" id="proxAleatorioBtn" style="margin-top: 10px;">▶ Próxima Questão</button>` : ''}
+            <button class="btn-responder" id="respAleatorioBtn">✅ Responder</button>
+            ${feedbackHtml}
         </div>
     `;
     
+    // Evento das alternativas
     document.querySelectorAll('#altAleatorio .alternativa').forEach(el => {
-        el.addEventListener('click', () => {
+        el.onclick = () => {
             document.querySelectorAll('#altAleatorio .alternativa').forEach(a=>a.classList.remove('selected'));
             el.classList.add('selected');
             window.selectedAleatorio = el.dataset.letra;
-        });
+        };
     });
     
-    document.getElementById("respAleatorioBtn")?.addEventListener('click', async () => {
+    // Evento do botão responder - SEMPRE ativo, mesmo para questões já respondidas
+    document.getElementById("respAleatorioBtn").onclick = async () => {
         let selected = window.selectedAleatorio;
-        if(!selected) { alert("Selecione uma alternativa!"); return; }
-        await salvarResposta(quest.id, selected === quest.correta, selected);
+        if(!selected) { 
+            alert("Selecione uma alternativa primeiro!"); 
+            return; 
+        }
+        const acertou = (selected === quest.correta);
+        
+        // Salvar resposta (sobrescreve a anterior)
+        await fetch(`${API_URL}/api/respostas`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                usuario_id: usuario.id,
+                questao_id: quest.id,
+                acertou: acertou,
+                resposta_usuario: selected
+            })
+        });
+        
+        // Recarregar dados
         await carregarRespostas();
-        renderizarQuestoes();
-        carregarEstatisticas();
-        atualizarStats();
+        
+        // Ir para próxima questão
+        indiceAleatorioAtual++;
         mostrarQuestaoAleatoria();
-    });
+        
+        // Atualizar estatísticas
+        if(typeof carregarEstatisticas === 'function') carregarEstatisticas();
+        if(typeof atualizarStats === 'function') atualizarStats();
+    };
     
-    document.getElementById("proxAleatorioBtn")?.addEventListener('click', () => { indiceAleatorioAtual++; mostrarQuestaoAleatoria(); });
-    document.getElementById("sairAleatorioBtn")?.addEventListener('click', () => encerrarModoAleatorio());
+    document.getElementById("sairAleatorioBtn").onclick = () => encerrarModoAleatorio();
 }
 
 function encerrarModoAleatorio() {
@@ -130,10 +172,11 @@ async function iniciarSimulado() {
     if (!assuntosSelecionados.includes("todos") && assuntosSelecionados.length > 0) {
         filtradas = filtradas.filter(q => assuntosSelecionados.includes(q.assunto));
     }
+    
+    // Filtros opcionais (não bloqueiam, apenas selecionam)
     if (apenasNaoRespondidas) {
         filtradas = filtradas.filter(q => !respostasUsuario[q.id]?.respondida);
-    }
-    if (apenasErradas) {
+    } else if (apenasErradas) {
         filtradas = filtradas.filter(q => respostasUsuario[q.id]?.acertou === false);
     }
     
