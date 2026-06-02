@@ -198,6 +198,17 @@ app.get('*.html', (req, res) => {
   res.sendFile(req.path, { root: './Frontend' });
 });
 
+
+
+// ==================== ADMIN - EXCLUIR USUÁRIO ====================
+
+// Middleware para verificar se é admin
+async function isAdmin(email) {
+    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    return email === adminEmail;
+}
+
+
 // ==================== ROTAS DE ADMIN ====================
 
 // Middleware para verificar se é admin
@@ -209,7 +220,6 @@ async function isAdmin(email) {
 // Listar todos os usuários (apenas admin)
 app.get('/api/admin/usuarios', async (req, res) => {
     try {
-        // Pega o email do usuário logado (vem do frontend via header)
         const userEmail = req.headers['x-user-email'];
         if (!await isAdmin(userEmail)) {
             return res.status(403).json({ sucesso: false, erro: 'Acesso negado' });
@@ -233,7 +243,6 @@ app.get('/api/admin/estatisticas/:usuario_id', async (req, res) => {
             return res.status(403).json({ sucesso: false, erro: 'Acesso negado' });
         }
         
-        // Busca estatísticas por matéria do usuário
         const result = await pool.query(`
             SELECT 
                 q.materia,
@@ -247,7 +256,6 @@ app.get('/api/admin/estatisticas/:usuario_id', async (req, res) => {
             ORDER BY q.materia
         `, [usuario_id]);
         
-        // Busca questões que o usuário errou
         const errosResult = await pool.query(`
             SELECT 
                 q.id, q.materia, q.assunto, q.enunciado, q.correta,
@@ -269,61 +277,45 @@ app.get('/api/admin/estatisticas/:usuario_id', async (req, res) => {
     }
 });
 
-// Excluir questão (DELETE)
-app.delete('/api/questoes/:id', async (req, res) => {
+// Excluir usuário (apenas ADMIN)
+app.delete('/api/admin/excluir-usuario/:id', async (req, res) => {
     const { id } = req.params;
+    const { senha } = req.body;
+    const adminEmail = req.headers['x-user-email'];
+    
+    console.log("Excluindo usuário:", id);
+    console.log("Admin email:", adminEmail);
+    
+    // Verificar se é admin
+    if (!await isAdmin(adminEmail)) {
+        return res.status(403).json({ sucesso: false, erro: 'Acesso negado' });
+    }
+    
+    // Verificar senha do admin
+    const adminResult = await pool.query('SELECT senha FROM usuarios WHERE email = $1', [adminEmail]);
+    if (adminResult.rows.length === 0) {
+        return res.status(401).json({ sucesso: false, erro: 'Admin não encontrado' });
+    }
+    
+    const senhaValida = await bcrypt.compare(senha, adminResult.rows[0].senha);
+    if (!senhaValida) {
+        return res.status(401).json({ sucesso: false, erro: 'Senha incorreta' });
+    }
+    
     try {
-        // Primeiro exclui as respostas associadas
-        await pool.query('DELETE FROM respostas_usuario WHERE questao_id = $1', [id]);
-        // Depois exclui a questão
-        await pool.query('DELETE FROM questoes_base WHERE id = $1', [id]);
-        res.json({ sucesso: true });
+        await pool.query('DELETE FROM respostas_usuario WHERE usuario_id = $1', [id]);
+        await pool.query('DELETE FROM notas_usuario WHERE usuario_id = $1', [id]);
+        await pool.query('DELETE FROM progresso_usuario WHERE usuario_id = $1', [id]);
+        await pool.query('DELETE FROM usuarios WHERE id = $1', [id]);
+        
+        console.log("Usuário excluído com sucesso!");
+        res.json({ sucesso: true, mensagem: 'Usuário excluído com sucesso' });
     } catch (error) {
-        console.error('Erro ao excluir questão:', error);
-        res.status(500).json({ sucesso: false, erro: 'Erro ao excluir questão' });
+        console.error('Erro ao excluir usuário:', error);
+        res.status(500).json({ sucesso: false, erro: 'Erro ao excluir usuário' });
     }
 });
 
-// Deletar resposta de um usuário para uma questão específica (mantém a questão)
-app.delete('/api/respostas/usuario/:usuarioId/questao/:questaoId', async (req, res) => {
-    const { usuarioId, questaoId } = req.params;
-    try {
-        await pool.query(
-            'DELETE FROM respostas_usuario WHERE usuario_id = $1 AND questao_id = $2',
-            [usuarioId, questaoId]
-        );
-        res.json({ sucesso: true, mensagem: 'Resposta deletada' });
-    } catch (error) {
-        console.error('Erro ao deletar resposta:', error);
-        res.status(500).json({ sucesso: false, erro: 'Erro ao deletar resposta' });
-    }
-});
-
-// Atualizar questão (PUT)
-app.put('/api/questoes/:id', async (req, res) => {
-    const { id } = req.params;
-    const { materia, assunto, enunciado, alternativas, correta, explicacao } = req.body;
-    try {
-        await pool.query(
-            `UPDATE questoes_base 
-             SET materia = $1, assunto = $2, enunciado = $3, alternativas = $4, correta = $5, explicacao = $6
-             WHERE id = $7`,
-            [materia, assunto, enunciado, alternativas, correta, explicacao || '', id]
-        );
-        res.json({ sucesso: true });
-    } catch (error) {
-        console.error('Erro ao atualizar questão:', error);
-        res.status(500).json({ sucesso: false, erro: 'Erro ao atualizar questão' });
-    }
-});
-
-// ==================== ADMIN - EXCLUIR USUÁRIO ====================
-
-// Middleware para verificar se é admin
-async function isAdmin(email) {
-    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
-    return email === adminEmail;
-}
 
 
 // ==================== ADMIN - EXCLUIR USUÁRIO ====================
