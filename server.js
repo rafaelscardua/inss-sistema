@@ -318,46 +318,6 @@ app.delete('/api/admin/excluir-usuario/:id', async (req, res) => {
 
 
 
-// ==================== ADMIN - EXCLUIR USUÁRIO ====================
-
-// Excluir usuário (apenas ADMIN)
-app.delete('/api/admin/excluir-usuario/:id', async (req, res) => {
-    const { id } = req.params;
-    const { senha } = req.body;
-    const adminEmail = req.headers['x-user-email'];
-    
-    console.log("Tentativa de excluir usuário:", id);
-    console.log("Admin email:", adminEmail);
-    
-    // Verificar se é admin
-    const adminEmailValido = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
-    if(adminEmail !== adminEmailValido) {
-        return res.status(403).json({ sucesso: false, erro: 'Acesso negado' });
-    }
-    
-    try {
-        // Excluir respostas do usuário
-        await pool.query('DELETE FROM respostas_usuario WHERE usuario_id = $1', [id]);
-        console.log("Respostas excluídas");
-        
-        // Excluir notas do usuário
-        await pool.query('DELETE FROM notas_usuario WHERE usuario_id = $1', [id]);
-        console.log("Notas excluídas");
-        
-        // Excluir progresso do usuário
-    //    await pool.query('DELETE FROM progresso_usuario WHERE usuario_id = $1', [id]);
-        console.log("Progresso excluído");
-        
-        // Excluir usuário
-        await pool.query('DELETE FROM usuarios WHERE id = $1', [id]);
-        console.log("Usuário excluído");
-        
-        res.json({ sucesso: true, mensagem: 'Usuário excluído com sucesso' });
-    } catch (error) {
-        console.error('Erro ao excluir usuário:', error);
-        res.status(500).json({ sucesso: false, erro: 'Erro ao excluir usuário' });
-    }
-});
 
 // Criar tabela progresso_usuario (se não existir)
 app.post('/api/admin/criar-tabela-progresso', async (req, res) => {
@@ -394,6 +354,25 @@ app.delete('/api/respostas/usuario/:usuarioId/questao/:questaoId', async (req, r
         res.status(500).json({ sucesso: false, erro: 'Erro ao deletar resposta' });
     }
 });
+
+// ==================== EXCLUIR QUESTÃO ====================
+
+// Excluir questão (DELETE)
+app.delete('/api/questoes/:id', async (req, res) => {
+    const { id } = req.params;
+    console.log("Excluindo questão:", id);
+    try {
+        // Primeiro exclui as respostas associadas
+        await pool.query('DELETE FROM respostas_usuario WHERE questao_id = $1', [id]);
+        // Depois exclui a questão
+        await pool.query('DELETE FROM questoes_base WHERE id = $1', [id]);
+        res.json({ sucesso: true });
+    } catch (error) {
+        console.error('Erro ao excluir questão:', error);
+        res.status(500).json({ sucesso: false, erro: 'Erro ao excluir questão: ' + error.message });
+    }
+});
+
 
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
