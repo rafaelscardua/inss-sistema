@@ -28,7 +28,8 @@ function renderizarAdminPainel() {
                 <strong style="color: #2c3e50;">👤 ${usr.nome}</strong><br>
                 <small style="color: #7f8c8d;">📧 ${usr.email}</small><br>
                 <small style="color: #7f8c8d;">📅 Cadastro: ${new Date(usr.data_criacao).toLocaleDateString()}</small><br>
-                <button style="background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 8px; margin-top: 10px; cursor: pointer;" onclick="event.stopPropagation(); verDetalhesUsuario(${usr.id}, '${usr.nome}')">📊 Ver Detalhes</button>
+                <button onclick="verDetalhesUsuario(${usr.id}, '${usr.nome}')" style="background:#3498db; color:white; border:none; padding:6px 12px; border-radius:5px; margin-top:5px; cursor:pointer; margin-right:5px;">📊 Detalhes</button>
+                <button onclick="excluirUsuario(${usr.id}, '${usr.nome}')" style="background:#e74c3c; color:white; border:none; padding:6px 12px; border-radius:5px; margin-top:5px; cursor:pointer;">🗑️ Excluir</button>
             </div>
         `;
     }
@@ -158,4 +159,39 @@ function irParaQuestaoAdmin(questaoId) {
             setTimeout(() => el.style.background = '', 2000); 
         }
     }, 100);
+}
+
+async function excluirUsuario(usuarioId, usuarioNome) {
+    // Confirmar exclusão
+    if(!confirm(`🗑️ Tem certeza que deseja excluir o usuário "${usuarioNome}" permanentemente?\n\nTodas as respostas e progresso serão perdidos!`)) return;
+    
+    // Pedir senha do ADMIN para segurança
+    const senhaAdmin = prompt("Digite sua senha para confirmar a exclusão:");
+    if(!senhaAdmin) return;
+    
+    try {
+        const usuarioSalvo = localStorage.getItem('usuario');
+        const admin = JSON.parse(usuarioSalvo);
+        
+        const res = await fetch(`${API_URL}/api/admin/excluir-usuario/${usuarioId}`, {
+            method: 'DELETE',
+            headers: { 
+                'Content-Type': 'application/json',
+                'x-user-email': admin.email
+            },
+            body: JSON.stringify({ senha: senhaAdmin })
+        });
+        
+        const data = await res.json();
+        if(data.sucesso) {
+            alert(`✅ Usuário "${usuarioNome}" excluído com sucesso!`);
+            // Recarregar lista de usuários
+            carregarAdminUsuarios();
+        } else {
+            alert(`❌ Erro: ${data.erro}`);
+        }
+    } catch(e) {
+        console.error(e);
+        alert("❌ Erro ao excluir usuário");
+    }
 }
