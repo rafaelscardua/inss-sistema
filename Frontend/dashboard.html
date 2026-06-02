@@ -514,6 +514,30 @@
     })();
 </script>
 
+<script>
+    async function resetarResposta(questaoId) {
+        if(confirm("🔄 Tem certeza que deseja resetar sua resposta para esta questão?")) {
+            try {
+                const usuarioSalvo = localStorage.getItem('usuario');
+                const usuario = JSON.parse(usuarioSalvo);
+                await fetch('/api/respostas', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        usuario_id: usuario.id,
+                        questao_id: questaoId,
+                        acertou: false,
+                        resposta_usuario: ''
+                    })
+                });
+                location.reload();
+            } catch(e) {
+                alert("❌ Erro ao resetar resposta");
+            }
+        }
+    }
+</script>
+
 </body>
 
 </html>
