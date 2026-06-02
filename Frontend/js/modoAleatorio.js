@@ -42,26 +42,12 @@ function mostrarQuestaoAleatoria() {
     }
     
     const quest = questoesAleatorias[indiceAleatorioAtual];
-    const resp = respostasUsuario[quest.id] || { respondida: false };
     const container = document.getElementById("questoesList");
     
+    // Gerar alternativas SEM marcar nenhuma como selecionada
     let alternativasHtml = Object.entries(quest.alternativas).map(([letra, texto]) => {
-        let classes = "alternativa";
-        // Mostrar visualmente se já foi respondida (mas permite re-responder)
-        if(resp.respondida) {
-            if(letra === quest.correta) classes += " correct-answer";
-            if(letra === resp.resposta_usuario && resp.resposta_usuario !== quest.correta) classes += " wrong-answer";
-        }
-        return `<div class="${classes}" data-letra="${letra}" data-qid="${quest.id}"><strong>${letra})</strong> ${texto}</div>`;
+        return `<div class="alternativa" data-letra="${letra}" data-qid="${quest.id}"><strong>${letra})</strong> ${texto}</div>`;
     }).join('');
-    
-    // Exibir feedback se já foi respondida, mas SEMPRE mostrar botão responder
-    const feedbackHtml = resp.respondida ? `
-        <div class="feedback ${resp.acertou ? 'correct' : 'wrong'}">
-            ${resp.acertou ? '✅ Resposta anterior: CORRETA' : '❌ Resposta anterior: ERRADA'}
-            <br><small>Responda novamente para atualizar!</small>
-        </div>
-    ` : '';
     
     container.innerHTML = `
         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
@@ -78,7 +64,6 @@ function mostrarQuestaoAleatoria() {
             <div class="question-text"><strong>📚 ${quest.materia} | ${quest.assunto}</strong><br>${quest.enunciado}</div>
             <div class="alternativas" id="altAleatorio">${alternativasHtml}</div>
             <button class="btn-responder" id="respAleatorioBtn">✅ Responder</button>
-            ${feedbackHtml}
         </div>
     `;
     
@@ -91,7 +76,7 @@ function mostrarQuestaoAleatoria() {
         };
     });
     
-    // Evento do botão responder - SEMPRE ativo, mesmo para questões já respondidas
+    // Evento do botão responder
     document.getElementById("respAleatorioBtn").onclick = async () => {
         let selected = window.selectedAleatorio;
         if(!selected) { 
