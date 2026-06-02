@@ -42,22 +42,18 @@ function renderizarQuestoes() {
         return; 
     }
     
-    let html = '';
-    for(let i = 0; i < filtradas.length; i++) {
-        const q = filtradas[i];
+    container.innerHTML = filtradas.map(q => {
         const resp = respostasUsuario[q.id] || {};
-        
-        let alternativasHtml = '';
-        for(let [letra, texto] of Object.entries(q.alternativas)) {
+        let alternativasHtml = Object.entries(q.alternativas).map(([letra, texto]) => {
             let classes = "alternativa";
             if(resp.respondida) {
                 if(letra === q.correta) classes += " correct-answer";
                 if(letra === resp.resposta_usuario && resp.resposta_usuario !== q.correta) classes += " wrong-answer";
             }
-            alternativasHtml += `<div class="${classes}" data-letra="${letra}" data-qid="${q.id}"><strong>${letra})</strong> ${texto}</div>`;
-        }
+            return `<div class="${classes}" data-letra="${letra}" data-qid="${q.id}"><strong>${letra})</strong> ${texto}</div>`;
+        }).join('');
         
-        html += `
+        return `
             <div class="question-card" id="q${q.id}">
                 <div class="action-icons">
                     <button class="edit-btn" onclick="abrirModalEdicao(${q.id})">✏️</button>
@@ -69,27 +65,35 @@ function renderizarQuestoes() {
                 ${resp.respondida ? `<div class="feedback ${resp.acertou ? 'correct' : 'wrong'}">${resp.acertou ? '✅ Correto! ' : '❌ Errado! '} ${q.explicacao || ''}</div>` : ''}
             </div>
         `;
-    }
-    container.innerHTML = html;
+    }).join('');
     
-    // Reatribuir eventos
+    // CORREÇÃO: Anexar eventos diretamente
+    document.querySelectorAll('.alternativa').forEach(el => {
+        el.onclick = () => {
+            const qid = el.dataset.qid;
+            document.querySelectorAll(`.alternativa[data-qid="${qid}"]`).forEach(a => a.classList.remove('selected'));
+            el.classList.add('selected');
+            window.selectedAnswer = window.selectedAnswer || {};
+            window.selectedAnswer[qid] = el.dataset.letra;
+        };
+    });
+    
     document.querySelectorAll('.btn-responder').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
+        btn.onclick = async () => {
             const id = parseInt(btn.dataset.id);
-            const quest = questoes.find(q => q.id === id);
-            const selectedDiv = document.querySelector(`#alt-${id} .alternativa.selected`);
-            if(!selectedDiv) {
+            const selected = window.selectedAnswer ? window.selectedAnswer[id] : null;
+            if(!selected) {
                 alert("Selecione uma alternativa primeiro!");
                 return;
             }
-            const selected = selectedDiv.dataset.letra;
+            const quest = questoes.find(q => q.id === id);
             const acertou = (selected === quest.correta);
             await salvarResposta(id, acertou, selected);
             await carregarRespostas();
             renderizarQuestoes();
             carregarEstatisticas();
             atualizarStats();
-        });
+        };
     });
 }
 
