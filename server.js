@@ -33,6 +33,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname + '/Frontend'));
 app.use(express.static('Frontend'));
+// Servir arquivos estáticos da pasta uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Inicializar banco de dados
 initDatabase().catch(err => console.error('Erro ao inicializar banco:', err));
