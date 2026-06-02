@@ -3,9 +3,8 @@
 function detectarQuestoes() {
     const texto = document.getElementById("importTexto").value;
     const gabaritoTexto = document.getElementById("importGabarito").value;
-    const materiaPadrao = document.getElementById("importMateria").value || "Geral";
-    const assuntoPadrao = document.getElementById("importAssunto").value || "Geral";
-    
+
+    // Processa gabarito
     let gabaritoMap = new Map();
     if (gabaritoTexto.trim()) {
         const linhasGab = gabaritoTexto.split('\n');
@@ -23,13 +22,49 @@ function detectarQuestoes() {
             }
         }
     }
-    
+
+    // NOVO: Pegar matéria (select ou novo input)
+    let materiaPadrao = "";
+    const materiaSelect = document.getElementById("importMateriaSelect");
+    const materiaNova = document.getElementById("importMateriaNova");
+
+    if (materiaSelect.value === "nova") {
+        materiaPadrao = materiaNova.value.trim();
+        if (!materiaPadrao) {
+            alert("Digite o nome da nova matéria!");
+            return;
+        }
+    } else if (materiaSelect.value) {
+        materiaPadrao = materiaSelect.value;
+    }
+
+    // NOVO: Pegar assunto (select ou novo input)
+    let assuntoPadrao = "";
+    const assuntoSelect = document.getElementById("importAssuntoSelect");
+    const assuntoNova = document.getElementById("importAssuntoNova");
+
+    if (assuntoSelect.value === "nova") {
+        assuntoPadrao = assuntoNova.value.trim();
+        if (!assuntoPadrao) {
+            alert("Digite o nome do novo assunto!");
+            return;
+        }
+    } else if (assuntoSelect.value) {
+        assuntoPadrao = assuntoSelect.value;
+    }
+
+    if (!materiaPadrao || !assuntoPadrao) {
+        alert("Selecione ou digite uma matéria e um assunto!");
+        return;
+    }
+
+    // Divide o texto em blocos de questões
     const blocos = texto.split(/\n\s*\n/);
     let questoesTemp = [];
-    
+
     for (let bloco of blocos) {
         if (!bloco.trim()) continue;
-        
+
         let linhas = bloco.split('\n');
         let questao = {
             materia: materiaPadrao,
@@ -39,22 +74,22 @@ function detectarQuestoes() {
             correta: "",
             explicacao: ""
         };
-        
+
         let numero = null;
         let emAlternativas = false;
         let alternativas = [];
-        
+
         for (let linha of linhas) {
             linha = linha.trim();
             if (!linha) continue;
-            
+
             let matchNum = linha.match(/^(\d+)[\.\)]\s*(.*)/);
             if (matchNum) {
                 numero = parseInt(matchNum[1]);
                 questao.enunciado = matchNum[2];
                 continue;
             }
-            
+
             let matchAlt = linha.match(/^([a-eA-E])[\.\)]\s*(.*)/);
             if (matchAlt) {
                 emAlternativas = true;
@@ -64,7 +99,7 @@ function detectarQuestoes() {
                 alternativas.push(letra);
                 continue;
             }
-            
+
             if (!emAlternativas) {
                 questao.enunciado += " " + linha;
             } else {
@@ -74,11 +109,11 @@ function detectarQuestoes() {
                 }
             }
         }
-        
+
         if (Object.keys(questao.alternativas).length === 0) {
             questao.alternativas = { "A": "Certo", "B": "Errado" };
         }
-        
+
         if (numero && gabaritoMap.has(numero)) {
             let resp = gabaritoMap.get(numero);
             if (resp === "CORRETO") {
@@ -89,12 +124,12 @@ function detectarQuestoes() {
                 questao.correta = resp;
             }
         }
-        
+
         if (questao.enunciado) {
             questoesTemp.push(questao);
         }
     }
-    
+
     questoesDetectadas = questoesTemp;
     mostrarPreview();
 }
@@ -102,13 +137,13 @@ function detectarQuestoes() {
 function mostrarPreview() {
     const previewArea = document.getElementById("previewArea");
     const previewList = document.getElementById("previewList");
-    
+
     if (questoesDetectadas.length === 0) {
         previewList.innerHTML = "<p style='color:red;'>Nenhuma questão detectada! Verifique o formato.</p>";
         previewArea.style.display = "block";
         return;
     }
-    
+
     previewList.innerHTML = questoesDetectadas.map((q, idx) => `
         <div class="preview-item">
             <strong>Questão ${idx + 1}</strong><br>
@@ -120,31 +155,31 @@ function mostrarPreview() {
             </div>
         </div>
     `).join('');
-    
+
     previewArea.style.display = "block";
 }
 
 async function importarQuestoes() {
     let importadas = 0;
-    for(let i=0; i<questoesDetectadas.length; i++) {
+    for (let i = 0; i < questoesDetectadas.length; i++) {
         let q = questoesDetectadas[i];
         let correta = document.getElementById(`correta_${i}`)?.value.trim().toUpperCase();
-        if(correta && q.alternativas[correta]) {
+        if (correta && q.alternativas[correta]) {
             q.correta = correta;
-            const res = await fetch(`${API_URL}/api/questoes`, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify(q) 
+            const res = await fetch(`${API_URL}/api/questoes`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(q)
             });
-            if((await res.json()).sucesso) importadas++;
+            if ((await res.json()).sucesso) importadas++;
         }
     }
-    if(importadas) { 
-        await carregarQuestoes(); 
-        preencherFiltros(); 
-        renderizarQuestoes(); 
-        carregarEstatisticas(); 
-        atualizarStats(); 
+    if (importadas) {
+        await carregarQuestoes();
+        preencherFiltros();
+        renderizarQuestoes();
+        carregarEstatisticas();
+        atualizarStats();
     }
     alert(`${importadas} questões importadas!`);
     document.getElementById("previewArea").style.display = "none";
