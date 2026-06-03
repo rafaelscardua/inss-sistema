@@ -76,7 +76,7 @@ function renderizarPlanoEstudos() {
         container.appendChild(div);
     }
     
-    // Evento para os cabeçalhos (Expandir/Recolher individual)
+    // Adicionar evento de clique para os cabeçalhos
     document.querySelectorAll('.materia-header').forEach(header => {
         header.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -85,55 +85,89 @@ function renderizarPlanoEstudos() {
         });
     });
     
-// Evento para os botões de estudar
-document.querySelectorAll('.btn-estudar').forEach(function(btn) {
-    // Remover eventos antigos para evitar duplicação
-    btn.removeEventListener('click', btn._listener);
-    
-    // Criar novo listener
-    btn._listener = function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
+    // ==================== EVENTOS DOS BOTÕES DE ESTUDAR ====================
+    document.querySelectorAll('.btn-estudar').forEach(btn => {
+        // Remover eventos antigos para evitar duplicação
+        btn.removeEventListener('click', btn._listener);
         
-        console.log("Clique no botão - IMPEDINDO PROPAGAÇÃO");
-        
-        const assuntoId = parseInt(btn.dataset.id);
-        let respondidas = parseInt(btn.dataset.respondidas);
-        const total = parseInt(btn.dataset.total);
-        
-        if (respondidas < total) {
-            respondidas++;
-            const novoProgresso = Math.round((respondidas / total) * 100);
+        btn._listener = async function(e) {
+            e.preventDefault();
+            e.stopPropagation();
             
-            fetch(`/api/assuntos/${assuntoId}/progresso`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-user-email': JSON.parse(localStorage.getItem('usuario')).email
-                },
-                body: JSON.stringify({ progresso: novoProgresso })
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.sucesso) {
-                    carregarPlanoEstudos();
+            console.log("✅ Botão clicado!");
+            
+            const assuntoId = parseInt(btn.dataset.id);
+            let respondidas = parseInt(btn.dataset.respondidas);
+            const total = parseInt(btn.dataset.total);
+            
+            if (respondidas < total) {
+                respondidas++;
+                const novoProgresso = Math.round((respondidas / total) * 100);
+                
+                // Atualizar visualmente
+                const progressoText = document.getElementById(`progresso-${assuntoId}`);
+                if (progressoText) {
+                    progressoText.innerText = `${novoProgresso}% (${respondidas}/${total})`;
                 }
-            });
-        }
-    };
+                btn.dataset.respondidas = respondidas;
+                
+                if (respondidas >= total) {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                }
+                
+                // Salvar no banco
+                const usuario = JSON.parse(localStorage.getItem('usuario'));
+                const res = await fetch(`/api/assuntos/${assuntoId}/progresso`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-user-email': usuario.email
+                    },
+                    body: JSON.stringify({ progresso: novoProgresso })
+                });
+                
+                const data = await res.json();
+                if (data.sucesso) {
+                    // Recarregar para atualizar barra de progresso da disciplina
+                    await carregarPlanoEstudos();
+                } else {
+                    alert("Erro: " + data.erro);
+                }
+            } else {
+                alert("🎉 Você já estudou todas as questões deste assunto!");
+            }
+        };
+        
+        btn.addEventListener('click', btn._listener);
+    });
     
-    btn.addEventListener('click', btn._listener);
-});
-    
-    // Evento para os selects de status
+    // ==================== EVENTOS DOS SELECTS DE STATUS ====================
     document.querySelectorAll('.status-select').forEach(select => {
-        select.addEventListener('change', async (e) => {
+        select.removeEventListener('change', select._listener);
+        
+        select._listener = async function(e) {
             e.stopPropagation();
             const assuntoId = parseInt(select.dataset.id);
             const novoStatus = select.value;
-            await atualizarStatusAssunto(assuntoId, novoStatus);
-        });
+            
+            const usuario = JSON.parse(localStorage.getItem('usuario'));
+            const res = await fetch(`/api/assuntos/${assuntoId}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-user-email': usuario.email
+                },
+                body: JSON.stringify({ status: novoStatus })
+            });
+            
+            const data = await res.json();
+            if (data.sucesso) {
+                await carregarPlanoEstudos();
+            }
+        };
+        
+        select.addEventListener('change', select._listener);
     });
     
     // Carregar anexos para cada assunto

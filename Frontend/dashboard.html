@@ -422,48 +422,6 @@
                 });
             });
             // Event listeners para os botões de progresso (depois que o plano carregar)
-            setTimeout(() => {
-                document.querySelectorAll('.btn-estudar').forEach(btn => {
-                    btn.addEventListener('click', async (e) => {
-                        e.stopPropagation();
-                        const assuntoId = parseInt(btn.dataset.id);
-                        let respondidas = parseInt(btn.dataset.respondidas);
-                        const total = parseInt(btn.dataset.total);
-
-                        console.log("Clicou! ID:", assuntoId, "Respondidas:", respondidas, "Total:", total);
-
-                        if (respondidas < total) {
-                            respondidas++;
-                            const novoProgresso = Math.round((respondidas / total) * 100);
-
-                            // Atualizar texto na tela
-                            const progressoText = document.getElementById(`progresso-${assuntoId}`);
-                            if (progressoText) {
-                                progressoText.innerText = `${novoProgresso}% (${respondidas}/${total})`;
-                            }
-
-                            btn.dataset.respondidas = respondidas;
-                            if (respondidas >= total) {
-                                btn.disabled = true;
-                                btn.style.opacity = '0.5';
-                            }
-
-                            // Chamar API para atualizar progresso
-                            await incrementarProgressoAssunto(assuntoId, respondidas, total);
-                        }
-                    });
-                });
-
-                // Event listeners para os selects de status
-                document.querySelectorAll('.status-select').forEach(select => {
-                    select.addEventListener('change', async (e) => {
-                        e.stopPropagation();
-                        const assuntoId = parseInt(select.dataset.id);
-                        const novoStatus = select.value;
-                        await atualizarStatusAssunto(assuntoId, novoStatus);
-                    });
-                });
-            }, 1000);
         }
 
         init();
@@ -471,10 +429,6 @@
 
     </script>
     </script>
-
-
-
-
 
     <script>
         async function resetarResposta(questaoId) {
