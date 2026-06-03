@@ -306,7 +306,7 @@
     <script>
 
         // Função para marcar/desmarcar assunto como estudado
-       window.toggleEstudado = async function(checkbox) {
+ window.toggleEstudado = async function(checkbox) {
     if (window.event) {
         window.event.stopPropagation();
         window.event.cancelBubble = true;
@@ -323,9 +323,22 @@
     
     console.log(`Assunto ${assuntoId}: ${estaEstudado ? 'ESTUDADO' : 'NÃO ESTUDADO'} (${respondidas}/${total}) - ${novoProgresso}%`);
     
+    // Atualizar texto do progresso
     const progressoText = document.getElementById(`progresso-${assuntoId}`);
     if (progressoText) {
         progressoText.innerText = `${novoProgresso}% (${respondidas}/${total})`;
+    }
+    
+    // Atualizar select de status
+    const selectStatus = checkbox.closest('.topico-header').querySelector('.status-select');
+    if (selectStatus) {
+        if (checkbox.checked) {
+            selectStatus.value = 'dominado';
+        } else {
+            selectStatus.value = 'nao_iniciado';
+        }
+        // Disparar evento change para salvar no banco
+        selectStatus.dispatchEvent(new Event('change'));
     }
     
     checkbox.setAttribute('data-respondidas', respondidas);
@@ -345,7 +358,7 @@
         if (data.sucesso) {
             console.log("✅ Progresso salvo no banco!");
             
-            // ==================== CÁLCULO CORRIGIDO ====================
+            // Atualizar barra de progresso da disciplina
             const disciplinaDiv = checkbox.closest('.materia');
             if (disciplinaDiv) {
                 const barraFill = disciplinaDiv.querySelector('.progress-bar-fill');
@@ -385,7 +398,6 @@
         alert("Erro ao salvar progresso");
     }
 };
-
 
 
         // Função para adicionar nova questão

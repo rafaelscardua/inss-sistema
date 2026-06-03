@@ -123,6 +123,24 @@ function renderizarPlanoEstudos() {
             }
         }
     }
+
+    // ==================== SINCRONIZAR CHECKBOXES ====================
+    document.querySelectorAll('.check-estudado').forEach(cb => {
+        const topico = cb.closest('.topico');
+        const progressoText = topico.querySelector('.progresso-texto');
+        if (progressoText) {
+            const progresso = parseInt(progressoText.innerText.split('%')[0]);
+            cb.checked = (progresso === 100);
+            // Atualizar o atributo data-respondidas
+            if (cb.checked) {
+                const total = parseInt(cb.getAttribute('data-total'));
+                cb.setAttribute('data-respondidas', total);
+            } else {
+                cb.setAttribute('data-respondidas', '0');
+            }
+        }
+    });
+}
 }
 
 // Atualizar status do assunto
