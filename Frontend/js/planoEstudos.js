@@ -22,65 +22,57 @@ async function carregarPlanoEstudos() {
     }
 }
 
-function renderizarPlanoEstudos() {
-    const container = document.getElementById("materiasContainer");
-    if(!container) return;
-    container.innerHTML = "";
-    
-    if (disciplinasPlano.length === 0) {
-        container.innerHTML = "<p>Nenhuma disciplina cadastrada. Use o ADMIN para criar disciplinas.</p>";
-        return;
-    }
-    
-    for (const disc of disciplinasPlano) {
-        // Calcular progresso geral da disciplina
-        let totalQuestoes = 0;
-        let totalAcertos = 0;
-        for (const assunto of disc.assuntos) {
-            totalQuestoes += assunto.total_questoes || 0;
-            totalAcertos += Math.round((assunto.progresso || 0) * (assunto.total_questoes || 0) / 100);
-        }
-        const progressoGeral = totalQuestoes > 0 ? Math.round((totalAcertos / totalQuestoes) * 100) : 0;
+// Atualizar status do assunto
+async function atualizarStatusAssunto(assuntoId, novoStatus) {
+    try {
+        const usuarioSalvo = localStorage.getItem('usuario');
+        const usuario = JSON.parse(usuarioSalvo);
         
-        const div = document.createElement("div"); 
-        div.className = "materia-item";
-        div.innerHTML = `
-            <div class="materia-header" data-disciplina-id="${disc.id}">
-                <div><b>📚 ${disc.nome}</b> <span style="font-size:0.8em;">${progressoGeral}%</span></div>
-                <div class="progress-bar-container"><div class="progress-bar-fill" style="width:${progressoGeral}%"></div></div>
-            </div>
-            <div class="materia-content collapsed">
-                ${disc.assuntos.map(assunto => `
-                    <div class="topico">
-                        <div class="topico-header">
-                            <span class="topico-nome">📌 ${assunto.nome}</span>
-                            <span style="font-size:0.8em; color:#666;">${assunto.progresso || 0}% (${Math.round((assunto.progresso || 0) * (assunto.total_questoes || 0) / 100)}/${assunto.total_questoes || 0})</span>
-                        </div>
-                        <div id="anexos-${disc.id}-${assunto.id}" class="anexos-container"></div>
-                    </div>
-                `).join('')}
-            </div>
-        `;
-        container.appendChild(div);
-    }
-    
-    // Adicionar evento de clique para cada cabeçalho
-    document.querySelectorAll('.materia-header').forEach(header => {
-        header.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const content = header.nextElementSibling;
-            content.classList.toggle('collapsed');
+        const res = await fetch(`/api/assuntos/${assuntoId}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-user-email': usuario.email
+            },
+            body: JSON.stringify({ status: novoStatus })
         });
-    });
-    
-    // Carregar anexos para cada assunto
-    for (const disc of disciplinasPlano) {
-        for (const assunto of disc.assuntos) {
-            const anexoContainer = document.getElementById(`anexos-${disc.id}-${assunto.id}`);
-            if (anexoContainer) {
-                carregarAnexos(disc.nome, assunto.nome, anexoContainer);
-            }
+        const data = await res.json();
+        if (data.sucesso) {
+            await carregarPlanoEstudos(); // Recarregar para atualizar UI
+        } else {
+            alert(`❌ Erro: ${data.erro}`);
         }
+    } catch (e) {
+        console.error('Erro ao atualizar status:', e);
+        alert("❌ Erro ao atualizar status");
+    }
+}
+
+// Incrementar progresso do assunto
+async function incrementarProgressoAssunto(assuntoId, novoValor, total) {
+    try {
+        const usuarioSalvo = localStorage.getItem('usuario');
+        const usuario = JSON.parse(usuarioSalvo);
+        
+        const novoProgresso = Math.round((novoValor / total) * 100);
+        
+        const res = await fetch(`/api/assuntos/${assuntoId}/progresso`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-user-email': usuario.email
+            },
+            body: JSON.stringify({ progresso: novoProgresso })
+        });
+        const data = await res.json();
+        if (data.sucesso) {
+            await carregarPlanoEstudos(); // Recarregar para atualizar UI
+        } else {
+            alert(`❌ Erro: ${data.erro}`);
+        }
+    } catch (e) {
+        console.error('Erro ao incrementar progresso:', e);
+        alert("❌ Erro ao incrementar progresso");
     }
 }
 
