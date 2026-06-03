@@ -436,4 +436,59 @@ html, body {
     padding-bottom: 100px !important;
 }
 
+/* Controle de expansão/recolhimento dos itens de matéria */
+.materia-item .materia-content {
+    display: block;
+}
+
+.materia-item.collapsed .materia-content {
+    display: none;
+}
+
+/* Estrutura para os itens de matéria */
+.materia-item {
+    background: white;
+    border-radius: 15px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+body.dark-mode .materia-item {
+    background: #2d2d44;
+}
+
+/* Topicos e subtopicos dentro do conteudo */
+.materia-content {
+    padding: 20px;
+}
+
+.topico {
+    margin-bottom: 25px;
+    border-left: 4px solid #3498db;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 0 10px 10px 0;
+}
+
+body.dark-mode .topico {
+    background: #25253a;
+}
+
+/* ===== CONTROLE DE EXPANSÃO DO PLANO DE ESTUDOS ===== */
+/* Esconde o conteúdo quando tem a classe collapsed */
+.materia-item .materia-content.collapsed {
+    display: none;
+}
+
+/* Mostra o conteúdo normalmente */
+.materia-item .materia-content {
+    display: block;
+}
+
+/* Cursor de mão no cabeçalho para indicar que é clicável */
+.materia-header {
+    cursor: pointer;
+}
+
     </style>

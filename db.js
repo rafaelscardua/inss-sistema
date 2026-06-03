@@ -82,7 +82,41 @@ async function initDatabase() {
     // ADICIONE ESTA LINHA AQUI (depois de criar a tabela)
     await client.query(`
     ALTER TABLE anexos_topico ADD COLUMN IF NOT EXISTS arquivo_base64 TEXT
-`);
+`)
+    // Tabela de disciplinas
+    await client.query(`
+        CREATE TABLE IF NOT EXISTS disciplinas (
+            id SERIAL PRIMARY KEY,
+            nome VARCHAR(100) NOT NULL UNIQUE,
+            ordem INTEGER DEFAULT 0,
+            ativo BOOLEAN DEFAULT true,
+            data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    // Tabela de assuntos
+    await client.query(`
+        CREATE TABLE IF NOT EXISTS assuntos (
+            id SERIAL PRIMARY KEY,
+            disciplina_id INTEGER REFERENCES disciplinas(id) ON DELETE CASCADE,
+            nome VARCHAR(100) NOT NULL,
+            ordem INTEGER DEFAULT 0,
+            ativo BOOLEAN DEFAULT true,
+            UNIQUE(disciplina_id, nome)
+        )
+    `);
+
+    // Adicionar colunas na tabela questoes_base (se não existirem)
+    await client.query(`
+        ALTER TABLE questoes_base ADD COLUMN IF NOT EXISTS disciplina_id INTEGER REFERENCES disciplinas(id)
+    `);
+    await client.query(`
+        ALTER TABLE questoes_base ADD COLUMN IF NOT EXISTS assunto_id INTEGER REFERENCES assuntos(id)
+    `);
+    ;
+
+
+
 
     console.log('✅ Banco de dados inicializado com sucesso!');
   } catch (error) {

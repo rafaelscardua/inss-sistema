@@ -345,7 +345,6 @@
         // ==================== INICIALIZAÇÃO ====================
         async function init() {
             if (!checkAuth()) return;
-            carregarPlano();
             await carregarQuestoes();
             await carregarRespostas();
 
@@ -362,15 +361,25 @@
             }
 
             // Event listeners
+            // Event listeners para Expandir/Recolher
             document.getElementById("expandirTudo")?.addEventListener("click", () => {
-                dadosEstudo.materias.forEach(m => m.expandido = true);
-                salvarPlano();
-                renderizarMaterias();
+                document.querySelectorAll('.materia-item .materia-content').forEach(content => {
+                    content.classList.remove('collapsed');
+                });
+                // Também atualiza o estado no array para consistência
             });
+
+            // Event listeners para Expandir/Recolher
+            document.getElementById("expandirTudo")?.addEventListener("click", () => {
+                document.querySelectorAll('.materia-item .materia-content').forEach(content => {
+                    content.classList.remove('collapsed');
+                });
+            });
+
             document.getElementById("recolherTudo")?.addEventListener("click", () => {
-                dadosEstudo.materias.forEach(m => m.expandido = false);
-                salvarPlano();
-                renderizarMaterias();
+                document.querySelectorAll('.materia-item .materia-content').forEach(content => {
+                    content.classList.add('collapsed');
+                });
             });
             document.getElementById("filtrarQuestoesBtn")?.addEventListener("click", renderizarQuestoes);
             document.getElementById("salvarNovaQuestao")?.addEventListener("click", adicionarNovaQuestao);
