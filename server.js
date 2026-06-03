@@ -499,6 +499,22 @@ app.delete('/api/anexos/:id', async (req, res) => {
     }
 });
 
+// Rota para listar todos os anexos (admin)
+app.get('/api/anexos/todos', async (req, res) => {
+    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    const userEmail = req.headers['x-user-email'];
+    
+    if (userEmail !== adminEmail) {
+        return res.status(403).json({ erro: 'Acesso negado' });
+    }
+    
+    try {
+        const result = await pool.query('SELECT * FROM anexos_topico ORDER BY id DESC');
+        res.json({ sucesso: true, anexos: result.rows });
+    } catch (error) {
+        res.status(500).json({ erro: 'Erro ao buscar anexos' });
+    }
+});
 
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
