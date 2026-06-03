@@ -63,9 +63,10 @@ function renderizarPlanoEstudos() {
                                     <option value="revisando" ${assunto.status === 'revisando' ? 'selected' : ''}>🟠 Revisando</option>
                                     <option value="dominado" ${assunto.status === 'dominado' ? 'selected' : ''}>🟢 Dominado</option>
                                 </select>
-                               <button class="btn-estudar" data-id="${assunto.id}" data-respondidas="${respondidas}" data-total="${total}" onclick="event.stopPropagation(); estudarAssunto(this); return false;" ${respondidas >= total ? 'disabled style="opacity:0.5;"' : ''}>
-                                    ✅ +1 Estudada
-                                </button>
+                               <label class="checkbox-estudado">
+                 <input type="checkbox" class="check-estudado" data-id="${assunto.id}" data-respondidas="${respondidas}" data-total="${total}" onclick="toggleEstudado(this); return false;" ${respondidas >= total ? 'checked' : ''}>
+    ✅ Estudado
+</label>
                             </div>
                             <div id="anexos-${disc.id}-${assunto.id}" class="anexos-container"></div>
                         </div>
@@ -85,7 +86,7 @@ function renderizarPlanoEstudos() {
         });
     });
 
-   
+
 
     // ==================== EVENTOS DOS SELECTS DE STATUS ====================
     document.querySelectorAll('.status-select').forEach(select => {
