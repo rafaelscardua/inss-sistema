@@ -512,6 +512,7 @@ app.put('/api/questoes/:id', async (req, res) => {
 // ==================== ROTAS DE DISCIPLINAS E ASSUNTOS ====================
 
 // Listar todas as disciplinas com seus assuntos
+// Listar todas as disciplinas com seus assuntos
 app.get('/api/admin/disciplinas', async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
     const userEmail = req.headers['x-user-email'];
@@ -521,22 +522,26 @@ app.get('/api/admin/disciplinas', async (req, res) => {
     }
     
     try {
-        const disciplinas = await pool.query(
-            'SELECT * FROM disciplinas ORDER BY ordem, id'
+        // Buscar disciplinas
+        const disciplinasResult = await pool.query(
+            'SELECT id, nome, ordem, ativo, data_criacao FROM disciplinas ORDER BY ordem, id'
         );
         
-        for (const d of disciplinas.rows) {
-            const assuntos = await pool.query(
-                'SELECT * FROM assuntos WHERE disciplina_id = $1 ORDER BY ordem, id',
-                [d.id]
+        const disciplinas = disciplinasResult.rows;
+        
+        // Buscar assuntos para cada disciplina
+        for (let i = 0; i < disciplinas.length; i++) {
+            const assuntosResult = await pool.query(
+                'SELECT id, nome, ordem, ativo FROM assuntos WHERE disciplina_id = $1 ORDER BY ordem, id',
+                [disciplinas[i].id]
             );
-            d.assuntos = assuntos.rows;
+            disciplinas[i].assuntos = assuntosResult.rows;
         }
         
-        res.json({ sucesso: true, disciplinas: disciplinas.rows });
+        res.json({ sucesso: true, disciplinas });
     } catch (error) {
-        console.error('Erro ao buscar disciplinas:', error);
-        res.status(500).json({ erro: 'Erro ao buscar disciplinas' });
+        console.error('Erro detalhado:', error);
+        res.status(500).json({ erro: 'Erro ao buscar disciplinas: ' + error.message });
     }
 });
 
