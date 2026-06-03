@@ -362,25 +362,19 @@
 
             // Event listeners
             // Event listeners para Expandir/Recolher
+            // Event listeners para Expandir/Recolher - CORRIGIDO
             document.getElementById("expandirTudo")?.addEventListener("click", () => {
-                document.querySelectorAll('.materia-item .materia-content').forEach(content => {
-                    content.classList.remove('collapsed');
-                });
-                // Também atualiza o estado no array para consistência
-            });
-
-            // Event listeners para Expandir/Recolher
-            document.getElementById("expandirTudo")?.addEventListener("click", () => {
-                document.querySelectorAll('.materia-item .materia-content').forEach(content => {
+                document.querySelectorAll('.materia .materia-content').forEach(content => {
                     content.classList.remove('collapsed');
                 });
             });
 
             document.getElementById("recolherTudo")?.addEventListener("click", () => {
-                document.querySelectorAll('.materia-item .materia-content').forEach(content => {
+                document.querySelectorAll('.materia .materia-content').forEach(content => {
                     content.classList.add('collapsed');
                 });
             });
+
             document.getElementById("filtrarQuestoesBtn")?.addEventListener("click", renderizarQuestoes);
             document.getElementById("salvarNovaQuestao")?.addEventListener("click", adicionarNovaQuestao);
             document.getElementById("detectarQuestoesBtn")?.addEventListener("click", detectarQuestoes);
@@ -919,9 +913,6 @@
             // Carregar disciplinas
             carregarDisciplinas();
         }
-
-
-
 
     </script>
 </body>
