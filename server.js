@@ -460,15 +460,21 @@ app.get('/api/anexos/download/:id', async (req, res) => {
     const { id } = req.params;
     try {
         const result = await pool.query('SELECT * FROM anexos_topico WHERE id = $1', [id]);
-        if (result.rows.length === 0) return res.status(404).json({ erro: 'Arquivo não encontrado' });
+        if (result.rows.length === 0) {
+            return res.status(404).json({ erro: 'Arquivo não encontrado' });
+        }
         
         const anexo = result.rows[0];
         const filePath = path.join(uploadDir, anexo.nome_arquivo);
         
-        if (!fs.existsSync(filePath)) return res.status(404).json({ erro: 'Arquivo não encontrado' });
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({ erro: 'Arquivo físico não encontrado' });
+        }
         
+        // Enviar o arquivo para download
         res.download(filePath, anexo.nome_original);
     } catch (error) {
+        console.error('Erro no download:', error);
         res.status(500).json({ erro: 'Erro ao baixar arquivo' });
     }
 });
