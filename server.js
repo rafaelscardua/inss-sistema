@@ -494,13 +494,14 @@ app.delete('/api/questoes/:id', async (req, res) => {
 // Atualizar questão (PUT)
 app.put('/api/questoes/:id', async (req, res) => {
     const { id } = req.params;
-    const { materia, assunto, enunciado, alternativas, correta, explicacao } = req.body;
+    const { materia, assunto, enunciado, alternativas, correta, explicacao, disciplina_id, assunto_id } = req.body;
     try {
         await pool.query(
             `UPDATE questoes_base 
-             SET materia = $1, assunto = $2, enunciado = $3, alternativas = $4, correta = $5, explicacao = $6
-             WHERE id = $7`,
-            [materia, assunto, enunciado, alternativas, correta, explicacao || '', id]
+             SET materia = $1, assunto = $2, enunciado = $3, alternativas = $4, correta = $5, explicacao = $6,
+             disciplina_id = $7, assunto_id = $8
+             WHERE id = $9`,
+            [materia, assunto, enunciado, alternativas, correta, explicacao || '', disciplina_id, assunto_id, id]
         );
         res.json({ sucesso: true });
     } catch (error) {
@@ -511,7 +512,7 @@ app.put('/api/questoes/:id', async (req, res) => {
 
 // ==================== ROTAS DE DISCIPLINAS E ASSUNTOS ====================
 
-// Listar todas as disciplinas com seus assuntos
+
 // Listar todas as disciplinas com seus assuntos
 app.get('/api/admin/disciplinas', async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
