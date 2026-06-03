@@ -49,26 +49,82 @@ function renderizarPlanoEstudos() {
                 <div class="progress-bar-container"><div class="progress-bar-fill" style="width:${progressoGeralDisc}%"></div></div>
             </div>
             <div class="materia-content collapsed">
-                ${disc.assuntos.map(assunto => `
-                    <div class="topico">
-                        <div class="topico-header">
-                            <span class="topico-nome">📌 ${assunto.nome}</span>
-                            <span style="font-size:0.8em; color:#666;">${assunto.progresso || 0}% (${Math.round((assunto.progresso || 0) * (assunto.total_questoes || 0) / 100)}/${assunto.total_questoes || 0})</span>
+                ${disc.assuntos.map(assunto => {
+                    const respondidas = Math.round((assunto.progresso || 0) * (assunto.total_questoes || 0) / 100);
+                    const total = assunto.total_questoes || 0;
+                    return `
+                        <div class="topico" data-assunto-id="${assunto.id}">
+                            <div class="topico-header">
+                                <span class="topico-nome">📌 ${assunto.nome}</span>
+                                <span class="progresso-texto" id="progresso-${assunto.id}">${assunto.progresso || 0}% (${respondidas}/${total})</span>
+                                <select class="status-select" data-id="${assunto.id}">
+                                    <option value="nao_iniciado" ${assunto.status === 'nao_iniciado' ? 'selected' : ''}>🔴 Não iniciado</option>
+                                    <option value="estudando" ${assunto.status === 'estudando' ? 'selected' : ''}>🟡 Estudando</option>
+                                    <option value="revisando" ${assunto.status === 'revisando' ? 'selected' : ''}>🟠 Revisando</option>
+                                    <option value="dominado" ${assunto.status === 'dominado' ? 'selected' : ''}>🟢 Dominado</option>
+                                </select>
+                                <button class="btn-estudar" data-id="${assunto.id}" data-respondidas="${respondidas}" data-total="${total}" ${respondidas >= total ? 'disabled style="opacity:0.5;"' : ''}>
+                                    ✅ +1 Estudada
+                                </button>
+                            </div>
+                            <div id="anexos-${disc.id}-${assunto.id}" class="anexos-container"></div>
                         </div>
-                        <div id="anexos-${disc.id}-${assunto.id}" class="anexos-container"></div>
-                    </div>
-                `).join('')}
+                    `;
+                }).join('')}
             </div>
         `;
         container.appendChild(div);
     }
     
-    // Adicionar evento de clique para os cabeçalhos
+    // Evento para os cabeçalhos (Expandir/Recolher individual)
     document.querySelectorAll('.materia-header').forEach(header => {
         header.addEventListener('click', (e) => {
             e.stopPropagation();
             const content = header.nextElementSibling;
             content.classList.toggle('collapsed');
+        });
+    });
+    
+    // Evento para os botões de estudar
+    document.querySelectorAll('.btn-estudar').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const assuntoId = parseInt(btn.dataset.id);
+            let respondidas = parseInt(btn.dataset.respondidas);
+            const total = parseInt(btn.dataset.total);
+            
+            if (respondidas < total) {
+                respondidas++;
+                const novoProgresso = Math.round((respondidas / total) * 100);
+                
+                // Atualizar texto na tela
+                const progressoText = document.getElementById(`progresso-${assuntoId}`);
+                if (progressoText) {
+                    progressoText.innerText = `${novoProgresso}% (${respondidas}/${total})`;
+                }
+                
+                btn.dataset.respondidas = respondidas;
+                if (respondidas >= total) {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                }
+                
+                // Chamar API para atualizar progresso
+                await incrementarProgressoAssunto(assuntoId, respondidas, total);
+                
+                // Recarregar para atualizar barra de progresso da disciplina
+                await carregarPlanoEstudos();
+            }
+        });
+    });
+    
+    // Evento para os selects de status
+    document.querySelectorAll('.status-select').forEach(select => {
+        select.addEventListener('change', async (e) => {
+            e.stopPropagation();
+            const assuntoId = parseInt(select.dataset.id);
+            const novoStatus = select.value;
+            await atualizarStatusAssunto(assuntoId, novoStatus);
         });
     });
     
