@@ -613,6 +613,8 @@ app.post('/api/admin/assuntos', async (req, res) => {
     }
     
     const { disciplina_id, nome } = req.body;
+    console.log("Criando assunto:", { disciplina_id, nome });
+    
     try {
         const result = await pool.query(
             'INSERT INTO assuntos (disciplina_id, nome) VALUES ($1, $2) RETURNING *',
@@ -620,7 +622,8 @@ app.post('/api/admin/assuntos', async (req, res) => {
         );
         res.json({ sucesso: true, assunto: result.rows[0] });
     } catch (error) {
-        res.status(500).json({ erro: 'Erro ao criar assunto' });
+        console.error('Erro detalhado:', error);
+        res.status(500).json({ erro: 'Erro ao criar assunto: ' + error.message });
     }
 });
 
@@ -676,6 +679,23 @@ app.post('/api/admin/sql', async (req, res) => {
         res.json({ rows: result.rows });
     } catch (error) {
         res.status(500).json({ erro: error.message });
+    }
+});
+
+// Listar todos os assuntos (admin)
+app.get('/api/admin/assuntos', async (req, res) => {
+    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    const userEmail = req.headers['x-user-email'];
+    
+    if (userEmail !== adminEmail) {
+        return res.status(403).json({ erro: 'Acesso negado' });
+    }
+    
+    try {
+        const result = await pool.query('SELECT * FROM assuntos ORDER BY id');
+        res.json({ sucesso: true, assuntos: result.rows });
+    } catch (error) {
+        res.status(500).json({ erro: 'Erro ao buscar assuntos' });
     }
 });
 
