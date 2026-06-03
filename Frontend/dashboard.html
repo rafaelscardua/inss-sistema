@@ -428,12 +428,13 @@
         resetarTimer();
 
 
-// Função global para estudar assunto - NÃO RECOLHE A MATÉRIA
+
+// Função global para estudar assunto
 window.estudarAssunto = async function(btn) {
-    // Impedir qualquer propagação
-    if (event) {
-        event.stopPropagation();
-        event.preventDefault();
+    // IMPEDIR TOTALMENTE a propagação
+    if (window.event) {
+        window.event.stopPropagation();
+        window.event.cancelBubble = true;
     }
     
     console.log("✅ Função estudarAssunto chamada!");
@@ -446,16 +447,14 @@ window.estudarAssunto = async function(btn) {
         respondidas++;
         const novoProgresso = Math.round((respondidas / total) * 100);
         
-        // Atualizar visualmente o texto
+        // Atualizar visualmente
         const progressoText = document.getElementById(`progresso-${assuntoId}`);
         if (progressoText) {
             progressoText.innerText = `${novoProgresso}% (${respondidas}/${total})`;
         }
         
-        // Atualizar os dados do botão
         btn.setAttribute('data-respondidas', respondidas);
         
-        // Se completou, desabilitar o botão
         if (respondidas >= total) {
             btn.disabled = true;
             btn.style.opacity = '0.5';
@@ -476,8 +475,8 @@ window.estudarAssunto = async function(btn) {
             const data = await res.json();
             if (data.sucesso) {
                 console.log("✅ Progresso salvo!");
-                // Recarregar para atualizar a barra de progresso da disciplina
-                setTimeout(() => carregarPlanoEstudos(), 500);
+                // NÃO recarregar a página inteira, apenas atualizar a barra
+                atualizarBarraProgresso();
             } else {
                 alert("Erro: " + data.erro);
             }
@@ -491,6 +490,45 @@ window.estudarAssunto = async function(btn) {
     
     return false;
 };
+
+// Função para atualizar apenas a barra de progresso (sem recarregar tudo)
+async function atualizarBarraProgresso() {
+    const usuario = JSON.parse(localStorage.getItem('usuario'));
+    const res = await fetch(`${API_URL}/api/plano-estudos/${usuario.id}`, {
+        headers: { 'x-user-email': usuario.email }
+    });
+    const data = await res.json();
+    
+    if (data.sucesso) {
+        // Atualizar cada barra de progresso individualmente
+        for (const disc of data.disciplinas) {
+            let totalQuestoesDisc = 0;
+            let totalAcertosDisc = 0;
+            for (const assunto of disc.assuntos) {
+                totalQuestoesDisc += assunto.total_questoes || 0;
+                totalAcertosDisc += Math.round((assunto.progresso || 0) * (assunto.total_questoes || 0) / 100);
+            }
+            const progressoGeralDisc = totalQuestoesDisc > 0 ? Math.round((totalAcertosDisc / totalQuestoesDisc) * 100) : 0;
+            
+            // Encontrar a barra de progresso da disciplina
+            const materias = document.querySelectorAll('.materia');
+            for (const materia of materias) {
+                const headerDiv = materia.querySelector('.materia-header div');
+                if (headerDiv && headerDiv.innerText.includes(disc.nome)) {
+                    const barraFill = materia.querySelector('.progress-bar-fill');
+                    if (barraFill) {
+                        barraFill.style.width = `${progressoGeralDisc}%`;
+                    }
+                    const span = headerDiv.querySelector('span');
+                    if (span) {
+                        span.innerText = `${progressoGeralDisc}%`;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+}
 
 
 
