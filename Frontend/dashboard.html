@@ -342,19 +342,19 @@
 
 
         // ==================== INICIALIZAÇÃO ====================
+        // ==================== INICIALIZAÇÃO ====================
         async function init() {
-
-
             if (!checkAuth()) return;
             carregarPlano();
             await carregarQuestoes();
             await carregarRespostas();
-            renderizarMaterias();
+
+            await carregarPlanoEstudos();  // ← NOVO PLANO DE ESTUDOS
+
             preencherFiltros();
             renderizarQuestoes();
             carregarEstatisticas();
             atualizarStats();
-
 
             // Se for admin, carrega dados do painel
             if (usuario.email === 'rafaelscardua@gmail.com') {
@@ -362,9 +362,16 @@
             }
 
             // Event listeners
-
-            document.getElementById("expandirTudo")?.addEventListener("click", () => { dadosEstudo.materias.forEach(m => m.expandido = true); salvarPlano(); renderizarMaterias(); });
-            document.getElementById("recolherTudo")?.addEventListener("click", () => { dadosEstudo.materias.forEach(m => m.expandido = false); salvarPlano(); renderizarMaterias(); });
+            document.getElementById("expandirTudo")?.addEventListener("click", () => {
+                dadosEstudo.materias.forEach(m => m.expandido = true);
+                salvarPlano();
+                renderizarMaterias();
+            });
+            document.getElementById("recolherTudo")?.addEventListener("click", () => {
+                dadosEstudo.materias.forEach(m => m.expandido = false);
+                salvarPlano();
+                renderizarMaterias();
+            });
             document.getElementById("filtrarQuestoesBtn")?.addEventListener("click", renderizarQuestoes);
             document.getElementById("salvarNovaQuestao")?.addEventListener("click", adicionarNovaQuestao);
             document.getElementById("detectarQuestoesBtn")?.addEventListener("click", detectarQuestoes);
@@ -412,10 +419,11 @@
                     }
                 });
             });
-        }  // ← FECHA A FUNÇÃO init()
+        }
 
         init();
         resetarTimer();
+
     </script>
     </script>
 
