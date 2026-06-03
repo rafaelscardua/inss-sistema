@@ -84,19 +84,7 @@ function renderizarPlanoEstudos() {
         });
     });
 
-    // ==================== EVENTOS DOS CHECKBOXES ====================
-    document.querySelectorAll('.check-estudado').forEach(checkbox => {
-        checkbox.removeEventListener('click', checkbox._listener);
-
-        checkbox._listener = function (e) {
-            e.stopPropagation();
-            e.preventDefault();
-            console.log("Checkbox clicado!", this.checked);
-            toggleEstudado(this);
-        };
-
-        checkbox.addEventListener('click', checkbox._listener);
-    });
+    
 
     // ==================== EVENTOS DOS SELECTS DE STATUS ====================
     document.querySelectorAll('.status-select').forEach(select => {
