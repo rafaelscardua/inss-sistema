@@ -22,6 +22,67 @@ async function carregarPlanoEstudos() {
     }
 }
 
+function renderizarPlanoEstudos() {
+    const container = document.getElementById("materiasContainer");
+    if(!container) return;
+    container.innerHTML = "";
+    
+    if (disciplinasPlano.length === 0) {
+        container.innerHTML = "<p>Nenhuma disciplina cadastrada. Use o ADMIN para criar disciplinas.</p>";
+        return;
+    }
+    
+    for (const disc of disciplinasPlano) {
+        let totalQuestoesDisc = 0;
+        let totalAcertosDisc = 0;
+        for (const assunto of disc.assuntos) {
+            totalQuestoesDisc += assunto.total_questoes || 0;
+            totalAcertosDisc += Math.round((assunto.progresso || 0) * (assunto.total_questoes || 0) / 100);
+        }
+        const progressoGeralDisc = totalQuestoesDisc > 0 ? Math.round((totalAcertosDisc / totalQuestoesDisc) * 100) : 0;
+        
+        const div = document.createElement("div"); 
+        div.className = "materia";
+        div.innerHTML = `
+            <div class="materia-header">
+                <div><b>📚 ${disc.nome}</b> <span style="font-size:0.8em;">${progressoGeralDisc}%</span></div>
+                <div class="progress-bar-container"><div class="progress-bar-fill" style="width:${progressoGeralDisc}%"></div></div>
+            </div>
+            <div class="materia-content collapsed">
+                ${disc.assuntos.map(assunto => `
+                    <div class="topico">
+                        <div class="topico-header">
+                            <span class="topico-nome">📌 ${assunto.nome}</span>
+                            <span style="font-size:0.8em; color:#666;">${assunto.progresso || 0}% (${Math.round((assunto.progresso || 0) * (assunto.total_questoes || 0) / 100)}/${assunto.total_questoes || 0})</span>
+                        </div>
+                        <div id="anexos-${disc.id}-${assunto.id}" class="anexos-container"></div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        container.appendChild(div);
+    }
+    
+    // Adicionar evento de clique para os cabeçalhos
+    document.querySelectorAll('.materia-header').forEach(header => {
+        header.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const content = header.nextElementSibling;
+            content.classList.toggle('collapsed');
+        });
+    });
+    
+    // Carregar anexos para cada assunto
+    for (const disc of disciplinasPlano) {
+        for (const assunto of disc.assuntos) {
+            const anexoContainer = document.getElementById(`anexos-${disc.id}-${assunto.id}`);
+            if (anexoContainer && typeof carregarAnexos === 'function') {
+                carregarAnexos(disc.nome, assunto.nome, anexoContainer);
+            }
+        }
+    }
+}
+
 // Atualizar status do assunto
 async function atualizarStatusAssunto(assuntoId, novoStatus) {
     try {
@@ -242,3 +303,6 @@ async function excluirAnexo(id, buttonElement) {
         alert("❌ Erro ao excluir anexo");
     }
 }
+
+// ==================== RENDERIZAR PLANO DE ESTUDOS ====================
+
