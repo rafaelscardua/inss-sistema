@@ -508,6 +508,156 @@ app.put('/api/questoes/:id', async (req, res) => {
         res.status(500).json({ sucesso: false, erro: 'Erro ao atualizar questão' });
     }
 });
+
+// ==================== ROTAS DE DISCIPLINAS E ASSUNTOS ====================
+
+// Listar todas as disciplinas com seus assuntos
+app.get('/api/admin/disciplinas', async (req, res) => {
+    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    const userEmail = req.headers['x-user-email'];
+    
+    if (userEmail !== adminEmail) {
+        return res.status(403).json({ erro: 'Acesso negado' });
+    }
+    
+    try {
+        const disciplinas = await pool.query(
+            'SELECT * FROM disciplinas ORDER BY ordem, id'
+        );
+        
+        for (const d of disciplinas.rows) {
+            const assuntos = await pool.query(
+                'SELECT * FROM assuntos WHERE disciplina_id = $1 ORDER BY ordem, id',
+                [d.id]
+            );
+            d.assuntos = assuntos.rows;
+        }
+        
+        res.json({ sucesso: true, disciplinas: disciplinas.rows });
+    } catch (error) {
+        console.error('Erro ao buscar disciplinas:', error);
+        res.status(500).json({ erro: 'Erro ao buscar disciplinas' });
+    }
+});
+
+// Criar disciplina
+app.post('/api/admin/disciplinas', async (req, res) => {
+    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    const userEmail = req.headers['x-user-email'];
+    
+    if (userEmail !== adminEmail) {
+        return res.status(403).json({ erro: 'Acesso negado' });
+    }
+    
+    const { nome } = req.body;
+    try {
+        const result = await pool.query(
+            'INSERT INTO disciplinas (nome) VALUES ($1) RETURNING *',
+            [nome]
+        );
+        res.json({ sucesso: true, disciplina: result.rows[0] });
+    } catch (error) {
+        res.status(500).json({ erro: 'Erro ao criar disciplina' });
+    }
+});
+
+// Editar disciplina
+app.put('/api/admin/disciplinas/:id', async (req, res) => {
+    const { id } = req.params;
+    const { nome } = req.body;
+    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    const userEmail = req.headers['x-user-email'];
+    
+    if (userEmail !== adminEmail) {
+        return res.status(403).json({ erro: 'Acesso negado' });
+    }
+    
+    try {
+        await pool.query('UPDATE disciplinas SET nome = $1 WHERE id = $2', [nome, id]);
+        res.json({ sucesso: true });
+    } catch (error) {
+        res.status(500).json({ erro: 'Erro ao editar disciplina' });
+    }
+});
+
+// Excluir disciplina
+app.delete('/api/admin/disciplinas/:id', async (req, res) => {
+    const { id } = req.params;
+    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    const userEmail = req.headers['x-user-email'];
+    
+    if (userEmail !== adminEmail) {
+        return res.status(403).json({ erro: 'Acesso negado' });
+    }
+    
+    try {
+        await pool.query('DELETE FROM disciplinas WHERE id = $1', [id]);
+        res.json({ sucesso: true });
+    } catch (error) {
+        res.status(500).json({ erro: 'Erro ao excluir disciplina' });
+    }
+});
+
+// Criar assunto
+app.post('/api/admin/assuntos', async (req, res) => {
+    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    const userEmail = req.headers['x-user-email'];
+    
+    if (userEmail !== adminEmail) {
+        return res.status(403).json({ erro: 'Acesso negado' });
+    }
+    
+    const { disciplina_id, nome } = req.body;
+    try {
+        const result = await pool.query(
+            'INSERT INTO assuntos (disciplina_id, nome) VALUES ($1, $2) RETURNING *',
+            [disciplina_id, nome]
+        );
+        res.json({ sucesso: true, assunto: result.rows[0] });
+    } catch (error) {
+        res.status(500).json({ erro: 'Erro ao criar assunto' });
+    }
+});
+
+// Editar assunto
+app.put('/api/admin/assuntos/:id', async (req, res) => {
+    const { id } = req.params;
+    const { nome } = req.body;
+    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    const userEmail = req.headers['x-user-email'];
+    
+    if (userEmail !== adminEmail) {
+        return res.status(403).json({ erro: 'Acesso negado' });
+    }
+    
+    try {
+        await pool.query('UPDATE assuntos SET nome = $1 WHERE id = $2', [nome, id]);
+        res.json({ sucesso: true });
+    } catch (error) {
+        res.status(500).json({ erro: 'Erro ao editar assunto' });
+    }
+});
+
+// Excluir assunto
+app.delete('/api/admin/assuntos/:id', async (req, res) => {
+    const { id } = req.params;
+    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    const userEmail = req.headers['x-user-email'];
+    
+    if (userEmail !== adminEmail) {
+        return res.status(403).json({ erro: 'Acesso negado' });
+    }
+    
+    try {
+        await pool.query('DELETE FROM assuntos WHERE id = $1', [id]);
+        res.json({ sucesso: true });
+    } catch (error) {
+        res.status(500).json({ erro: 'Erro ao excluir assunto' });
+    }
+});
+
+
+
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
