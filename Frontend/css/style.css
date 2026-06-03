@@ -631,5 +631,21 @@ body.dark-mode .topico {
     pointer-events: auto;
 }
 
+/* Isolar os botões de estudo para não propagar clique */
+.btn-estudar, .status-select {
+    position: relative;
+    z-index: 100;
+    pointer-events: auto;
+}
+
+.topico-header {
+    position: relative;
+}
+
+/* Garantir que o clique no botão não afete o cabeçalho */
+.btn-estudar {
+    pointer-events: auto !important;
+}
+
 
 </style>

@@ -7,12 +7,12 @@ async function carregarPlanoEstudos() {
         const usuarioSalvo = localStorage.getItem('usuario');
         if (!usuarioSalvo) return;
         const usuario = JSON.parse(usuarioSalvo);
-        
+
         const res = await fetch(`${API_URL}/api/plano-estudos/${usuario.id}`, {
             headers: { 'x-user-email': usuario.email }
         });
         const data = await res.json();
-        
+
         if (data.sucesso) {
             disciplinasPlano = data.disciplinas;
             renderizarPlanoEstudos();
@@ -24,14 +24,14 @@ async function carregarPlanoEstudos() {
 
 function renderizarPlanoEstudos() {
     const container = document.getElementById("materiasContainer");
-    if(!container) return;
+    if (!container) return;
     container.innerHTML = "";
-    
+
     if (disciplinasPlano.length === 0) {
         container.innerHTML = "<p>Nenhuma disciplina cadastrada. Use o ADMIN para criar disciplinas.</p>";
         return;
     }
-    
+
     for (const disc of disciplinasPlano) {
         let totalQuestoesDisc = 0;
         let totalAcertosDisc = 0;
@@ -40,8 +40,8 @@ function renderizarPlanoEstudos() {
             totalAcertosDisc += Math.round((assunto.progresso || 0) * (assunto.total_questoes || 0) / 100);
         }
         const progressoGeralDisc = totalQuestoesDisc > 0 ? Math.round((totalAcertosDisc / totalQuestoesDisc) * 100) : 0;
-        
-        const div = document.createElement("div"); 
+
+        const div = document.createElement("div");
         div.className = "materia";
         div.innerHTML = `
             <div class="materia-header">
@@ -50,9 +50,9 @@ function renderizarPlanoEstudos() {
             </div>
             <div class="materia-content collapsed">
                 ${disc.assuntos.map(assunto => {
-                    const respondidas = Math.round((assunto.progresso || 0) * (assunto.total_questoes || 0) / 100);
-                    const total = assunto.total_questoes || 0;
-                    return `
+            const respondidas = Math.round((assunto.progresso || 0) * (assunto.total_questoes || 0) / 100);
+            const total = assunto.total_questoes || 0;
+            return `
                         <div class="topico" data-assunto-id="${assunto.id}">
                             <div class="topico-header">
                                 <span class="topico-nome">📌 ${assunto.nome}</span>
@@ -63,19 +63,19 @@ function renderizarPlanoEstudos() {
                                     <option value="revisando" ${assunto.status === 'revisando' ? 'selected' : ''}>🟠 Revisando</option>
                                     <option value="dominado" ${assunto.status === 'dominado' ? 'selected' : ''}>🟢 Dominado</option>
                                 </select>
-                                <button class="btn-estudar" data-id="${assunto.id}" data-respondidas="${respondidas}" data-total="${total}" ${respondidas >= total ? 'disabled style="opacity:0.5;"' : ''}>
+                               <button class="btn-estudar" data-id="${assunto.id}" data-respondidas="${respondidas}" data-total="${total}" onclick="event.stopPropagation(); estudarAssunto(this); return false;" ${respondidas >= total ? 'disabled style="opacity:0.5;"' : ''}>
                                     ✅ +1 Estudada
                                 </button>
                             </div>
                             <div id="anexos-${disc.id}-${assunto.id}" class="anexos-container"></div>
                         </div>
                     `;
-                }).join('')}
+        }).join('')}
             </div>
         `;
         container.appendChild(div);
     }
-    
+
     // Adicionar evento de clique para os cabeçalhos
     document.querySelectorAll('.materia-header').forEach(header => {
         header.addEventListener('click', (e) => {
@@ -84,38 +84,38 @@ function renderizarPlanoEstudos() {
             content.classList.toggle('collapsed');
         });
     });
-    
+
     // ==================== EVENTOS DOS BOTÕES DE ESTUDAR ====================
     document.querySelectorAll('.btn-estudar').forEach(btn => {
         // Remover eventos antigos para evitar duplicação
         btn.removeEventListener('click', btn._listener);
-        
-        btn._listener = async function(e) {
+
+        btn._listener = async function (e) {
             e.preventDefault();
             e.stopPropagation();
-            
+
             console.log("✅ Botão clicado!");
-            
+
             const assuntoId = parseInt(btn.dataset.id);
             let respondidas = parseInt(btn.dataset.respondidas);
             const total = parseInt(btn.dataset.total);
-            
+
             if (respondidas < total) {
                 respondidas++;
                 const novoProgresso = Math.round((respondidas / total) * 100);
-                
+
                 // Atualizar visualmente
                 const progressoText = document.getElementById(`progresso-${assuntoId}`);
                 if (progressoText) {
                     progressoText.innerText = `${novoProgresso}% (${respondidas}/${total})`;
                 }
                 btn.dataset.respondidas = respondidas;
-                
+
                 if (respondidas >= total) {
                     btn.disabled = true;
                     btn.style.opacity = '0.5';
                 }
-                
+
                 // Salvar no banco
                 const usuario = JSON.parse(localStorage.getItem('usuario'));
                 const res = await fetch(`/api/assuntos/${assuntoId}/progresso`, {
@@ -126,7 +126,7 @@ function renderizarPlanoEstudos() {
                     },
                     body: JSON.stringify({ progresso: novoProgresso })
                 });
-                
+
                 const data = await res.json();
                 if (data.sucesso) {
                     // Recarregar para atualizar barra de progresso da disciplina
@@ -138,19 +138,19 @@ function renderizarPlanoEstudos() {
                 alert("🎉 Você já estudou todas as questões deste assunto!");
             }
         };
-        
+
         btn.addEventListener('click', btn._listener);
     });
-    
+
     // ==================== EVENTOS DOS SELECTS DE STATUS ====================
     document.querySelectorAll('.status-select').forEach(select => {
         select.removeEventListener('change', select._listener);
-        
-        select._listener = async function(e) {
+
+        select._listener = async function (e) {
             e.stopPropagation();
             const assuntoId = parseInt(select.dataset.id);
             const novoStatus = select.value;
-            
+
             const usuario = JSON.parse(localStorage.getItem('usuario'));
             const res = await fetch(`/api/assuntos/${assuntoId}/status`, {
                 method: 'PUT',
@@ -160,16 +160,16 @@ function renderizarPlanoEstudos() {
                 },
                 body: JSON.stringify({ status: novoStatus })
             });
-            
+
             const data = await res.json();
             if (data.sucesso) {
                 await carregarPlanoEstudos();
             }
         };
-        
+
         select.addEventListener('change', select._listener);
     });
-    
+
     // Carregar anexos para cada assunto
     for (const disc of disciplinasPlano) {
         for (const assunto of disc.assuntos) {
@@ -186,7 +186,7 @@ async function atualizarStatusAssunto(assuntoId, novoStatus) {
     try {
         const usuarioSalvo = localStorage.getItem('usuario');
         const usuario = JSON.parse(usuarioSalvo);
-        
+
         const res = await fetch(`/api/assuntos/${assuntoId}/status`, {
             method: 'PUT',
             headers: {
@@ -212,9 +212,9 @@ async function incrementarProgressoAssunto(assuntoId, novoValor, total) {
     try {
         const usuarioSalvo = localStorage.getItem('usuario');
         const usuario = JSON.parse(usuarioSalvo);
-        
+
         const novoProgresso = Math.round((novoValor / total) * 100);
-        
+
         const res = await fetch(`/api/assuntos/${assuntoId}/progresso`, {
             method: 'PUT',
             headers: {
@@ -242,17 +242,17 @@ async function carregarAnexos(materia, topico, elementoContainer) {
         const usuarioSalvo = localStorage.getItem('usuario');
         if (!usuarioSalvo) return;
         const usuario = JSON.parse(usuarioSalvo);
-        
+
         const res = await fetch(`/api/anexos/${encodeURIComponent(materia)}/${encodeURIComponent(topico)}`, {
             headers: { 'x-user-email': usuario.email }
         });
         const data = await res.json();
-        
+
         const isAdmin = usuario.email === 'rafaelscardua@gmail.com';
-        
+
         let html = '<div style="margin-top: 10px; margin-left: 20px; padding: 10px; background: #f0f0f0; border-radius: 8px;">';
         html += '<strong>📎 Anexos:</strong><br>';
-        
+
         if (data.sucesso && data.anexos && data.anexos.length > 0) {
             for (const anexo of data.anexos) {
                 const tamanho = formatarTamanho(anexo.tamanho_bytes);
@@ -269,7 +269,7 @@ async function carregarAnexos(materia, topico, elementoContainer) {
         } else {
             html += '<p style="margin: 5px 0;">Nenhum anexo.</p>';
         }
-        
+
         if (isAdmin) {
             html += `
                 <div style="margin-top: 10px;">
@@ -278,7 +278,7 @@ async function carregarAnexos(materia, topico, elementoContainer) {
             `;
         }
         html += '</div>';
-        
+
         if (elementoContainer) {
             elementoContainer.innerHTML = html;
         }
@@ -300,26 +300,26 @@ async function uploadAnexo(materia, topico) {
     const usuarioSalvo = localStorage.getItem('usuario');
     if (!usuarioSalvo) return;
     const usuario = JSON.parse(usuarioSalvo);
-    
+
     if (usuario.email !== 'rafaelscardua@gmail.com') {
         alert("Apenas o administrador pode adicionar anexos.");
         return;
     }
-    
+
     const input = document.createElement('input');
     input.type = 'file';
     input.onchange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        
+
         const reader = new FileReader();
         reader.onload = async (event) => {
             const base64 = event.target.result;
-            
+
             try {
                 const res = await fetch('/api/anexos/upload', {
                     method: 'POST',
-                    headers: { 
+                    headers: {
                         'Content-Type': 'application/json',
                         'x-user-email': usuario.email
                     },
@@ -352,12 +352,12 @@ async function baixarAnexo(id) {
     try {
         const usuarioSalvo = localStorage.getItem('usuario');
         const usuario = JSON.parse(usuarioSalvo);
-        
+
         const res = await fetch(`/api/anexos/download/${id}`, {
             headers: { 'x-user-email': usuario.email }
         });
         const data = await res.json();
-        
+
         if (data.sucesso && data.arquivo_base64) {
             const link = document.createElement('a');
             link.href = data.arquivo_base64;
@@ -374,16 +374,16 @@ async function baixarAnexo(id) {
 
 async function excluirAnexo(id, buttonElement) {
     if (!confirm("🗑️ Tem certeza que deseja excluir este anexo permanentemente?")) return;
-    
+
     const usuarioSalvo = localStorage.getItem('usuario');
     if (!usuarioSalvo) return;
     const usuario = JSON.parse(usuarioSalvo);
-    
+
     if (usuario.email !== 'rafaelscardua@gmail.com') {
         alert("Apenas o administrador pode excluir anexos.");
         return;
     }
-    
+
     try {
         const res = await fetch(`/api/anexos/${id}`, {
             method: 'DELETE',
