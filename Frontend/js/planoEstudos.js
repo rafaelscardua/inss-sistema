@@ -150,30 +150,65 @@ async function uploadAnexo(materia, topico) {
         const file = e.target.files[0];
         if (!file) return;
         
-        const formData = new FormData();
-        formData.append('arquivo', file);
-        formData.append('materia', materia);
-        formData.append('topico', topico);
-        
-        try {
-            const res = await fetch('/api/anexos/upload', {
-                method: 'POST',
-                headers: { 'x-user-email': usuario.email },
-                body: formData
-            });
-            const data = await res.json();
-            if (data.sucesso) {
-                alert(`✅ Anexo "${file.name}" adicionado com sucesso!`);
-                // Recarregar a página para mostrar o novo anexo
-                location.reload();
-            } else {
-                alert(`❌ Erro: ${data.erro}`);
+        // Converter para base64
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            const base64 = event.target.result;
+            
+            try {
+                const res = await fetch('/api/anexos/upload', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'x-user-email': usuario.email
+                    },
+                    body: JSON.stringify({
+                        materia: materia,
+                        topico: topico,
+                        nome_original: file.name,
+                        tamanho_bytes: file.size,
+                        arquivo_base64: base64
+                    })
+                });
+                const data = await res.json();
+                if (data.sucesso) {
+                    alert(`✅ Anexo "${file.name}" adicionado!`);
+                    location.reload();
+                } else {
+                    alert(`❌ Erro: ${data.erro}`);
+                }
+            } catch (err) {
+                console.error(err);
+                alert("❌ Erro ao fazer upload");
             }
-        } catch (err) {
-            alert("❌ Erro ao fazer upload");
-        }
+        };
+        reader.readAsDataURL(file);
     };
     input.click();
+}
+
+async function baixarAnexo(id) {
+    try {
+        const usuarioSalvo = localStorage.getItem('usuario');
+        const usuario = JSON.parse(usuarioSalvo);
+        
+        const res = await fetch(`/api/anexos/download/${id}`, {
+            headers: { 'x-user-email': usuario.email }
+        });
+        const data = await res.json();
+        
+        if (data.sucesso && data.arquivo_base64) {
+            const link = document.createElement('a');
+            link.href = data.arquivo_base64;
+            link.download = data.nome_original;
+            link.click();
+        } else {
+            alert("❌ Erro ao baixar arquivo");
+        }
+    } catch (err) {
+        console.error(err);
+        alert("❌ Erro ao baixar");
+    }
 }
 
 async function baixarAnexo(id) {

@@ -20,7 +20,7 @@ async function initDatabase() {
   const client = await pool.connect();
   try {
     console.log('Conectando ao banco...');
-    
+
     await client.query(`
       CREATE TABLE IF NOT EXISTS usuarios (
         id SERIAL PRIMARY KEY,
@@ -67,8 +67,8 @@ async function initDatabase() {
       )
     `);
 
-   // Tabela de anexos
-        await client.query(`
+    // Tabela de anexos
+    await client.query(`
             CREATE TABLE IF NOT EXISTS anexos_topico (
                 id SERIAL PRIMARY KEY,
                 materia VARCHAR(100) NOT NULL,
@@ -79,13 +79,17 @@ async function initDatabase() {
                 data_upload TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+    // ADICIONE ESTA LINHA AQUI (depois de criar a tabela)
+    await client.query(`
+    ALTER TABLE anexos_topico ADD COLUMN IF NOT EXISTS arquivo_base64 TEXT
+`);
 
-        console.log('✅ Banco de dados inicializado com sucesso!');
-    } catch (error) {
-        console.error('❌ Erro ao inicializar banco:', error);
-    } finally {
-        client.release();
-    }
+    console.log('✅ Banco de dados inicializado com sucesso!');
+  } catch (error) {
+    console.error('❌ Erro ao inicializar banco:', error);
+  } finally {
+    client.release();
+  }
 }
 
 module.exports = { pool, initDatabase };
