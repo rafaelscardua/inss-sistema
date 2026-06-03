@@ -330,16 +330,17 @@
     }
     
     // Atualizar select de status
-    const selectStatus = checkbox.closest('.topico-header').querySelector('.status-select');
+    // Atualizar select de status
+const topicoHeader = checkbox.closest('.topico-header');
+if (topicoHeader) {
+    const selectStatus = topicoHeader.querySelector('.status-select');
     if (selectStatus) {
-        if (checkbox.checked) {
-            selectStatus.value = 'dominado';
-        } else {
-            selectStatus.value = 'nao_iniciado';
-        }
+        const novoStatus = checkbox.checked ? 'dominado' : 'nao_iniciado';
+        selectStatus.value = novoStatus;
         // Disparar evento change para salvar no banco
         selectStatus.dispatchEvent(new Event('change'));
     }
+}
     
     checkbox.setAttribute('data-respondidas', respondidas);
     
