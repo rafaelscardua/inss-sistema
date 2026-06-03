@@ -139,7 +139,59 @@ app.post('/api/questoes', async (req, res) => {
   }
 });
 
-// ==================== ROTAS DE ANEXOS ====================
+// ==================== ROTAS DE PROGRESSO DOS ASSUNTOS ====================
+
+// Atualizar progresso do assunto
+app.put('/api/assuntos/:id/progresso', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { progresso } = req.body;
+        const userEmail = req.headers['x-user-email'];
+        
+        console.log(`📊 Atualizando progresso do assunto ${id} para ${progresso}%`);
+        
+        // Verificar autenticação
+        if (!userEmail) {
+            return res.status(401).json({ erro: 'Email não fornecido' });
+        }
+        
+        // Atualizar progresso
+        await pool.query('UPDATE assuntos SET progresso = $1 WHERE id = $2', [progresso, id]);
+        
+        res.json({ sucesso: true, progresso });
+        
+    } catch (error) {
+        console.error('Erro ao atualizar progresso:', error);
+        res.status(500).json({ erro: error.message });
+    }
+});
+
+// Atualizar status do assunto
+app.put('/api/assuntos/:id/status', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        const userEmail = req.headers['x-user-email'];
+        
+        console.log(`📌 Atualizando status do assunto ${id} para ${status}`);
+        
+        if (!userEmail) {
+            return res.status(401).json({ erro: 'Email não fornecido' });
+        }
+        
+        await pool.query('UPDATE assuntos SET status = $1 WHERE id = $2', [status, id]);
+        
+        res.json({ sucesso: true, status });
+        
+    } catch (error) {
+        console.error('Erro ao atualizar status:', error);
+        res.status(500).json({ erro: error.message });
+    }
+});
+
+
+
+
 
 // ==================== ROTAS DE ANEXOS ====================
 
