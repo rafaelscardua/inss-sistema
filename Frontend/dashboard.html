@@ -647,6 +647,7 @@
         let disciplinasData = [];
 
         async function carregarDisciplinas() {
+            console.log("Carregando disciplinas...");
             try {
                 const usuarioSalvo = localStorage.getItem('usuario');
                 const usuario = JSON.parse(usuarioSalvo);
@@ -893,11 +894,12 @@
             <button onclick="this.closest('#modal-disciplinas').remove()" style="background: #e74c3c; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer;">✕</button>
         </div>
         <div id="admin-disciplinas-container" style="max-height: 60vh; overflow-y: auto;">
-            Carregando...
+            <p>Carregando disciplinas...</p>
         </div>
     `;
             document.body.appendChild(modal);
 
+            // Carregar disciplinas
             carregarDisciplinas();
         }
 
@@ -905,10 +907,6 @@
 
 
     </script>
-
-
-
-
 </body>
 
 </html>
