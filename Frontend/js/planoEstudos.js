@@ -50,9 +50,9 @@ function renderizarPlanoEstudos() {
             </div>
             <div class="materia-content collapsed">
                 ${disc.assuntos.map(assunto => {
-                    const respondidas = Math.round((assunto.progresso || 0) * (assunto.total_questoes || 0) / 100);
-                    const total = assunto.total_questoes || 0;
-                    return `
+            const respondidas = Math.round((assunto.progresso || 0) * (assunto.total_questoes || 0) / 100);
+            const total = assunto.total_questoes || 0;
+            return `
                         <div class="topico" data-assunto-id="${assunto.id}">
                             <div class="topico-header">
                                 <span class="topico-nome">📌 ${assunto.nome}</span>
@@ -64,14 +64,14 @@ function renderizarPlanoEstudos() {
                                     <option value="dominado" ${assunto.status === 'dominado' ? 'selected' : ''}>🟢 Dominado</option>
                                 </select>
                                 <label class="checkbox-estudado">
-                                    <input type="checkbox" class="check-estudado" data-id="${assunto.id}" data-respondidas="${respondidas}" data-total="${total}" ${respondidas >= total ? 'checked' : ''}>
-                                    ✅ Estudado
-                                </label>
+     <input type="checkbox" class="check-estudado" data-id="${assunto.id}" data-respondidas="${respondidas}" data-total="${total}" onclick="toggleEstudado(this); return false;" ${respondidas >= total ? 'checked' : ''}>
+    ✅ Estudado
+</label>   
                             </div>
                             <div id="anexos-${disc.id}-${assunto.id}" class="anexos-container"></div>
                         </div>
                     `;
-                }).join('')}
+        }).join('')}
             </div>
         `;
         container.appendChild(div);
@@ -89,14 +89,14 @@ function renderizarPlanoEstudos() {
     // ==================== EVENTOS DOS CHECKBOXES ====================
     document.querySelectorAll('.check-estudado').forEach(checkbox => {
         checkbox.removeEventListener('click', checkbox._listener);
-        
-        checkbox._listener = function(e) {
+
+        checkbox._listener = function (e) {
             e.stopPropagation();
             e.preventDefault();
             console.log("Checkbox clicado!", this.checked);
             toggleEstudado(this);
         };
-        
+
         checkbox.addEventListener('click', checkbox._listener);
     });
 
@@ -104,7 +104,7 @@ function renderizarPlanoEstudos() {
     document.querySelectorAll('.status-select').forEach(select => {
         select.removeEventListener('change', select._listener);
 
-        select._listener = async function(e) {
+        select._listener = async function (e) {
             e.stopPropagation();
             const assuntoId = parseInt(select.dataset.id);
             const novoStatus = select.value;
