@@ -513,126 +513,401 @@
     </script>
 
     <script>
-function popularSelectsImportacao() {
-    // Aguardar as questões carregarem
-    setTimeout(() => {
-        if(typeof questoes !== 'undefined' && questoes.length > 0) {
-            // Popular matérias
-            const materiaSelect = document.getElementById("importMateriaSelect");
-            const materias = [...new Set(questoes.map(q => q.materia))];
-            
-            materias.forEach(m => {
-                // Verificar se a opção já existe
-                let existe = false;
-                for(let i = 0; i < materiaSelect.options.length; i++) {
-                    if(materiaSelect.options[i].value === m) {
-                        existe = true;
-                        break;
-                    }
+        function popularSelectsImportacao() {
+            // Aguardar as questões carregarem
+            setTimeout(() => {
+                if (typeof questoes !== 'undefined' && questoes.length > 0) {
+                    // Popular matérias
+                    const materiaSelect = document.getElementById("importMateriaSelect");
+                    const materias = [...new Set(questoes.map(q => q.materia))];
+
+                    materias.forEach(m => {
+                        // Verificar se a opção já existe
+                        let existe = false;
+                        for (let i = 0; i < materiaSelect.options.length; i++) {
+                            if (materiaSelect.options[i].value === m) {
+                                existe = true;
+                                break;
+                            }
+                        }
+                        if (!existe && m) {
+                            const option = document.createElement("option");
+                            option.value = m;
+                            option.textContent = m;
+                            materiaSelect.appendChild(option);
+                        }
+                    });
+
+                    // Popular assuntos
+                    const assuntoSelect = document.getElementById("importAssuntoSelect");
+                    const assuntos = [...new Set(questoes.map(q => q.assunto))];
+
+                    assuntos.forEach(a => {
+                        let existe = false;
+                        for (let i = 0; i < assuntoSelect.options.length; i++) {
+                            if (assuntoSelect.options[i].value === a) {
+                                existe = true;
+                                break;
+                            }
+                        }
+                        if (!existe && a) {
+                            const option = document.createElement("option");
+                            option.value = a;
+                            option.textContent = a;
+                            assuntoSelect.appendChild(option);
+                        }
+                    });
                 }
-                if(!existe && m) {
-                    const option = document.createElement("option");
-                    option.value = m;
-                    option.textContent = m;
-                    materiaSelect.appendChild(option);
-                }
-            });
-            
-            // Popular assuntos
-            const assuntoSelect = document.getElementById("importAssuntoSelect");
-            const assuntos = [...new Set(questoes.map(q => q.assunto))];
-            
-            assuntos.forEach(a => {
-                let existe = false;
-                for(let i = 0; i < assuntoSelect.options.length; i++) {
-                    if(assuntoSelect.options[i].value === a) {
-                        existe = true;
-                        break;
-                    }
-                }
-                if(!existe && a) {
-                    const option = document.createElement("option");
-                    option.value = a;
-                    option.textContent = a;
-                    assuntoSelect.appendChild(option);
-                }
-            });
+            }, 500);
         }
-    }, 500);
-}
 
-// Chamar a função quando a página carregar
-document.addEventListener('DOMContentLoaded', function() {
-    popularSelectsImportacao();
-});
+        // Chamar a função quando a página carregar
+        document.addEventListener('DOMContentLoaded', function () {
+            popularSelectsImportacao();
+        });
 
-// Também chamar quando o usuário mudar de aba (por via das dúvidas)
-document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        setTimeout(popularSelectsImportacao, 300);
-    });
-});
-</script>
+        // Também chamar quando o usuário mudar de aba (por via das dúvidas)
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                setTimeout(popularSelectsImportacao, 300);
+            });
+        });
+    </script>
 
-<script>
-    // ADMIN FLUTUANTE
-    setTimeout(() => {
-        const usuarioSalvo = localStorage.getItem('usuario');
-        if (!usuarioSalvo) return;
-        const usuario = JSON.parse(usuarioSalvo);
-        if (usuario.email !== 'rafaelscardua@gmail.com') return;
-        
-        // Remover botão antigo se existir
-        const btnAntigo = document.getElementById("admin-float-btn");
-        if(btnAntigo) btnAntigo.remove();
-        
-        const btn = document.createElement("button");
-        btn.id = "admin-float-btn";
-        btn.innerHTML = "👑 ADMIN";
-        btn.style.cssText = "position:fixed; bottom:20px; right:20px; background:#27ae60; color:white; border:none; padding:12px 20px; border-radius:30px; cursor:pointer; z-index:99999; font-weight:bold; box-shadow:0 4px 15px rgba(0,0,0,0.2);";
-        document.body.appendChild(btn);
-        
-        btn.onclick = async () => {
-            const modalExistente = document.getElementById("admin-flutuante-final");
-            if(modalExistente) modalExistente.remove();
-            
-            const modal = document.createElement("div");
-            modal.id = "admin-flutuante-final";
-            modal.style.cssText = "position:fixed; bottom:80px; right:20px; width:400px; background:white; border-radius:15px; z-index:99999; padding:15px; border:2px solid #27ae60; max-height:70vh; overflow-y:auto; box-shadow:0 5px 20px rgba(0,0,0,0.3);";
-            modal.innerHTML = `
+    <script>
+        // ADMIN FLUTUANTE
+        setTimeout(() => {
+            const usuarioSalvo = localStorage.getItem('usuario');
+            if (!usuarioSalvo) return;
+            const usuario = JSON.parse(usuarioSalvo);
+            if (usuario.email !== 'rafaelscardua@gmail.com') return;
+
+            // Remover botão antigo se existir
+            const btnAntigo = document.getElementById("admin-float-btn");
+            if (btnAntigo) btnAntigo.remove();
+
+            const btn = document.createElement("button");
+            btn.id = "admin-float-btn";
+            btn.innerHTML = "👑 ADMIN";
+            btn.style.cssText = "position:fixed; bottom:20px; right:20px; background:#27ae60; color:white; border:none; padding:12px 20px; border-radius:30px; cursor:pointer; z-index:99999; font-weight:bold; box-shadow:0 4px 15px rgba(0,0,0,0.2);";
+            document.body.appendChild(btn);
+
+            btn.onclick = async () => {
+                const modalExistente = document.getElementById("admin-flutuante-final");
+                if (modalExistente) modalExistente.remove();
+
+                const modal = document.createElement("div");
+                modal.id = "admin-flutuante-final";
+                modal.style.cssText = "position:fixed; bottom:80px; right:20px; width:400px; background:white; border-radius:15px; z-index:99999; padding:15px; border:2px solid #27ae60; max-height:70vh; overflow-y:auto; box-shadow:0 5px 20px rgba(0,0,0,0.3);";
+                modal.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                     <h3 style="margin:0;">👑 ADMIN</h3>
                     <button onclick="this.closest('#admin-flutuante-final').remove()" style="background:#e74c3c; color:white; border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:16px;">✕</button>
                 </div>
                 <div id="admin-lista-final">Carregando...</div>
             `;
-            document.body.appendChild(modal);
-            
+                document.body.appendChild(modal);
+
+                try {
+                    const res = await fetch('/api/admin/usuarios', {
+                        headers: { 'x-user-email': usuario.email }
+                    });
+                    const data = await res.json();
+                    const container = document.getElementById("admin-lista-final");
+                    if (data.sucesso && data.usuarios.length > 0) {
+                        container.innerHTML = data.usuarios.map(u => `
+    <div style="background:#f5f5f5; padding:12px; margin-bottom:12px; border-radius:8px;">
+        <strong>👤 ${u.nome}</strong><br>
+        <small>📧 ${u.email}</small><br>
+        <small>📅 Cadastro: ${new Date(u.data_criacao).toLocaleDateString()}</small><br>
+        <button onclick="verDetalhesUsuario(${u.id}, '${u.nome}')" style="background:#3498db; color:white; border:none; padding:6px 12px; border-radius:5px; margin-right:5px;">📊 Detalhes</button>
+        <button onclick="excluirUsuario(${u.id}, '${u.nome}')" style="background:#e74c3c; color:white; border:none; padding:6px 12px; border-radius:5px;">🗑️ Excluir</button>
+    </div>
+`).join('');
+
+                        // Adicionar botão de gerenciar disciplinas APÓS a lista de usuários
+                        container.innerHTML += `
+    <div style="margin-top: 15px; text-align: center;">
+        <button onclick="carregarDisciplinas(); mostrarModalDisciplinas()" style="background: #9b59b6; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">📚 Gerenciar Disciplinas</button>
+    </div>
+`;
+                    } else {
+                        container.innerHTML = "<p>Nenhum usuário encontrado.</p>";
+                    }
+                } catch (e) {
+                    document.getElementById("admin-lista-final").innerHTML = "<p>Erro ao carregar usuários.</p>";
+                }
+            };
+        }, 1500);
+    </script>
+
+    <script>
+        // ==================== GERENCIAR DISCIPLINAS E ASSUNTOS ====================
+
+        let disciplinasData = [];
+
+        async function carregarDisciplinas() {
             try {
-                const res = await fetch('/api/admin/usuarios', {
+                const usuarioSalvo = localStorage.getItem('usuario');
+                const usuario = JSON.parse(usuarioSalvo);
+
+                const res = await fetch('/api/admin/disciplinas', {
                     headers: { 'x-user-email': usuario.email }
                 });
                 const data = await res.json();
-                const container = document.getElementById("admin-lista-final");
-                if(data.sucesso && data.usuarios.length > 0) {
-                    container.innerHTML = data.usuarios.map(u => `
-                        <div style="background:#f5f5f5; padding:12px; margin-bottom:12px; border-radius:8px;">
-                            <strong>👤 ${u.nome}</strong><br>
-                            <small>📧 ${u.email}</small><br>
-                            <small>📅 Cadastro: ${new Date(u.data_criacao).toLocaleDateString()}</small><br>
-                            <button onclick="verDetalhesUsuario(${u.id}, '${u.nome}')" style="background:#3498db; color:white; border:none; padding:6px 12px; border-radius:5px; margin-right:5px;">📊 Detalhes</button>
-                            <button onclick="excluirUsuario(${u.id}, '${u.nome}')" style="background:#e74c3c; color:white; border:none; padding:6px 12px; border-radius:5px;">🗑️ Excluir</button>
-                        </div>
-                    `).join('');
-                } else {
-                    container.innerHTML = "<p>Nenhum usuário encontrado.</p>";
+
+                if (data.sucesso) {
+                    disciplinasData = data.disciplinas;
+                    renderizarDisciplinas();
                 }
-            } catch(e) {
-                document.getElementById("admin-lista-final").innerHTML = "<p>Erro ao carregar usuários.</p>";
+            } catch (e) {
+                console.error('Erro ao carregar disciplinas:', e);
             }
-        };
-    }, 1500);
-</script>
+        }
+
+        function renderizarDisciplinas() {
+            const container = document.getElementById("admin-disciplinas-container");
+            if (!container) return;
+
+            if (disciplinasData.length === 0) {
+                container.innerHTML = '<p>Nenhuma disciplina cadastrada.</p>';
+                return;
+            }
+
+            let html = '<div style="display: flex; flex-direction: column; gap: 20px;">';
+            for (const disc of disciplinasData) {
+                html += `
+            <div style="background: #f5f5f5; border-radius: 10px; padding: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <strong style="font-size: 1.1em;">📚 ${disc.nome}</strong>
+                    <div>
+                        <button onclick="editarDisciplina(${disc.id}, '${disc.nome}')" style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">✏️</button>
+                        <button onclick="excluirDisciplina(${disc.id})" style="background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-left: 5px;">🗑️</button>
+                    </div>
+                </div>
+                <div style="margin-left: 20px;">
+                    ${disc.assuntos && disc.assuntos.length > 0 ? disc.assuntos.map(a => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #ddd;">
+                            <span>📌 ${a.nome}</span>
+                            <div>
+                                <button onclick="editarAssunto(${a.id}, '${a.nome}', ${disc.id})" style="background: #3498db; color: white; border: none; padding: 3px 8px; border-radius: 4px; cursor: pointer;">✏️</button>
+                                <button onclick="excluirAssunto(${a.id})" style="background: #e74c3c; color: white; border: none; padding: 3px 8px; border-radius: 4px; cursor: pointer; margin-left: 5px;">🗑️</button>
+                            </div>
+                        </div>
+                    `).join('') : '<p style="color: #999;">Nenhum assunto</p>'}
+                    <button onclick="adicionarAssunto(${disc.id})" style="background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 5px; margin-top: 10px; cursor: pointer;">➕ Adicionar assunto</button>
+                </div>
+            </div>
+        `;
+            }
+            html += `
+        <button onclick="adicionarDisciplina()" style="background: #9b59b6; color: white; border: none; padding: 10px; border-radius: 10px; cursor: pointer;">➕ Nova Disciplina</button>
+    `;
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        async function adicionarDisciplina() {
+            const nome = prompt("Digite o nome da nova disciplina:");
+            if (!nome) return;
+
+            try {
+                const usuarioSalvo = localStorage.getItem('usuario');
+                const usuario = JSON.parse(usuarioSalvo);
+
+                const res = await fetch('/api/admin/disciplinas', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-user-email': usuario.email
+                    },
+                    body: JSON.stringify({ nome })
+                });
+                const data = await res.json();
+                if (data.sucesso) {
+                    alert(`✅ Disciplina "${nome}" criada!`);
+                    carregarDisciplinas();
+                } else {
+                    alert(`❌ Erro: ${data.erro}`);
+                }
+            } catch (e) {
+                alert("❌ Erro ao criar disciplina");
+            }
+        }
+
+        async function editarDisciplina(id, nomeAtual) {
+            const novoNome = prompt("Digite o novo nome da disciplina:", nomeAtual);
+            if (!novoNome || novoNome === nomeAtual) return;
+
+            try {
+                const usuarioSalvo = localStorage.getItem('usuario');
+                const usuario = JSON.parse(usuarioSalvo);
+
+                const res = await fetch(`/api/admin/disciplinas/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-user-email': usuario.email
+                    },
+                    body: JSON.stringify({ nome: novoNome })
+                });
+                const data = await res.json();
+                if (data.sucesso) {
+                    alert(`✅ Disciplina atualizada!`);
+                    carregarDisciplinas();
+                } else {
+                    alert(`❌ Erro: ${data.erro}`);
+                }
+            } catch (e) {
+                alert("❌ Erro ao editar disciplina");
+            }
+        }
+
+        async function excluirDisciplina(id) {
+            if (!confirm("🗑️ Excluir esta disciplina? Todas as questões e assuntos serão perdidos!")) return;
+
+            try {
+                const usuarioSalvo = localStorage.getItem('usuario');
+                const usuario = JSON.parse(usuarioSalvo);
+
+                const res = await fetch(`/api/admin/disciplinas/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'x-user-email': usuario.email }
+                });
+                const data = await res.json();
+                if (data.sucesso) {
+                    alert(`✅ Disciplina excluída!`);
+                    carregarDisciplinas();
+                } else {
+                    alert(`❌ Erro: ${data.erro}`);
+                }
+            } catch (e) {
+                alert("❌ Erro ao excluir disciplina");
+            }
+        }
+
+        async function adicionarAssunto(disciplinaId) {
+            const nome = prompt("Digite o nome do novo assunto:");
+            if (!nome) return;
+
+            try {
+                const usuarioSalvo = localStorage.getItem('usuario');
+                const usuario = JSON.parse(usuarioSalvo);
+
+                const res = await fetch('/api/admin/assuntos', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-user-email': usuario.email
+                    },
+                    body: JSON.stringify({ disciplina_id: disciplinaId, nome })
+                });
+                const data = await res.json();
+                if (data.sucesso) {
+                    alert(`✅ Assunto "${nome}" criado!`);
+                    carregarDisciplinas();
+                } else {
+                    alert(`❌ Erro: ${data.erro}`);
+                }
+            } catch (e) {
+                alert("❌ Erro ao criar assunto");
+            }
+        }
+
+        async function editarAssunto(id, nomeAtual, disciplinaId) {
+            const novoNome = prompt("Digite o novo nome do assunto:", nomeAtual);
+            if (!novoNome || novoNome === nomeAtual) return;
+
+            try {
+                const usuarioSalvo = localStorage.getItem('usuario');
+                const usuario = JSON.parse(usuarioSalvo);
+
+                const res = await fetch(`/api/admin/assuntos/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-user-email': usuario.email
+                    },
+                    body: JSON.stringify({ nome: novoNome })
+                });
+                const data = await res.json();
+                if (data.sucesso) {
+                    alert(`✅ Assunto atualizado!`);
+                    carregarDisciplinas();
+                } else {
+                    alert(`❌ Erro: ${data.erro}`);
+                }
+            } catch (e) {
+                alert("❌ Erro ao editar assunto");
+            }
+        }
+
+        async function excluirAssunto(id) {
+            if (!confirm("🗑️ Excluir este assunto? Todas as questões associadas serão perdidas!")) return;
+
+            try {
+                const usuarioSalvo = localStorage.getItem('usuario');
+                const usuario = JSON.parse(usuarioSalvo);
+
+                const res = await fetch(`/api/admin/assuntos/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'x-user-email': usuario.email }
+                });
+                const data = await res.json();
+                if (data.sucesso) {
+                    alert(`✅ Assunto excluído!`);
+                    carregarDisciplinas();
+                } else {
+                    alert(`❌ Erro: ${data.erro}`);
+                }
+            } catch (e) {
+                alert("❌ Erro ao excluir assunto");
+            }
+        }
+
+        function mostrarModalDisciplinas() {
+            // Criar modal para mostrar disciplinas
+            const modalExistente = document.getElementById("modal-disciplinas");
+            if (modalExistente) modalExistente.remove();
+
+            const modal = document.createElement("div");
+            modal.id = "modal-disciplinas";
+            modal.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        border-radius: 20px;
+        padding: 20px;
+        width: 90%;
+        max-width: 800px;
+        max-height: 80vh;
+        overflow-y: auto;
+        z-index: 1000000;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    `;
+            modal.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="margin: 0;">📚 Gerenciar Disciplinas</h3>
+            <button onclick="this.closest('#modal-disciplinas').remove()" style="background: #e74c3c; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer;">✕</button>
+        </div>
+        <div id="admin-disciplinas-container" style="max-height: 60vh; overflow-y: auto;">
+            Carregando...
+        </div>
+    `;
+            document.body.appendChild(modal);
+
+            carregarDisciplinas();
+        }
+
+
+
+
+    </script>
+
+
+
 
 </body>
 
