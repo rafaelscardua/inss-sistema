@@ -92,12 +92,12 @@ async function carregarAnexos(materia, topico, elementoContainer) {
         });
         const data = await res.json();
         
-        if (data.sucesso && data.anexos.length > 0) {
-            const isAdmin = usuario.email === 'rafaelscardua@gmail.com';
-            
-            let html = '<div style="margin-top: 10px; margin-left: 20px; padding: 10px; background: #f0f0f0; border-radius: 8px;">';
-            html += '<strong>📎 Anexos:</strong><br>';
-            
+        const isAdmin = usuario.email === 'rafaelscardua@gmail.com';
+        
+        let html = '<div style="margin-top: 10px; margin-left: 20px; padding: 10px; background: #f0f0f0; border-radius: 8px;">';
+        html += '<strong>📎 Anexos:</strong><br>';
+        
+        if (data.sucesso && data.anexos && data.anexos.length > 0) {
             for (const anexo of data.anexos) {
                 const tamanho = formatarTamanho(anexo.tamanho_bytes);
                 html += `
@@ -110,22 +110,28 @@ async function carregarAnexos(materia, topico, elementoContainer) {
                     </div>
                 `;
             }
-            
-            if (isAdmin) {
-                html += `
-                    <div style="margin-top: 10px;">
-                        <button onclick="uploadAnexo('${materia}', '${topico}')" style="background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">➕ Adicionar anexo</button>
-                    </div>
-                `;
-            }
-            html += '</div>';
-            
-            if (elementoContainer) {
-                elementoContainer.innerHTML = html;
-            }
+        } else {
+            html += '<p style="margin: 5px 0;">Nenhum anexo.</p>';
+        }
+        
+        // Botão de adicionar aparece SEMPRE para admin, mesmo sem anexos
+        if (isAdmin) {
+            html += `
+                <div style="margin-top: 10px;">
+                    <button onclick="uploadAnexo('${materia}', '${topico}')" style="background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">➕ Adicionar anexo</button>
+                </div>
+            `;
+        }
+        html += '</div>';
+        
+        if (elementoContainer) {
+            elementoContainer.innerHTML = html;
         }
     } catch (e) {
         console.error('Erro ao carregar anexos:', e);
+        if (elementoContainer) {
+            elementoContainer.innerHTML = '<div style="color: red;">Erro ao carregar anexos</div>';
+        }
     }
 }
 
