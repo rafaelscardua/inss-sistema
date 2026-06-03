@@ -141,31 +141,9 @@ app.post('/api/questoes', async (req, res) => {
 
 // ==================== ROTAS DE ANEXOS ====================
 
-// Upload de anexo (apenas ADMIN) - versão base64
-app.post('/api/anexos/upload', async (req, res) => {
-    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
-    const userEmail = req.headers['x-user-email'];
-    
-    if (userEmail !== adminEmail) {
-        return res.status(403).json({ sucesso: false, erro: 'Apenas administrador' });
-    }
-    
-    const { materia, topico, nome_original, tamanho_bytes, arquivo_base64 } = req.body;
-    
-    try {
-        await pool.query(
-            `INSERT INTO anexos_topico (materia, topico, nome_original, nome_arquivo, tamanho_bytes, arquivo_base64) 
-             VALUES ($1, $2, $3, $4, $5, $6)`,
-            [materia, topico, nome_original, Date.now() + '_' + nome_original, tamanho_bytes, arquivo_base64]
-        );
-        res.json({ sucesso: true });
-    } catch (error) {
-        console.error('Erro ao salvar anexo:', error);
-        res.status(500).json({ sucesso: false, erro: 'Erro ao salvar' });
-    }
-});
+// ==================== ROTAS DE ANEXOS ====================
 
-// Download de anexo
+// 1º - DOWNLOAD (rota específica - tem que vir PRIMEIRO!)
 app.get('/api/anexos/download/:id', async (req, res) => {
     const { id } = req.params;
     try {
@@ -186,6 +164,79 @@ app.get('/api/anexos/download/:id', async (req, res) => {
     }
 });
 
+// 2º - LISTAR todos (admin)
+app.get('/api/anexos/todos', async (req, res) => {
+    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    const userEmail = req.headers['x-user-email'];
+    
+    if (userEmail !== adminEmail) {
+        return res.status(403).json({ erro: 'Acesso negado' });
+    }
+    
+    try {
+        const result = await pool.query('SELECT * FROM anexos_topico ORDER BY id DESC');
+        res.json({ sucesso: true, anexos: result.rows });
+    } catch (error) {
+        res.status(500).json({ erro: 'Erro ao buscar anexos' });
+    }
+});
+
+// 3º - LISTAR anexos de um tópico (rota com parâmetros genéricos - vem por último!)
+app.get('/api/anexos/:materia/:topico', async (req, res) => {
+    const { materia, topico } = req.params;
+    try {
+        const result = await pool.query(
+            'SELECT id, nome_original, tamanho_bytes, data_upload FROM anexos_topico WHERE materia = $1 AND topico = $2 ORDER BY data_upload DESC',
+            [decodeURIComponent(materia), decodeURIComponent(topico)]
+        );
+        res.json({ sucesso: true, anexos: result.rows });
+    } catch (error) {
+        res.status(500).json({ sucesso: false, erro: 'Erro ao buscar anexos' });
+    }
+});
+
+// 4º - UPLOAD (POST)
+app.post('/api/anexos/upload', async (req, res) => {
+    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    const userEmail = req.headers['x-user-email'];
+    
+    if (userEmail !== adminEmail) {
+        return res.status(403).json({ sucesso: false, erro: 'Apenas administrador pode adicionar anexos' });
+    }
+    
+    const { materia, topico, nome_original, tamanho_bytes, arquivo_base64 } = req.body;
+    
+    try {
+        await pool.query(
+            `INSERT INTO anexos_topico (materia, topico, nome_original, nome_arquivo, tamanho_bytes, arquivo_base64) 
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [materia, topico, nome_original, Date.now() + '_' + nome_original, tamanho_bytes, arquivo_base64]
+        );
+        res.json({ sucesso: true });
+    } catch (error) {
+        console.error('Erro ao salvar anexo:', error);
+        res.status(500).json({ sucesso: false, erro: 'Erro ao salvar anexo' });
+    }
+});
+
+// 5º - EXCLUIR (DELETE)
+app.delete('/api/anexos/:id', async (req, res) => {
+    const { id } = req.params;
+    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    const userEmail = req.headers['x-user-email'];
+    
+    if (userEmail !== adminEmail) {
+        return res.status(403).json({ sucesso: false, erro: 'Apenas administrador pode excluir anexos' });
+    }
+    
+    try {
+        await pool.query('DELETE FROM anexos_topico WHERE id = $1', [id]);
+        res.json({ sucesso: true });
+    } catch (error) {
+        console.error('Erro ao excluir anexo:', error);
+        res.status(500).json({ sucesso: false, erro: 'Erro ao excluir anexo' });
+    }
+});
 
 
 
