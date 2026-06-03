@@ -85,23 +85,27 @@ function renderizarPlanoEstudos() {
         });
     });
     
-    // Evento para os botões de estudar
-    // Evento para os botões de estudar
-    
+// Evento para os botões de estudar
 document.querySelectorAll('.btn-estudar').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
+    // Remover eventos antigos para evitar duplicação
+    btn.removeEventListener('click', btn._listener);
+    
+    // Criar novo listener
+    btn._listener = function(e) {
+        e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
+        
+        console.log("Clique no botão - IMPEDINDO PROPAGAÇÃO");
+        
         const assuntoId = parseInt(btn.dataset.id);
         let respondidas = parseInt(btn.dataset.respondidas);
         const total = parseInt(btn.dataset.total);
-        
-        console.log("Clique no botão!", assuntoId, respondidas, total);
         
         if (respondidas < total) {
             respondidas++;
             const novoProgresso = Math.round((respondidas / total) * 100);
             
-            // Chamar API
             fetch(`/api/assuntos/${assuntoId}/progresso`, {
                 method: 'PUT',
                 headers: {
@@ -112,17 +116,14 @@ document.querySelectorAll('.btn-estudar').forEach(function(btn) {
             })
             .then(r => r.json())
             .then(data => {
-                console.log("Resposta da API:", data);
                 if (data.sucesso) {
-                    // RECARREGAR O PLANO PARA ATUALIZAR A TELA
                     carregarPlanoEstudos();
                 }
-            })
-            .catch(err => console.error("Erro na API:", err));
-        } else {
-            alert("🎉 Parabéns! Você já estudou todas as questões deste assunto!");
+            });
         }
-    });
+    };
+    
+    btn.addEventListener('click', btn._listener);
 });
     
     // Evento para os selects de status

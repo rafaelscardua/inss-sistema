@@ -623,4 +623,13 @@ body.dark-mode .topico {
     display: none !important;
 }
 
+
+/* Garantir que botão não ative o cabeçalho */
+.btn-estudar {
+    position: relative;
+    z-index: 10;
+    pointer-events: auto;
+}
+
+
 </style>
