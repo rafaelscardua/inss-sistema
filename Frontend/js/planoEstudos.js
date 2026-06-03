@@ -141,7 +141,7 @@ function renderizarPlanoEstudos() {
         }
     });
 }
-}
+
 
 // Atualizar status do assunto
 async function atualizarStatusAssunto(assuntoId, novoStatus) {
