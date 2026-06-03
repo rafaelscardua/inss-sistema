@@ -700,6 +700,57 @@ app.get('/api/admin/assuntos', async (req, res) => {
     }
 });
 
+// Buscar disciplinas com progresso do usuário
+app.get('/api/plano-estudos/:usuario_id', async (req, res) => {
+    const { usuario_id } = req.params;
+    try {
+        // Buscar disciplinas
+        const disciplinasResult = await pool.query(
+            'SELECT id, nome FROM disciplinas ORDER BY id'
+        );
+        
+        const disciplinas = disciplinasResult.rows;
+        
+        // Para cada disciplina, buscar os assuntos e o progresso
+        for (const disc of disciplinas) {
+            // Buscar assuntos
+            const assuntosResult = await pool.query(
+                'SELECT id, nome FROM assuntos WHERE disciplina_id = $1 ORDER BY id',
+                [disc.id]
+            );
+            
+            // Para cada assunto, buscar progresso do usuário
+            for (const assunto of assuntosResult.rows) {
+                // Contar questões totais do assunto
+                const totalResult = await pool.query(
+                    'SELECT COUNT(*) FROM questoes_base WHERE disciplina_id = $1 AND assunto_id = $2',
+                    [disc.id, assunto.id]
+                );
+                const total = parseInt(totalResult.rows[0].count);
+                
+                // Contar questões respondidas corretamente
+                const acertosResult = await pool.query(
+                    `SELECT COUNT(*) FROM respostas_usuario r
+                     JOIN questoes_base q ON r.questao_id = q.id
+                     WHERE r.usuario_id = $1 AND q.disciplina_id = $2 AND q.assunto_id = $3 AND r.acertou = true`,
+                    [usuario_id, disc.id, assunto.id]
+                );
+                const acertos = parseInt(acertosResult.rows[0].count);
+                
+                assunto.progresso = total > 0 ? Math.round((acertos / total) * 100) : 0;
+                assunto.total_questoes = total;
+            }
+            
+            disc.assuntos = assuntosResult.rows;
+        }
+        
+        res.json({ sucesso: true, disciplinas });
+    } catch (error) {
+        console.error('Erro ao buscar plano de estudos:', error);
+        res.status(500).json({ erro: 'Erro ao buscar plano de estudos' });
+    }
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });

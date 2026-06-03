@@ -46,7 +46,7 @@ function renderizarMaterias() {
         container.appendChild(div);
     });
     
-        // Carregar anexos para cada tópico
+    // Carregar anexos para cada tópico
     dadosEstudo.materias.forEach((m, mIdx) => {
         m.topicos.forEach((t, tIdx) => {
             const anexoContainer = document.getElementById(`anexos-${mIdx}-${tIdx}`);
@@ -69,13 +69,93 @@ function renderizarMaterias() {
         salvarPlano(); 
         renderizarMaterias(); 
     }));       
+}
+
+// ==================== NOVO PLANO DE ESTUDOS (COM BANCO) ====================
+
+let disciplinasPlano = [];
+
+async function carregarPlanoEstudos() {
+    try {
+        const usuarioSalvo = localStorage.getItem('usuario');
+        if (!usuarioSalvo) return;
+        const usuario = JSON.parse(usuarioSalvo);
+        
+        const res = await fetch(`${API_URL}/api/plano-estudos/${usuario.id}`, {
+            headers: { 'x-user-email': usuario.email }
+        });
+        const data = await res.json();
+        
+        if (data.sucesso) {
+            disciplinasPlano = data.disciplinas;
+            renderizarPlanoEstudos();
+        }
+    } catch (e) {
+        console.error('Erro ao carregar plano:', e);
+    }
+}
+
+function renderizarPlanoEstudos() {
+    const container = document.getElementById("materiasContainer");
+    if(!container) return;
+    container.innerHTML = "";
     
+    if (disciplinasPlano.length === 0) {
+        container.innerHTML = "<p>Nenhuma disciplina cadastrada. Use o ADMIN para criar disciplinas.</p>";
+        return;
+    }
+    
+    for (const disc of disciplinasPlano) {
+        // Calcular progresso geral da disciplina
+        let totalQuestoes = 0;
+        let totalAcertos = 0;
+        for (const assunto of disc.assuntos) {
+            totalQuestoes += assunto.total_questoes || 0;
+            totalAcertos += Math.round((assunto.progresso || 0) * (assunto.total_questoes || 0) / 100);
+        }
+        const progressoGeral = totalQuestoes > 0 ? Math.round((totalAcertos / totalQuestoes) * 100) : 0;
+        
+        const div = document.createElement("div"); div.className="materia";
+        div.innerHTML = `
+            <div class="materia-header" onclick="toggleDisciplina(this)">
+                <div><b>📚 ${disc.nome}</b> <span style="font-size:0.8em;">${progressoGeral}%</span></div>
+                <div class="progress-bar-container"><div class="progress-bar-fill" style="width:${progressoGeral}%"></div></div>
+            </div>
+            <div class="materia-content collapsed">
+                ${disc.assuntos.map(assunto => `
+                    <div class="topico">
+                        <div class="topico-header">
+                            <span class="topico-nome">📌 ${assunto.nome}</span>
+                            <span style="font-size:0.8em; color:#666;">${assunto.progresso || 0}% (${Math.round((assunto.progresso || 0) * (assunto.total_questoes || 0) / 100)}/${assunto.total_questoes || 0})</span>
+                        </div>
+                        <div id="anexos-${disc.id}-${assunto.id}" class="anexos-container"></div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        container.appendChild(div);
+    }
+    
+    // Carregar anexos para cada assunto
+    for (const disc of disciplinasPlano) {
+        for (const assunto of disc.assuntos) {
+            const anexoContainer = document.getElementById(`anexos-${disc.id}-${assunto.id}`);
+            if (anexoContainer) {
+                carregarAnexos(disc.nome, assunto.nome, anexoContainer);
+            }
+        }
+    }
+}
+
+function toggleDisciplina(header) {
+    const content = header.nextElementSibling;
+    content.classList.toggle('collapsed');
 }
 
 window.toggleMateria = (idx) => { 
     dadosEstudo.materias[idx].expandido = !dadosEstudo.materias[idx].expandido; 
     salvarPlano(); 
-    renderizarMaterias(); 
+    carregarPlanoEstudos();
 };
 
 
