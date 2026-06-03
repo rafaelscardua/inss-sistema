@@ -431,36 +431,45 @@
 
 // Função global para estudar assunto
 window.estudarAssunto = async function(btn) {
-    // IMPEDIR TOTALMENTE a propagação
+    // Impedir propagação
     if (window.event) {
         window.event.stopPropagation();
         window.event.cancelBubble = true;
     }
     
-    console.log("✅ Função estudarAssunto chamada!");
+    console.log("✅ Clique detectado!");
     
     const assuntoId = parseInt(btn.getAttribute('data-id'));
     let respondidas = parseInt(btn.getAttribute('data-respondidas'));
     const total = parseInt(btn.getAttribute('data-total'));
     
+    console.log(`Assunto ${assuntoId}: ${respondidas}/${total}`);
+    
     if (respondidas < total) {
         respondidas++;
         const novoProgresso = Math.round((respondidas / total) * 100);
         
-        // Atualizar visualmente
+        console.log(`Novo progresso: ${novoProgresso}% (${respondidas}/${total})`);
+        
+        // Atualizar visualmente o texto
         const progressoText = document.getElementById(`progresso-${assuntoId}`);
         if (progressoText) {
             progressoText.innerText = `${novoProgresso}% (${respondidas}/${total})`;
+            console.log("✅ Texto atualizado:", progressoText.innerText);
+        } else {
+            console.log("❌ Elemento progresso-${assuntoId} não encontrado");
         }
         
+        // Atualizar os dados do botão
         btn.setAttribute('data-respondidas', respondidas);
         
+        // Se completou, desabilitar o botão
         if (respondidas >= total) {
             btn.disabled = true;
             btn.style.opacity = '0.5';
         }
         
-        // Salvar no banco
+        // Salvar no banco (sem recarregar a página)
         const usuario = JSON.parse(localStorage.getItem('usuario'));
         try {
             const res = await fetch(`/api/assuntos/${assuntoId}/progresso`, {
@@ -474,9 +483,35 @@ window.estudarAssunto = async function(btn) {
             
             const data = await res.json();
             if (data.sucesso) {
-                console.log("✅ Progresso salvo!");
-                // NÃO recarregar a página inteira, apenas atualizar a barra
-                atualizarBarraProgresso();
+                console.log("✅ Progresso salvo no banco!");
+                
+                // Atualizar a barra de progresso da disciplina
+                const disciplinaDiv = btn.closest('.materia');
+                if (disciplinaDiv) {
+                    const barraFill = disciplinaDiv.querySelector('.progress-bar-fill');
+                    const porcentagemSpan = disciplinaDiv.querySelector('.materia-header span');
+                    
+                    // Calcular novo progresso da disciplina
+                    const todosBotoes = disciplinaDiv.querySelectorAll('.btn-estudar');
+                    let totalAcertos = 0;
+                    let totalQuestoes = 0;
+                    
+                    todosBotoes.forEach(b => {
+                        const resp = parseInt(b.getAttribute('data-respondidas'));
+                        const tot = parseInt(b.getAttribute('data-total'));
+                        totalAcertos += resp;
+                        totalQuestoes += tot;
+                    });
+                    
+                    const novoProgressoDisc = totalQuestoes > 0 ? Math.round((totalAcertos / totalQuestoes) * 100) : 0;
+                    
+                    if (barraFill) {
+                        barraFill.style.width = `${novoProgressoDisc}%`;
+                    }
+                    if (porcentagemSpan) {
+                        porcentagemSpan.innerText = `${novoProgressoDisc}%`;
+                    }
+                }
             } else {
                 alert("Erro: " + data.erro);
             }
