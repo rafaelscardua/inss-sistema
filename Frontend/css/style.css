@@ -618,4 +618,9 @@ body.dark-mode .topico {
     cursor: pointer;
 }
 
+/* Forçar esconder conteúdo recolhido */
+.materia .materia-content.collapsed {
+    display: none !important;
+}
+
 </style>
