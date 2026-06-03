@@ -306,89 +306,85 @@
     <script>
 
         // Função para marcar/desmarcar assunto como estudado
-        window.toggleEstudado = async function (checkbox) {
-            // Impedir propagação
-            if (window.event) {
-                window.event.stopPropagation();
-                window.event.cancelBubble = true;
-            }
-
-            console.log("✅ Checkbox clicado!", checkbox.checked);
-
-            const assuntoId = parseInt(checkbox.getAttribute('data-id'));
-            const total = parseInt(checkbox.getAttribute('data-total'));
-            const estaEstudado = checkbox.checked;
-
-            // Se marcou = 100% estudado, se desmarcou = 0%
-            const novoProgresso = estaEstudado ? 100 : 0;
-            const respondidas = estaEstudado ? total : 0;
-
-            console.log(`Assunto ${assuntoId}: ${estaEstudado ? 'ESTUDADO' : 'NÃO ESTUDADO'} (${respondidas}/${total}) - ${novoProgresso}%`);
-
-            // Atualizar visualmente o texto
-            const progressoText = document.getElementById(`progresso-${assuntoId}`);
-            if (progressoText) {
-                progressoText.innerText = `${novoProgresso}% (${respondidas}/${total})`;
-            }
-
-            // Atualizar o atributo data-respondidas
-            checkbox.setAttribute('data-respondidas', respondidas);
-
-            // Salvar no banco
-            const usuario = JSON.parse(localStorage.getItem('usuario'));
-            try {
-                const res = await fetch(`/api/assuntos/${assuntoId}/progresso`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-user-email': usuario.email
-                    },
-                    body: JSON.stringify({ progresso: novoProgresso })
-                });
-
-                const data = await res.json();
-                if (data.sucesso) {
-                    console.log("✅ Progresso salvo no banco!");
-
-                    // Atualizar a barra de progresso da disciplina
-                    const disciplinaDiv = checkbox.closest('.materia');
-                    if (disciplinaDiv) {
-                        const barraFill = disciplinaDiv.querySelector('.progress-bar-fill');
-                        const porcentagemSpan = disciplinaDiv.querySelector('.materia-header span');
-
-                        // Calcular novo progresso da disciplina
-                        const todosChecks = disciplinaDiv.querySelectorAll('.check-estudado');
-                        let totalAcertos = 0;
-                        let totalQuestoes = 0;
-
-                        todosChecks.forEach(ch => {
-                            const estaCheck = ch.checked;
-                            const tot = parseInt(ch.getAttribute('data-total'));
-                            totalQuestoes += tot;
-                            if (estaCheck) {
-                                totalAcertos += tot;
-                            }
-                        });
-
-                        const novoProgressoDisc = totalQuestoes > 0 ? Math.round((totalAcertos / totalQuestoes) * 100) : 0;
-
-                        console.log(`Progresso da disciplina: ${novoProgressoDisc}% (${totalAcertos}/${totalQuestoes})`);
-
-                        if (barraFill) {
-                            barraFill.style.width = `${novoProgressoDisc}%`;
-                        }
-                        if (porcentagemSpan) {
-                            porcentagemSpan.innerText = `${novoProgressoDisc}%`;
+       window.toggleEstudado = async function(checkbox) {
+    if (window.event) {
+        window.event.stopPropagation();
+        window.event.cancelBubble = true;
+    }
+    
+    console.log("✅ Checkbox clicado!", checkbox.checked);
+    
+    const assuntoId = parseInt(checkbox.getAttribute('data-id'));
+    const total = parseInt(checkbox.getAttribute('data-total'));
+    const estaEstudado = checkbox.checked;
+    
+    const novoProgresso = estaEstudado ? 100 : 0;
+    const respondidas = estaEstudado ? total : 0;
+    
+    console.log(`Assunto ${assuntoId}: ${estaEstudado ? 'ESTUDADO' : 'NÃO ESTUDADO'} (${respondidas}/${total}) - ${novoProgresso}%`);
+    
+    const progressoText = document.getElementById(`progresso-${assuntoId}`);
+    if (progressoText) {
+        progressoText.innerText = `${novoProgresso}% (${respondidas}/${total})`;
+    }
+    
+    checkbox.setAttribute('data-respondidas', respondidas);
+    
+    const usuario = JSON.parse(localStorage.getItem('usuario'));
+    try {
+        const res = await fetch(`/api/assuntos/${assuntoId}/progresso`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-user-email': usuario.email
+            },
+            body: JSON.stringify({ progresso: novoProgresso })
+        });
+        
+        const data = await res.json();
+        if (data.sucesso) {
+            console.log("✅ Progresso salvo no banco!");
+            
+            // ==================== CÁLCULO CORRIGIDO ====================
+            const disciplinaDiv = checkbox.closest('.materia');
+            if (disciplinaDiv) {
+                const barraFill = disciplinaDiv.querySelector('.progress-bar-fill');
+                const porcentagemSpan = disciplinaDiv.querySelector('.materia-header span');
+                
+                const todosChecks = disciplinaDiv.querySelectorAll('.check-estudado');
+                let totalAcertos = 0;
+                let totalQuestoes = 0;
+                
+                todosChecks.forEach(ch => {
+                    const estaCheck = ch.checked;
+                    const tot = parseInt(ch.getAttribute('data-total'));
+                    if (tot > 0) {
+                        totalQuestoes += tot;
+                        if (estaCheck) {
+                            totalAcertos += tot;
                         }
                     }
-                } else {
-                    alert("Erro: " + data.erro);
+                });
+                
+                const novoProgressoDisc = totalQuestoes > 0 ? Math.round((totalAcertos / totalQuestoes) * 100) : 0;
+                
+                console.log(`Progresso da disciplina: ${novoProgressoDisc}% (${totalAcertos}/${totalQuestoes})`);
+                
+                if (barraFill) {
+                    barraFill.style.width = `${novoProgressoDisc}%`;
                 }
-            } catch (error) {
-                console.error("Erro na API:", error);
-                alert("Erro ao salvar progresso");
+                if (porcentagemSpan) {
+                    porcentagemSpan.innerText = `${novoProgressoDisc}%`;
+                }
             }
-        };
+        } else {
+            alert("Erro: " + data.erro);
+        }
+    } catch (error) {
+        console.error("Erro na API:", error);
+        alert("Erro ao salvar progresso");
+    }
+};
 
 
 
