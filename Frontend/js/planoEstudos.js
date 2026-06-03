@@ -86,37 +86,44 @@ function renderizarPlanoEstudos() {
     });
     
     // Evento para os botões de estudar
-    document.querySelectorAll('.btn-estudar').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const assuntoId = parseInt(btn.dataset.id);
-            let respondidas = parseInt(btn.dataset.respondidas);
-            const total = parseInt(btn.dataset.total);
+    // Evento para os botões de estudar
+    
+document.querySelectorAll('.btn-estudar').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const assuntoId = parseInt(btn.dataset.id);
+        let respondidas = parseInt(btn.dataset.respondidas);
+        const total = parseInt(btn.dataset.total);
+        
+        console.log("Clique no botão!", assuntoId, respondidas, total);
+        
+        if (respondidas < total) {
+            respondidas++;
+            const novoProgresso = Math.round((respondidas / total) * 100);
             
-            if (respondidas < total) {
-                respondidas++;
-                const novoProgresso = Math.round((respondidas / total) * 100);
-                
-                // Atualizar texto na tela
-                const progressoText = document.getElementById(`progresso-${assuntoId}`);
-                if (progressoText) {
-                    progressoText.innerText = `${novoProgresso}% (${respondidas}/${total})`;
+            // Chamar API
+            fetch(`/api/assuntos/${assuntoId}/progresso`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-user-email': JSON.parse(localStorage.getItem('usuario')).email
+                },
+                body: JSON.stringify({ progresso: novoProgresso })
+            })
+            .then(r => r.json())
+            .then(data => {
+                console.log("Resposta da API:", data);
+                if (data.sucesso) {
+                    // RECARREGAR O PLANO PARA ATUALIZAR A TELA
+                    carregarPlanoEstudos();
                 }
-                
-                btn.dataset.respondidas = respondidas;
-                if (respondidas >= total) {
-                    btn.disabled = true;
-                    btn.style.opacity = '0.5';
-                }
-                
-                // Chamar API para atualizar progresso
-                await incrementarProgressoAssunto(assuntoId, respondidas, total);
-                
-                // Recarregar para atualizar barra de progresso da disciplina
-                await carregarPlanoEstudos();
-            }
-        });
+            })
+            .catch(err => console.error("Erro na API:", err));
+        } else {
+            alert("🎉 Parabéns! Você já estudou todas as questões deste assunto!");
+        }
     });
+});
     
     // Evento para os selects de status
     document.querySelectorAll('.status-select').forEach(select => {
