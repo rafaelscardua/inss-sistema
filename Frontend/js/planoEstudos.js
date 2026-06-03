@@ -46,7 +46,7 @@ function renderizarMaterias() {
         container.appendChild(div);
     });
     
-    // Carregar anexos para cada tópico
+        // Carregar anexos para cada tópico
     dadosEstudo.materias.forEach((m, mIdx) => {
         m.topicos.forEach((t, tIdx) => {
             const anexoContainer = document.getElementById(`anexos-${mIdx}-${tIdx}`);
@@ -68,7 +68,8 @@ function renderizarMaterias() {
         dadosEstudo.materias[m].topicos[t].subtopicos[s].feito = chk.checked; 
         salvarPlano(); 
         renderizarMaterias(); 
-    }));
+    }));       
+    
 }
 
 window.toggleMateria = (idx) => { 
@@ -211,9 +212,7 @@ async function baixarAnexo(id) {
     }
 }
 
-async function baixarAnexo(id) {
-    window.open(`/api/anexos/download/${id}`, '_blank');
-}
+
 
 async function excluirAnexo(id, buttonElement) {
     if (!confirm("🗑️ Tem certeza que deseja excluir este anexo permanentemente?")) return;
