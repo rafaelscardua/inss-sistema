@@ -63,8 +63,9 @@ function renderizarPlanoEstudos() {
                                     <option value="revisando" ${assunto.status === 'revisando' ? 'selected' : ''}>🟠 Revisando</option>
                                     <option value="dominado" ${assunto.status === 'dominado' ? 'selected' : ''}>🟢 Dominado</option>
                                 </select>
-                                <input type="checkbox" class="check-estudado" data-id="${assunto.id}" data-respondidas="${respondidas}" data-total="${total}" onclick="toggleEstudado(this); return false;" ${respondidas >= total ? 'checked' : ''}>
-<label style="display: inline-block; cursor: pointer;">✅ Estudado</label>
+                               <input type="checkbox" class="check-estudado" data-id="${assunto.id}" data-respondidas="${respondidas}" data-total="${total}" onclick="toggleEstudado(this); return false;" ${respondidas >= total ? 'checked' : ''}>
+<label style="display: inline-block; cursor: pointer;" onclick="this.previousElementSibling.click();">✅ Estudado</label>
+
                             </div>
                             <div id="anexos-${disc.id}-${assunto.id}" class="anexos-container"></div>
                         </div>

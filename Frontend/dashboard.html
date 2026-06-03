@@ -513,6 +513,21 @@ if (topicoHeader) {
                 });
             });
             // Event listeners para os botões de progresso (depois que o plano carregar)
+// Forçar cliques nos checkboxes
+setTimeout(() => {
+    document.querySelectorAll('.check-estudado').forEach(cb => {
+        // Remover onclick do HTML para evitar conflito
+        cb.removeAttribute('onclick');
+        // Adicionar evento moderno
+        cb.addEventListener('click', function(e) {
+            e.stopPropagation();
+            console.log("Click capturado!", this.checked);
+            toggleEstudado(this);
+        });
+    });
+    console.log("✅ Eventos recriados");
+}, 1000);
+
         }
 
         init();
