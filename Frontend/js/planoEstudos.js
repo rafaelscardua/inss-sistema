@@ -85,62 +85,7 @@ function renderizarPlanoEstudos() {
         });
     });
 
-    // ==================== EVENTOS DOS BOTÕES DE ESTUDAR ====================
-    document.querySelectorAll('.btn-estudar').forEach(btn => {
-        // Remover eventos antigos para evitar duplicação
-        btn.removeEventListener('click', btn._listener);
-
-        btn._listener = async function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            console.log("✅ Botão clicado!");
-
-            const assuntoId = parseInt(btn.dataset.id);
-            let respondidas = parseInt(btn.dataset.respondidas);
-            const total = parseInt(btn.dataset.total);
-
-            if (respondidas < total) {
-                respondidas++;
-                const novoProgresso = Math.round((respondidas / total) * 100);
-
-                // Atualizar visualmente
-                const progressoText = document.getElementById(`progresso-${assuntoId}`);
-                if (progressoText) {
-                    progressoText.innerText = `${novoProgresso}% (${respondidas}/${total})`;
-                }
-                btn.dataset.respondidas = respondidas;
-
-                if (respondidas >= total) {
-                    btn.disabled = true;
-                    btn.style.opacity = '0.5';
-                }
-
-                // Salvar no banco
-                const usuario = JSON.parse(localStorage.getItem('usuario'));
-                const res = await fetch(`/api/assuntos/${assuntoId}/progresso`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-user-email': usuario.email
-                    },
-                    body: JSON.stringify({ progresso: novoProgresso })
-                });
-
-                const data = await res.json();
-                if (data.sucesso) {
-                    // Recarregar para atualizar barra de progresso da disciplina
-                    await carregarPlanoEstudos();
-                } else {
-                    alert("Erro: " + data.erro);
-                }
-            } else {
-                alert("🎉 Você já estudou todas as questões deste assunto!");
-            }
-        };
-
-        btn.addEventListener('click', btn._listener);
-    });
+   
 
     // ==================== EVENTOS DOS SELECTS DE STATUS ====================
     document.querySelectorAll('.status-select').forEach(select => {
