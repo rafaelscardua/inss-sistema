@@ -371,6 +371,7 @@
                         todosChecks.forEach(ch => {
                             const estaCheck = ch.checked;
                             const tot = parseInt(ch.getAttribute('data-total'));
+                            console.log(`Checkbox ID ${ch.dataset.id}: tot=${tot}, estaCheck=${estaCheck}`);
                             if (tot > 0) {
                                 totalQuestoes += tot;
                                 if (estaCheck) {
@@ -378,7 +379,7 @@
                                 }
                             }
                         });
-
+                        console.log(`SOMA FINAL: totalAcertos=${totalAcertos}, totalQuestoes=${totalQuestoes}`);
                         const novoProgressoDisc = totalQuestoes > 0 ? Math.round((totalAcertos / totalQuestoes) * 100) : 0;
 
                         console.log(`Progresso da disciplina: ${novoProgressoDisc}% (${totalAcertos}/${totalQuestoes})`);
