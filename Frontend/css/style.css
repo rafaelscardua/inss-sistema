@@ -666,4 +666,9 @@ body.dark-mode .topico {
     z-index: 10;
 }
 
+/* Garantir que a barra de progresso seja atualizável */
+.progress-bar-fill {
+    transition: none !important;
+}
+
 </style>
