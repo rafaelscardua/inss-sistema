@@ -369,17 +369,7 @@
                         let totalQuestoes = 0;
 
                         todosChecks.forEach(ch => {
-                            todosChecks.forEach(ch => {
-                                const estaCheck = ch.dataset.logico === 'true';  // ← USA O DATASET!
-                                const tot = parseInt(ch.getAttribute('data-total'));
-                                console.log(`Checkbox ID ${ch.dataset.id}: tot=${tot}, estaCheck=${estaCheck}`);
-                                if (tot > 0) {
-                                    totalQuestoes += tot;
-                                    if (estaCheck) {
-                                        totalAcertos += tot;
-                                    }
-                                }
-                            });
+                            const estaCheck = ch.dataset.logico === 'true';  // ← MUDANÇA AQUI
                             const tot = parseInt(ch.getAttribute('data-total'));
                             console.log(`Checkbox ID ${ch.dataset.id}: tot=${tot}, estaCheck=${estaCheck}`);
                             if (tot > 0) {
