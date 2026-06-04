@@ -121,6 +121,9 @@ function renderizarQuestoes() {
             carregarEstatisticas();
             atualizarStats();
             atualizarBarraProgresso();
+
+            // Sincronizar com o plano de estudos
+            await sincronizarProgressoPlano();
         };
     });
     atualizarBarraProgresso();
@@ -154,6 +157,15 @@ function atualizarBarraProgresso() {
     if (barra) {
         barra.style.width = percentual + '%';
         barra.textContent = Math.round(percentual) + '%';
+    }
+}
+
+// Função para sincronizar o progresso do PLANO DE ESTUDOS
+async function sincronizarProgressoPlano() {
+    // Simplesmente recarrega o plano de estudos
+    if (typeof carregarPlanoEstudos === 'function') {
+        await carregarPlanoEstudos();
+        console.log("✅ Plano de estudos sincronizado!");
     }
 }
 
