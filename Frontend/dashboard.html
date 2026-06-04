@@ -457,6 +457,11 @@
             await carregarRespostas();
 
             await carregarPlanoEstudos();  // ← NOVO PLANO DE ESTUDOS
+            // Inicializar dataset.logico imediatamente
+            document.querySelectorAll('.check-estudado').forEach(cb => {
+                cb.dataset.logico = cb.checked;
+                console.log(`Checkbox ID ${cb.dataset.id}: logico inicializado = ${cb.dataset.logico}`);
+            });
 
             // Forçar sincronização dos checkboxes com o progresso
             setTimeout(() => {
