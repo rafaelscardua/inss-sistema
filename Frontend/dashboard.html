@@ -306,7 +306,7 @@
     <script>
 
         // Função para marcar/desmarcar assunto como estudado
- window.toggleEstudado = async function(checkbox) {
+      window.toggleEstudado = async function (checkbox) {
     if (window.event) {
         window.event.stopPropagation();
         window.event.cancelBubble = true;
@@ -330,17 +330,15 @@
     }
     
     // Atualizar select de status
-    // Atualizar select de status
-const topicoHeader = checkbox.closest('.topico-header');
-if (topicoHeader) {
-    const selectStatus = topicoHeader.querySelector('.status-select');
-    if (selectStatus) {
-        const novoStatus = checkbox.checked ? 'dominado' : 'nao_iniciado';
-        selectStatus.value = novoStatus;
-        // Disparar evento change para salvar no banco
-        selectStatus.dispatchEvent(new Event('change'));
+    const topicoHeader = checkbox.closest('.topico-header');
+    if (topicoHeader) {
+        const selectStatus = topicoHeader.querySelector('.status-select');
+        if (selectStatus) {
+            const novoStatus = checkbox.checked ? 'dominado' : 'nao_iniciado';
+            selectStatus.value = novoStatus;
+            selectStatus.dispatchEvent(new Event('change'));
+        }
     }
-}
     
     checkbox.setAttribute('data-respondidas', respondidas);
     
@@ -398,7 +396,8 @@ if (topicoHeader) {
         console.error("Erro na API:", error);
         alert("Erro ao salvar progresso");
     }
-};
+}; 
+                      
 
 
         // Função para adicionar nova questão
@@ -440,6 +439,26 @@ if (topicoHeader) {
             await carregarRespostas();
 
             await carregarPlanoEstudos();  // ← NOVO PLANO DE ESTUDOS
+
+            // Forçar sincronização dos checkboxes com o progresso
+            setTimeout(() => {
+                document.querySelectorAll('.topico').forEach(topico => {
+                    const progressoText = topico.querySelector('.progresso-texto');
+                    const checkbox = topico.querySelector('.check-estudado');
+                    if (progressoText && checkbox) {
+                        const progresso = parseInt(progressoText.innerText.split('%')[0]);
+                        checkbox.checked = (progresso === 100);
+                        if (checkbox.checked) {
+                            const total = parseInt(checkbox.getAttribute('data-total'));
+                            checkbox.setAttribute('data-respondidas', total);
+                        } else {
+                            checkbox.setAttribute('data-respondidas', '0');
+                        }
+                        console.log(`Checkbox ID ${checkbox.dataset.id} sincronizado: ${checkbox.checked} (progresso: ${progresso}%)`);
+                    }
+                });
+            }, 1000);
+
 
             preencherFiltros();
             renderizarQuestoes();
@@ -513,20 +532,20 @@ if (topicoHeader) {
                 });
             });
             // Event listeners para os botões de progresso (depois que o plano carregar)
-// Forçar cliques nos checkboxes
-setTimeout(() => {
-    document.querySelectorAll('.check-estudado').forEach(cb => {
-        // Remover onclick do HTML para evitar conflito
-        cb.removeAttribute('onclick');
-        // Adicionar evento moderno
-        cb.addEventListener('click', function(e) {
-            e.stopPropagation();
-            console.log("Click capturado!", this.checked);
-            toggleEstudado(this);
-        });
-    });
-    console.log("✅ Eventos recriados");
-}, 1000);
+            // Forçar cliques nos checkboxes
+            setTimeout(() => {
+                document.querySelectorAll('.check-estudado').forEach(cb => {
+                    // Remover onclick do HTML para evitar conflito
+                    cb.removeAttribute('onclick');
+                    // Adicionar evento moderno
+                    cb.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        console.log("Click capturado!", this.checked);
+                        toggleEstudado(this);
+                    });
+                });
+                console.log("✅ Eventos recriados");
+            }, 1000);
 
         }
 
