@@ -82,6 +82,10 @@
                     <button class="btn-small btn-import" id="simuladoBtn">📋 SIMULADO AVANÇADO</button>
                 </div>
             </div>
+            <!-- Barra de Progresso do Simulado -->
+            <div class="progress-container">
+                <div class="progress-bar" id="barraProgressoSimulado">0%</div>
+            </div>
             <div id="questoesList"></div>
         </div>
 
@@ -337,7 +341,7 @@
                 if (selectStatus) {
                     const novoStatus = checkbox.checked ? 'dominado' : 'nao_iniciado';
                     selectStatus.value = novoStatus;
-              //      selectStatus.dispatchEvent(new Event('change'));
+                    //      selectStatus.dispatchEvent(new Event('change'));
                 }
             }
 
@@ -449,14 +453,14 @@
         }
 
 
-             // ==================== INICIALIZAÇÃO ====================
+        // ==================== INICIALIZAÇÃO ====================
         async function init() {
             if (!checkAuth()) return;
             await carregarQuestoes();
             await carregarRespostas();
 
             await carregarPlanoEstudos();  // ← NOVO PLANO DE ESTUDOS
-                  
+
             // Forçar sincronização dos checkboxes com o progresso
             setTimeout(() => {
                 // PRIMEIRO: inicializar dataset.logico

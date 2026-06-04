@@ -91,11 +91,11 @@ function renderizarQuestoes() {
             }
             const quest = questoes.find(q => q.id === id);
             const acertou = (selected === quest.correta);
-            
+
             // Salvar resposta
             await salvarResposta(id, acertou, selected);
             await carregarRespostas();
-            
+
             // Atualizar apenas a questão respondida (sem recarregar tudo)
             const questElement = document.getElementById(`q${id}`);
             if (questElement) {
@@ -116,12 +116,45 @@ function renderizarQuestoes() {
                 const btnResponder = questElement.querySelector('.btn-responder');
                 if (btnResponder) btnResponder.remove();
             }
-            
+
             // Atualizar estatísticas
             carregarEstatisticas();
             atualizarStats();
+            atualizarBarraProgresso();
         };
     });
+    atualizarBarraProgresso();
+
+}
+
+// Atualiza a barra de progresso com base nas questões respondidas
+function atualizarBarraProgresso() {
+    const todasQuestoes = document.querySelectorAll('#questoesList .question-card');
+    const total = todasQuestoes.length;
+
+    if (total === 0) {
+        const barra = document.getElementById('barraProgressoSimulado');
+        if (barra) {
+            barra.style.width = '0%';
+            barra.textContent = '0%';
+        }
+        return;
+    }
+
+    // Conta quantas questões têm feedback (já foram respondidas)
+    let respondidas = 0;
+    todasQuestoes.forEach(questao => {
+        const temFeedback = questao.querySelector('.feedback');
+        if (temFeedback) respondidas++;
+    });
+
+    const percentual = (respondidas / total) * 100;
+    const barra = document.getElementById('barraProgressoSimulado');
+
+    if (barra) {
+        barra.style.width = percentual + '%';
+        barra.textContent = Math.round(percentual) + '%';
+    }
 }
 
 function preencherFiltros() {
