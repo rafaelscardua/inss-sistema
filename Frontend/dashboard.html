@@ -386,10 +386,18 @@
 
                         if (barraFill) {
                             barraFill.style.width = `${novoProgressoDisc}%`;
+                            barraFill.setAttribute('style', `width: ${novoProgressoDisc}% !important`);
+                            console.log(`Barra atualizada para ${novoProgressoDisc}%`);
                         }
                         if (porcentagemSpan) {
                             porcentagemSpan.innerText = `${novoProgressoDisc}%`;
+                            porcentagemSpan.textContent = `${novoProgressoDisc}%`;
+                            console.log(`Texto da barra atualizado para ${novoProgressoDisc}%`);
                         }
+
+                        disciplinaDiv.style.display = 'none';
+                        disciplinaDiv.offsetHeight;
+                        disciplinaDiv.style.display = '';
                     }
                 } else {
                     alert("Erro: " + data.erro);
