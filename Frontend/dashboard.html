@@ -312,11 +312,12 @@
                 window.event.cancelBubble = true;
             }
 
-            console.log("✅ Checkbox clicado!", checkbox.checked);
+            // Usar o estado lógico em vez do checked visual
+            const estaEstudado = checkbox.dataset.logico === 'true';
+            console.log("✅ toggleEstudado - estado lógico:", estaEstudado);
 
             const assuntoId = parseInt(checkbox.getAttribute('data-id'));
             const total = parseInt(checkbox.getAttribute('data-total'));
-            const estaEstudado = checkbox.checked;
 
             const novoProgresso = estaEstudado ? 100 : 0;
             const respondidas = estaEstudado ? total : 0;
@@ -444,16 +445,26 @@
             setTimeout(() => {
                 document.querySelectorAll('.check-estudado').forEach(cb => {
                     cb.removeAttribute('onclick');
+
+                    // Inicializar o estado lógico baseado no checked visual
+                    cb.dataset.logico = cb.checked;
+
                     cb.addEventListener('click', function (e) {
                         e.stopPropagation();
                         e.preventDefault();
-                        // INVERTER O ESTADO VISUAL PRIMEIRO
-                        this.checked = !this.checked;
-                        console.log("Click capturado! Novo estado:", this.checked);
+
+                        // Inverter o estado lógico
+                        const novoEstado = this.dataset.logico === 'true' ? false : true;
+                        this.dataset.logico = novoEstado;
+
+                        // Aplicar visualmente
+                        this.checked = novoEstado;
+
+                        console.log("Click capturado! Novo estado lógico:", novoEstado);
                         toggleEstudado(this);
                     });
                 });
-                console.log("✅ Eventos recriados com inversão visual");
+                console.log("✅ Eventos recriados com estado lógico");
             }, 2000);
 
 
