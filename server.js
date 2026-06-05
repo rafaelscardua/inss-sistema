@@ -378,7 +378,7 @@ app.get('/api/respostas/:usuario_id', async (req, res) => {
 app.get('/api/estatisticas/:usuario_id', async (req, res) => {
   const { usuario_id } = req.params;
   try {
-    // Primeiro, buscar todas as matérias e totais de questões
+    // Buscar total de questões por matéria
     const totaisResult = await pool.query(`
       SELECT 
         materia,
@@ -387,28 +387,30 @@ app.get('/api/estatisticas/:usuario_id', async (req, res) => {
       GROUP BY materia
     `);
     
-    // Depois, buscar os acertos do usuário
+    // Buscar acertos do usuário por matéria
     const acertosResult = await pool.query(`
       SELECT 
         q.materia,
         COUNT(*) as acertos
       FROM respostas_usuario r
       JOIN questoes_base q ON r.questao_id = q.id
-      WHERE r.usuario_id = $1 AND r.acertou = true
+      WHERE r.usuario_id = $1 AND r.acertou = true AND r.respondida = true
       GROUP BY q.materia
     `, [usuario_id]);
     
-    // Combinar os resultados
+    // Criar mapa de totais
     const totaisMap = {};
     totaisResult.rows.forEach(row => {
-      totaisMap[row.materia] = row.total_questoes;
+      totaisMap[row.materia] = parseInt(row.total_questoes);
     });
     
+    // Criar mapa de acertos
     const acertosMap = {};
     acertosResult.rows.forEach(row => {
-      acertosMap[row.materia] = row.acertos;
+      acertosMap[row.materia] = parseInt(row.acertos);
     });
     
+    // Combinar
     const estatisticas = Object.keys(totaisMap).map(materia => ({
       materia: materia,
       total_questoes: totaisMap[materia],
