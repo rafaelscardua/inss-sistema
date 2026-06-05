@@ -378,18 +378,47 @@ app.get('/api/respostas/:usuario_id', async (req, res) => {
 app.get('/api/estatisticas/:usuario_id', async (req, res) => {
   const { usuario_id } = req.params;
   try {
-    const result = await pool.query(`
+    // Primeiro, buscar todas as matérias e totais de questões
+    const totaisResult = await pool.query(`
+      SELECT 
+        materia,
+        COUNT(*) as total_questoes
+      FROM questoes_base
+      GROUP BY materia
+    `);
+    
+    // Depois, buscar os acertos do usuário
+    const acertosResult = await pool.query(`
       SELECT 
         q.materia,
-        COUNT(DISTINCT r.questao_id) as total_respondidas,
-        SUM(CASE WHEN r.acertou THEN 1 ELSE 0 END) as acertos
+        COUNT(*) as acertos
       FROM respostas_usuario r
       JOIN questoes_base q ON r.questao_id = q.id
-      WHERE r.usuario_id = $1 AND r.respondida = true
+      WHERE r.usuario_id = $1 AND r.acertou = true
       GROUP BY q.materia
     `, [usuario_id]);
-    res.json({ sucesso: true, estatisticas: result.rows });
+    
+    // Combinar os resultados
+    const totaisMap = {};
+    totaisResult.rows.forEach(row => {
+      totaisMap[row.materia] = row.total_questoes;
+    });
+    
+    const acertosMap = {};
+    acertosResult.rows.forEach(row => {
+      acertosMap[row.materia] = row.acertos;
+    });
+    
+    const estatisticas = Object.keys(totaisMap).map(materia => ({
+      materia: materia,
+      total_questoes: totaisMap[materia],
+      acertos: acertosMap[materia] || 0,
+      total_respondidas: acertosMap[materia] || 0
+    }));
+    
+    res.json({ sucesso: true, estatisticas });
   } catch (error) {
+    console.error('Erro ao buscar estatísticas:', error);
     res.status(500).json({ sucesso: false, erro: 'Erro ao buscar estatísticas' });
   }
 });
