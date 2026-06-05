@@ -123,19 +123,59 @@ app.get('/api/questoes', async (req, res) => {
 });
 
 
-// Criar nova questão (POST)
+// Criar nova questão (POST) - COM CRIAÇÃO AUTOMÁTICA DE DISCIPLINA E ASSUNTO
 app.post('/api/questoes', async (req, res) => {
   const { materia, assunto, enunciado, alternativas, correta, explicacao } = req.body;
+  
   try {
-    const result = await pool.query(
-      `INSERT INTO questoes_base (materia, assunto, enunciado, alternativas, correta, explicacao) 
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [materia, assunto, enunciado, alternativas, correta, explicacao || '']
+    // 1. Verificar ou criar a DISCIPLINA
+    let disciplinaResult = await pool.query(
+      'SELECT id FROM disciplinas WHERE nome = $1',
+      [materia]
     );
+    
+    let disciplina_id;
+    if (disciplinaResult.rows.length === 0) {
+      const newDisciplina = await pool.query(
+        'INSERT INTO disciplinas (nome) VALUES ($1) RETURNING id',
+        [materia]
+      );
+      disciplina_id = newDisciplina.rows[0].id;
+      console.log(`✅ Nova disciplina criada: ${materia} (id: ${disciplina_id})`);
+    } else {
+      disciplina_id = disciplinaResult.rows[0].id;
+    }
+    
+    // 2. Verificar ou criar o ASSUNTO
+    let assuntoResult = await pool.query(
+      'SELECT id FROM assuntos WHERE nome = $1 AND disciplina_id = $2',
+      [assunto, disciplina_id]
+    );
+    
+    let assunto_id;
+    if (assuntoResult.rows.length === 0) {
+      const newAssunto = await pool.query(
+        'INSERT INTO assuntos (disciplina_id, nome) VALUES ($1, $2) RETURNING id',
+        [disciplina_id, assunto]
+      );
+      assunto_id = newAssunto.rows[0].id;
+      console.log(`✅ Novo assunto criado: ${assunto} (id: ${assunto_id})`);
+    } else {
+      assunto_id = assuntoResult.rows[0].id;
+    }
+    
+    // 3. Inserir a questão com os IDs
+    const result = await pool.query(
+      `INSERT INTO questoes_base (materia, assunto, enunciado, alternativas, correta, explicacao, disciplina_id, assunto_id) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [materia, assunto, enunciado, alternativas, correta, explicacao || '', disciplina_id, assunto_id]
+    );
+    
     res.json({ sucesso: true, questao: result.rows[0] });
+    
   } catch (error) {
     console.error('Erro ao criar questão:', error);
-    res.status(500).json({ sucesso: false, erro: 'Erro ao criar questão' });
+    res.status(500).json({ sucesso: false, erro: 'Erro ao criar questão: ' + error.message });
   }
 });
 
