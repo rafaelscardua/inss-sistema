@@ -99,8 +99,70 @@ function renderizarPlanoEstudos() {
 
 // ==================== ANEXOS ====================
 
+// ==================== ANEXOS ====================
+
 async function carregarAnexos(materia, topico, elementoContainer) {
-    // ... mantenha suas funções de anexos existentes ...
+    try {
+        const usuario = JSON.parse(localStorage.getItem('usuario'));
+        const res = await fetch(`/api/anexos/${encodeURIComponent(materia)}/${encodeURIComponent(topico)}`, {
+            headers: { 'x-user-email': usuario.email }
+        });
+        const data = await res.json();
+
+        if (data.sucesso && data.anexos && data.anexos.length > 0) {
+            elementoContainer.innerHTML = `
+                <div style="margin-top: 10px; padding: 10px; background: #f0f0f0; border-radius: 8px;">
+                    <strong>📎 Mapas Mentais e Anexos:</strong>
+                    <ul style="margin-top: 5px; list-style: none; padding-left: 0;">
+                        ${data.anexos.map(anexo => `
+                            <li style="margin: 5px 0;">
+                                <a href="#" onclick="baixarAnexo(${anexo.id}, '${anexo.nome_original}'); return false;" style="text-decoration: none; color: #3498db;">
+                                    📄 ${anexo.nome_original} (${formatarBytes(anexo.tamanho_bytes)})
+                                </a>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+            `;
+        } else {
+            elementoContainer.innerHTML = '';
+        }
+    } catch (error) {
+        console.error('Erro ao carregar anexos:', error);
+        elementoContainer.innerHTML = '';
+    }
+}
+
+function formatarBytes(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+async function baixarAnexo(id, nomeOriginal) {
+    try {
+        const usuario = JSON.parse(localStorage.getItem('usuario'));
+        const res = await fetch(`/api/anexos/download/${id}`, {
+            headers: { 'x-user-email': usuario.email }
+        });
+        const data = await res.json();
+
+        if (data.sucesso && data.arquivo_base64) {
+            const link = document.createElement('a');
+            link.href = data.arquivo_base64;
+            link.download = nomeOriginal;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } else {
+            alert('Erro ao baixar anexo');
+        }
+    } catch (error) {
+        console.error('Erro ao baixar:', error);
+        alert('Erro ao baixar anexo');
+    }
 }
 
 
@@ -129,10 +191,10 @@ function atualizarCardsPlano() {
 
     document.getElementById("progressoGeral").innerText = `${progressoGeral}%`;
     document.getElementById("topicosDominados").innerText = topicosDominados;
-    
+
     // Questões Restantes = Total Geral - Total Acertos
     const questoesRestantes = totalQuestoesGeral - totalAcertosGeral;
     document.getElementById("subtopicosFeitos").innerText = questoesRestantes;
-    
+
     document.getElementById("totalAcertos").innerText = totalAcertosGeral;
 }
