@@ -1283,11 +1283,10 @@
         let assuntosPermissoes = [];
 
         async function abrirModalPermissoes(usuarioId, usuarioNome) {
-            usuarioPermissoesAtual = usuarioId;
+            usuarioPermissoesAtual = usuarioId;  // ⬅️ ADICIONE ESTA LINHA!
+            console.log('Abrindo modal para usuário:', usuarioId);
             document.getElementById("modalPermissoesTitulo").innerHTML = `📚 Permissões - ${usuarioNome}`;
             document.getElementById("modalPermissoes").style.display = "flex";
-
-            // Carregar assuntos e permissões atuais
             await carregarAssuntosPermissoes(usuarioId);
         }
 
