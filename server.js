@@ -44,139 +44,139 @@ initDatabase().catch(err => console.error('Erro ao inicializar banco:', err));
 // Cadastro
 // Cadastro com lista de emails permitidos
 app.post('/api/cadastrar', async (req, res) => {
-  const { nome, email, senha } = req.body;
-  
-  // Verifica se email está na lista de permitidos
-  const allowedEmails = process.env.ALLOWED_EMAILS ? process.env.ALLOWED_EMAILS.split(',') : [];
-  const isAllowed = allowedEmails.includes(email);
-  
-  if (!isAllowed) {
-    return res.status(403).json({ 
-      sucesso: false, 
-      erro: 'Email não autorizado. Contate o administrador para se cadastrar.' 
-    });
-  }
-  
-  try {
-    const senhaHash = await bcrypt.hash(senha, 10);
-    const result = await pool.query(
-      'INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING id, nome, email',
-      [nome, email, senhaHash]
-    );
-    res.json({ sucesso: true, usuario: result.rows[0] });
-  } catch (error) {
-    if (error.code === '23505') {
-      res.status(400).json({ sucesso: false, erro: 'Email já cadastrado!' });
-    } else {
-      res.status(500).json({ sucesso: false, erro: 'Erro ao cadastrar' });
+    const { nome, email, senha } = req.body;
+
+    // Verifica se email está na lista de permitidos
+    const allowedEmails = process.env.ALLOWED_EMAILS ? process.env.ALLOWED_EMAILS.split(',') : [];
+    const isAllowed = allowedEmails.includes(email);
+
+    if (!isAllowed) {
+        return res.status(403).json({
+            sucesso: false,
+            erro: 'Email não autorizado. Contate o administrador para se cadastrar.'
+        });
     }
-  }
+
+    try {
+        const senhaHash = await bcrypt.hash(senha, 10);
+        const result = await pool.query(
+            'INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING id, nome, email',
+            [nome, email, senhaHash]
+        );
+        res.json({ sucesso: true, usuario: result.rows[0] });
+    } catch (error) {
+        if (error.code === '23505') {
+            res.status(400).json({ sucesso: false, erro: 'Email já cadastrado!' });
+        } else {
+            res.status(500).json({ sucesso: false, erro: 'Erro ao cadastrar' });
+        }
+    }
 });
 
 // Login
 app.post('/api/login', async (req, res) => {
-  const { email, senha } = req.body;
-  try {
-    const result = await pool.query('SELECT * FROM usuarios WHERE email = $1', [email]);
-    if (result.rows.length === 0) {
-      return res.status(401).json({ sucesso: false, erro: 'Email ou senha inválidos' });
+    const { email, senha } = req.body;
+    try {
+        const result = await pool.query('SELECT * FROM usuarios WHERE email = $1', [email]);
+        if (result.rows.length === 0) {
+            return res.status(401).json({ sucesso: false, erro: 'Email ou senha inválidos' });
+        }
+        const usuario = result.rows[0];
+        const valido = await bcrypt.compare(senha, usuario.senha);
+        if (!valido) {
+            return res.status(401).json({ sucesso: false, erro: 'Email ou senha inválidos' });
+        }
+        res.json({ sucesso: true, usuario: { id: usuario.id, nome: usuario.nome, email: usuario.email } });
+    } catch (error) {
+        res.status(500).json({ sucesso: false, erro: 'Erro ao fazer login' });
     }
-    const usuario = result.rows[0];
-    const valido = await bcrypt.compare(senha, usuario.senha);
-    if (!valido) {
-      return res.status(401).json({ sucesso: false, erro: 'Email ou senha inválidos' });
-    }
-    res.json({ sucesso: true, usuario: { id: usuario.id, nome: usuario.nome, email: usuario.email } });
-  } catch (error) {
-    res.status(500).json({ sucesso: false, erro: 'Erro ao fazer login' });
-  }
 });
 
 // ==================== ROTAS DE QUESTÕES ====================
 
 // Listar questões
 app.get('/api/questoes', async (req, res) => {
-  const { materia, assunto } = req.query;
-  let query = 'SELECT * FROM questoes_base';
-  let params = [];
-  let conditions = [];
-  
-  if (materia && materia !== 'todas') {
-    conditions.push(`materia = $${params.length + 1}`);
-    params.push(materia);
-  }
-  if (assunto && assunto !== 'todos') {
-    conditions.push(`assunto = $${params.length + 1}`);
-    params.push(assunto);
-  }
-  if (conditions.length > 0) {
-    query += ' WHERE ' + conditions.join(' AND ');
-  }
-  query += ' ORDER BY id';
-  
-  try {
-    const result = await pool.query(query, params);
-    res.json({ sucesso: true, questoes: result.rows });
-  } catch (error) {
-    res.status(500).json({ sucesso: false, erro: 'Erro ao buscar questões' });
-  }
+    const { materia, assunto } = req.query;
+    let query = 'SELECT * FROM questoes_base';
+    let params = [];
+    let conditions = [];
+
+    if (materia && materia !== 'todas') {
+        conditions.push(`materia = $${params.length + 1}`);
+        params.push(materia);
+    }
+    if (assunto && assunto !== 'todos') {
+        conditions.push(`assunto = $${params.length + 1}`);
+        params.push(assunto);
+    }
+    if (conditions.length > 0) {
+        query += ' WHERE ' + conditions.join(' AND ');
+    }
+    query += ' ORDER BY id';
+
+    try {
+        const result = await pool.query(query, params);
+        res.json({ sucesso: true, questoes: result.rows });
+    } catch (error) {
+        res.status(500).json({ sucesso: false, erro: 'Erro ao buscar questões' });
+    }
 });
 
 
 // Criar nova questão (POST) - COM CRIAÇÃO AUTOMÁTICA DE DISCIPLINA E ASSUNTO
 app.post('/api/questoes', async (req, res) => {
-  const { materia, assunto, enunciado, alternativas, correta, explicacao } = req.body;
-  
-  try {
-    // 1. Verificar ou criar a DISCIPLINA
-    let disciplinaResult = await pool.query(
-      'SELECT id FROM disciplinas WHERE nome = $1',
-      [materia]
-    );
-    
-    let disciplina_id;
-    if (disciplinaResult.rows.length === 0) {
-      const newDisciplina = await pool.query(
-        'INSERT INTO disciplinas (nome) VALUES ($1) RETURNING id',
-        [materia]
-      );
-      disciplina_id = newDisciplina.rows[0].id;
-      console.log(`✅ Nova disciplina criada: ${materia} (id: ${disciplina_id})`);
-    } else {
-      disciplina_id = disciplinaResult.rows[0].id;
-    }
-    
-    // 2. Verificar ou criar o ASSUNTO
-    let assuntoResult = await pool.query(
-      'SELECT id FROM assuntos WHERE nome = $1 AND disciplina_id = $2',
-      [assunto, disciplina_id]
-    );
-    
-    let assunto_id;
-    if (assuntoResult.rows.length === 0) {
-      const newAssunto = await pool.query(
-        'INSERT INTO assuntos (disciplina_id, nome) VALUES ($1, $2) RETURNING id',
-        [disciplina_id, assunto]
-      );
-      assunto_id = newAssunto.rows[0].id;
-      console.log(`✅ Novo assunto criado: ${assunto} (id: ${assunto_id})`);
-    } else {
-      assunto_id = assuntoResult.rows[0].id;
-    }
-    
-    // 3. Inserir a questão com os IDs
-    const result = await pool.query(
-      `INSERT INTO questoes_base (materia, assunto, enunciado, alternativas, correta, explicacao, disciplina_id, assunto_id) 
+    const { materia, assunto, enunciado, alternativas, correta, explicacao } = req.body;
+
+    try {
+        // 1. Verificar ou criar a DISCIPLINA
+        let disciplinaResult = await pool.query(
+            'SELECT id FROM disciplinas WHERE nome = $1',
+            [materia]
+        );
+
+        let disciplina_id;
+        if (disciplinaResult.rows.length === 0) {
+            const newDisciplina = await pool.query(
+                'INSERT INTO disciplinas (nome) VALUES ($1) RETURNING id',
+                [materia]
+            );
+            disciplina_id = newDisciplina.rows[0].id;
+            console.log(`✅ Nova disciplina criada: ${materia} (id: ${disciplina_id})`);
+        } else {
+            disciplina_id = disciplinaResult.rows[0].id;
+        }
+
+        // 2. Verificar ou criar o ASSUNTO
+        let assuntoResult = await pool.query(
+            'SELECT id FROM assuntos WHERE nome = $1 AND disciplina_id = $2',
+            [assunto, disciplina_id]
+        );
+
+        let assunto_id;
+        if (assuntoResult.rows.length === 0) {
+            const newAssunto = await pool.query(
+                'INSERT INTO assuntos (disciplina_id, nome) VALUES ($1, $2) RETURNING id',
+                [disciplina_id, assunto]
+            );
+            assunto_id = newAssunto.rows[0].id;
+            console.log(`✅ Novo assunto criado: ${assunto} (id: ${assunto_id})`);
+        } else {
+            assunto_id = assuntoResult.rows[0].id;
+        }
+
+        // 3. Inserir a questão com os IDs
+        const result = await pool.query(
+            `INSERT INTO questoes_base (materia, assunto, enunciado, alternativas, correta, explicacao, disciplina_id, assunto_id) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [materia, assunto, enunciado, alternativas, correta, explicacao || '', disciplina_id, assunto_id]
-    );
-    
-    res.json({ sucesso: true, questao: result.rows[0] });
-    
-  } catch (error) {
-    console.error('Erro ao criar questão:', error);
-    res.status(500).json({ sucesso: false, erro: 'Erro ao criar questão: ' + error.message });
-  }
+            [materia, assunto, enunciado, alternativas, correta, explicacao || '', disciplina_id, assunto_id]
+        );
+
+        res.json({ sucesso: true, questao: result.rows[0] });
+
+    } catch (error) {
+        console.error('Erro ao criar questão:', error);
+        res.status(500).json({ sucesso: false, erro: 'Erro ao criar questão: ' + error.message });
+    }
 });
 
 // ==================== ROTAS DE PROGRESSO DOS ASSUNTOS ====================
@@ -187,19 +187,19 @@ app.put('/api/assuntos/:id/progresso', async (req, res) => {
         const { id } = req.params;
         const { progresso } = req.body;
         const userEmail = req.headers['x-user-email'];
-        
+
         console.log(`📊 Atualizando progresso do assunto ${id} para ${progresso}%`);
-        
+
         // Verificar autenticação
         if (!userEmail) {
             return res.status(401).json({ erro: 'Email não fornecido' });
         }
-        
+
         // Atualizar progresso
         await pool.query('UPDATE assuntos SET progresso = $1 WHERE id = $2', [progresso, id]);
-        
+
         res.json({ sucesso: true, progresso });
-        
+
     } catch (error) {
         console.error('Erro ao atualizar progresso:', error);
         res.status(500).json({ erro: error.message });
@@ -212,17 +212,17 @@ app.put('/api/assuntos/:id/status', async (req, res) => {
         const { id } = req.params;
         const { status } = req.body;
         const userEmail = req.headers['x-user-email'];
-        
+
         console.log(`📌 Atualizando status do assunto ${id} para ${status}`);
-        
+
         if (!userEmail) {
             return res.status(401).json({ erro: 'Email não fornecido' });
         }
-        
+
         await pool.query('UPDATE assuntos SET status = $1 WHERE id = $2', [status, id]);
-        
+
         res.json({ sucesso: true, status });
-        
+
     } catch (error) {
         console.error('Erro ao atualizar status:', error);
         res.status(500).json({ erro: error.message });
@@ -243,10 +243,10 @@ app.get('/api/anexos/download/:id', async (req, res) => {
         if (result.rows.length === 0) {
             return res.status(404).json({ erro: 'Anexo não encontrado' });
         }
-        
+
         const anexo = result.rows[0];
-        res.json({ 
-            sucesso: true, 
+        res.json({
+            sucesso: true,
             arquivo_base64: anexo.arquivo_base64,
             nome_original: anexo.nome_original
         });
@@ -260,11 +260,11 @@ app.get('/api/anexos/download/:id', async (req, res) => {
 app.get('/api/anexos/todos', async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
     const userEmail = req.headers['x-user-email'];
-    
+
     if (userEmail !== adminEmail) {
         return res.status(403).json({ erro: 'Acesso negado' });
     }
-    
+
     try {
         const result = await pool.query('SELECT * FROM anexos_topico ORDER BY id DESC');
         res.json({ sucesso: true, anexos: result.rows });
@@ -291,13 +291,13 @@ app.get('/api/anexos/:materia/:topico', async (req, res) => {
 app.post('/api/anexos/upload', async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
     const userEmail = req.headers['x-user-email'];
-    
+
     if (userEmail !== adminEmail) {
         return res.status(403).json({ sucesso: false, erro: 'Apenas administrador pode adicionar anexos' });
     }
-    
+
     const { materia, topico, nome_original, tamanho_bytes, arquivo_base64 } = req.body;
-    
+
     try {
         await pool.query(
             `INSERT INTO anexos_topico (materia, topico, nome_original, nome_arquivo, tamanho_bytes, arquivo_base64) 
@@ -316,11 +316,11 @@ app.delete('/api/anexos/:id', async (req, res) => {
     const { id } = req.params;
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
     const userEmail = req.headers['x-user-email'];
-    
+
     if (userEmail !== adminEmail) {
         return res.status(403).json({ sucesso: false, erro: 'Apenas administrador pode excluir anexos' });
     }
-    
+
     try {
         await pool.query('DELETE FROM anexos_topico WHERE id = $1', [id]);
         res.json({ sucesso: true });
@@ -336,59 +336,59 @@ app.delete('/api/anexos/:id', async (req, res) => {
 
 // Registrar resposta
 app.post('/api/respostas', async (req, res) => {
-  const { usuario_id, questao_id, acertou, resposta_usuario } = req.body;
-  try {
-    await pool.query(
-      `INSERT INTO respostas_usuario (usuario_id, questao_id, respondida, acertou, resposta_usuario, data_resposta)
+    const { usuario_id, questao_id, acertou, resposta_usuario } = req.body;
+    try {
+        await pool.query(
+            `INSERT INTO respostas_usuario (usuario_id, questao_id, respondida, acertou, resposta_usuario, data_resposta)
        VALUES ($1, $2, true, $3, $4, NOW())
        ON CONFLICT (usuario_id, questao_id) 
        DO UPDATE SET respondida = true, acertou = $3, resposta_usuario = $4, data_resposta = NOW()`,
-      [usuario_id, questao_id, acertou, resposta_usuario]
-    );
-    res.json({ sucesso: true });
-  } catch (error) {
-    res.status(500).json({ sucesso: false, erro: 'Erro ao salvar resposta' });
-  }
+            [usuario_id, questao_id, acertou, resposta_usuario]
+        );
+        res.json({ sucesso: true });
+    } catch (error) {
+        res.status(500).json({ sucesso: false, erro: 'Erro ao salvar resposta' });
+    }
 });
 
 // Buscar respostas do usuário
 app.get('/api/respostas/:usuario_id', async (req, res) => {
-  const { usuario_id } = req.params;
-  try {
-    const result = await pool.query(
-      'SELECT questao_id, respondida, acertou, resposta_usuario FROM respostas_usuario WHERE usuario_id = $1',
-      [usuario_id]
-    );
-    const respostas = {};
-    result.rows.forEach(r => {
-      respostas[r.questao_id] = { 
-        respondida: r.respondida, 
-        acertou: r.acertou, 
-        resposta_usuario: r.resposta_usuario 
-      };
-    });
-    res.json({ sucesso: true, respostas });
-  } catch (error) {
-    res.status(500).json({ sucesso: false, erro: 'Erro ao buscar respostas' });
-  }
+    const { usuario_id } = req.params;
+    try {
+        const result = await pool.query(
+            'SELECT questao_id, respondida, acertou, resposta_usuario FROM respostas_usuario WHERE usuario_id = $1',
+            [usuario_id]
+        );
+        const respostas = {};
+        result.rows.forEach(r => {
+            respostas[r.questao_id] = {
+                respondida: r.respondida,
+                acertou: r.acertou,
+                resposta_usuario: r.resposta_usuario
+            };
+        });
+        res.json({ sucesso: true, respostas });
+    } catch (error) {
+        res.status(500).json({ sucesso: false, erro: 'Erro ao buscar respostas' });
+    }
 });
 
 // ==================== ESTATÍSTICAS ====================
 
 app.get('/api/estatisticas/:usuario_id', async (req, res) => {
-  const { usuario_id } = req.params;
-  try {
-    // Buscar total de questões por matéria
-    const totaisResult = await pool.query(`
+    const { usuario_id } = req.params;
+    try {
+        // Buscar total de questões por matéria
+        const totaisResult = await pool.query(`
       SELECT 
         materia,
         COUNT(*) as total_questoes
       FROM questoes_base
       GROUP BY materia
     `);
-    
-    // Buscar acertos do usuário por matéria
-    const acertosResult = await pool.query(`
+
+        // Buscar acertos do usuário por matéria
+        const acertosResult = await pool.query(`
       SELECT 
         q.materia,
         COUNT(*) as acertos
@@ -397,32 +397,32 @@ app.get('/api/estatisticas/:usuario_id', async (req, res) => {
       WHERE r.usuario_id = $1 AND r.acertou = true AND r.respondida = true
       GROUP BY q.materia
     `, [usuario_id]);
-    
-    // Criar mapa de totais
-    const totaisMap = {};
-    totaisResult.rows.forEach(row => {
-      totaisMap[row.materia] = parseInt(row.total_questoes);
-    });
-    
-    // Criar mapa de acertos
-    const acertosMap = {};
-    acertosResult.rows.forEach(row => {
-      acertosMap[row.materia] = parseInt(row.acertos);
-    });
-    
-    // Combinar
-    const estatisticas = Object.keys(totaisMap).map(materia => ({
-      materia: materia,
-      total_questoes: totaisMap[materia],
-      acertos: acertosMap[materia] || 0,
-      total_respondidas: acertosMap[materia] || 0
-    }));
-    
-    res.json({ sucesso: true, estatisticas });
-  } catch (error) {
-    console.error('Erro ao buscar estatísticas:', error);
-    res.status(500).json({ sucesso: false, erro: 'Erro ao buscar estatísticas' });
-  }
+
+        // Criar mapa de totais
+        const totaisMap = {};
+        totaisResult.rows.forEach(row => {
+            totaisMap[row.materia] = parseInt(row.total_questoes);
+        });
+
+        // Criar mapa de acertos
+        const acertosMap = {};
+        acertosResult.rows.forEach(row => {
+            acertosMap[row.materia] = parseInt(row.acertos);
+        });
+
+        // Combinar
+        const estatisticas = Object.keys(totaisMap).map(materia => ({
+            materia: materia,
+            total_questoes: totaisMap[materia],
+            acertos: acertosMap[materia] || 0,
+            total_respondidas: acertosMap[materia] || 0
+        }));
+
+        res.json({ sucesso: true, estatisticas });
+    } catch (error) {
+        console.error('Erro ao buscar estatísticas:', error);
+        res.status(500).json({ sucesso: false, erro: 'Erro ao buscar estatísticas' });
+    }
 });
 
 console.log('=== CONFIGURAÇÕES APLICADAS ===');
@@ -430,12 +430,12 @@ console.log('Rotas registradas: /api/cadastrar, /api/login, /api/questoes');
 
 // Rota principal - serve o login.html
 app.get('/', (req, res) => {
-  res.sendFile('login.html', { root: './Frontend' });
+    res.sendFile('login.html', { root: './Frontend' });
 });
 
 // Rota para qualquer outra página HTML
 app.get('*.html', (req, res) => {
-  res.sendFile(req.path, { root: './Frontend' });
+    res.sendFile(req.path, { root: './Frontend' });
 });
 
 
@@ -464,7 +464,7 @@ app.get('/api/admin/usuarios', async (req, res) => {
         if (!await isAdmin(userEmail)) {
             return res.status(403).json({ sucesso: false, erro: 'Acesso negado' });
         }
-        
+
         const result = await pool.query(
             'SELECT id, nome, email, data_criacao FROM usuarios ORDER BY nome'
         );
@@ -482,7 +482,7 @@ app.get('/api/admin/estatisticas/:usuario_id', async (req, res) => {
         if (!await isAdmin(userEmail)) {
             return res.status(403).json({ sucesso: false, erro: 'Acesso negado' });
         }
-        
+
         const result = await pool.query(`
             SELECT 
                 q.materia,
@@ -495,7 +495,7 @@ app.get('/api/admin/estatisticas/:usuario_id', async (req, res) => {
             GROUP BY q.materia
             ORDER BY q.materia
         `, [usuario_id]);
-        
+
         const errosResult = await pool.query(`
             SELECT 
                 q.id, q.materia, q.assunto, q.enunciado, q.correta,
@@ -506,9 +506,9 @@ app.get('/api/admin/estatisticas/:usuario_id', async (req, res) => {
             ORDER BY r.data_resposta DESC
             LIMIT 50
         `, [usuario_id]);
-        
-        res.json({ 
-            sucesso: true, 
+
+        res.json({
+            sucesso: true,
             estatisticas: result.rows,
             erros: errosResult.rows
         });
@@ -522,32 +522,32 @@ app.delete('/api/admin/excluir-usuario/:id', async (req, res) => {
     const { id } = req.params;
     const { senha } = req.body;
     const adminEmail = req.headers['x-user-email'];
-    
+
     console.log("Excluindo usuário:", id);
     console.log("Admin email:", adminEmail);
-    
+
     // Verificar se é admin
     if (!await isAdmin(adminEmail)) {
         return res.status(403).json({ sucesso: false, erro: 'Acesso negado' });
     }
-    
+
     // Verificar senha do admin
     const adminResult = await pool.query('SELECT senha FROM usuarios WHERE email = $1', [adminEmail]);
     if (adminResult.rows.length === 0) {
         return res.status(401).json({ sucesso: false, erro: 'Admin não encontrado' });
     }
-    
+
     const senhaValida = await bcrypt.compare(senha, adminResult.rows[0].senha);
     if (!senhaValida) {
         return res.status(401).json({ sucesso: false, erro: 'Senha incorreta' });
     }
-    
+
     try {
         await pool.query('DELETE FROM respostas_usuario WHERE usuario_id = $1', [id]);
         await pool.query('DELETE FROM notas_usuario WHERE usuario_id = $1', [id]);
-    //    await pool.query('DELETE FROM progresso_usuario WHERE usuario_id = $1', [id]);
+        //    await pool.query('DELETE FROM progresso_usuario WHERE usuario_id = $1', [id]);
         await pool.query('DELETE FROM usuarios WHERE id = $1', [id]);
-        
+
         console.log("Usuário excluído com sucesso!");
         res.json({ sucesso: true, mensagem: 'Usuário excluído com sucesso' });
     } catch (error) {
@@ -640,19 +640,19 @@ app.put('/api/questoes/:id', async (req, res) => {
 app.get('/api/admin/disciplinas', async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
     const userEmail = req.headers['x-user-email'];
-    
+
     if (userEmail !== adminEmail) {
         return res.status(403).json({ erro: 'Acesso negado' });
     }
-    
+
     try {
         // Buscar disciplinas
         const disciplinasResult = await pool.query(
             'SELECT id, nome, ordem, ativo, data_criacao FROM disciplinas ORDER BY ordem, id'
         );
-        
+
         const disciplinas = disciplinasResult.rows;
-        
+
         // Buscar assuntos para cada disciplina
         for (let i = 0; i < disciplinas.length; i++) {
             const assuntosResult = await pool.query(
@@ -661,7 +661,7 @@ app.get('/api/admin/disciplinas', async (req, res) => {
             );
             disciplinas[i].assuntos = assuntosResult.rows;
         }
-        
+
         res.json({ sucesso: true, disciplinas });
     } catch (error) {
         console.error('Erro detalhado:', error);
@@ -673,11 +673,11 @@ app.get('/api/admin/disciplinas', async (req, res) => {
 app.post('/api/admin/disciplinas', async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
     const userEmail = req.headers['x-user-email'];
-    
+
     if (userEmail !== adminEmail) {
         return res.status(403).json({ erro: 'Acesso negado' });
     }
-    
+
     const { nome } = req.body;
     try {
         const result = await pool.query(
@@ -696,11 +696,11 @@ app.put('/api/admin/disciplinas/:id', async (req, res) => {
     const { nome } = req.body;
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
     const userEmail = req.headers['x-user-email'];
-    
+
     if (userEmail !== adminEmail) {
         return res.status(403).json({ erro: 'Acesso negado' });
     }
-    
+
     try {
         await pool.query('UPDATE disciplinas SET nome = $1 WHERE id = $2', [nome, id]);
         res.json({ sucesso: true });
@@ -714,11 +714,11 @@ app.delete('/api/admin/disciplinas/:id', async (req, res) => {
     const { id } = req.params;
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
     const userEmail = req.headers['x-user-email'];
-    
+
     if (userEmail !== adminEmail) {
         return res.status(403).json({ erro: 'Acesso negado' });
     }
-    
+
     try {
         await pool.query('DELETE FROM disciplinas WHERE id = $1', [id]);
         res.json({ sucesso: true });
@@ -731,14 +731,14 @@ app.delete('/api/admin/disciplinas/:id', async (req, res) => {
 app.post('/api/admin/assuntos', async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
     const userEmail = req.headers['x-user-email'];
-    
+
     if (userEmail !== adminEmail) {
         return res.status(403).json({ erro: 'Acesso negado' });
     }
-    
+
     const { disciplina_id, nome } = req.body;
     console.log("Criando assunto:", { disciplina_id, nome });
-    
+
     try {
         const result = await pool.query(
             'INSERT INTO assuntos (disciplina_id, nome) VALUES ($1, $2) RETURNING *',
@@ -757,11 +757,11 @@ app.put('/api/admin/assuntos/:id', async (req, res) => {
     const { nome } = req.body;
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
     const userEmail = req.headers['x-user-email'];
-    
+
     if (userEmail !== adminEmail) {
         return res.status(403).json({ erro: 'Acesso negado' });
     }
-    
+
     try {
         await pool.query('UPDATE assuntos SET nome = $1 WHERE id = $2', [nome, id]);
         res.json({ sucesso: true });
@@ -775,11 +775,11 @@ app.delete('/api/admin/assuntos/:id', async (req, res) => {
     const { id } = req.params;
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
     const userEmail = req.headers['x-user-email'];
-    
+
     if (userEmail !== adminEmail) {
         return res.status(403).json({ erro: 'Acesso negado' });
     }
-    
+
     try {
         await pool.query('DELETE FROM assuntos WHERE id = $1', [id]);
         res.json({ sucesso: true });
@@ -792,11 +792,11 @@ app.delete('/api/admin/assuntos/:id', async (req, res) => {
 app.post('/api/admin/sql', async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
     const userEmail = req.headers['x-user-email'];
-    
+
     if (userEmail !== adminEmail) {
         return res.status(403).json({ erro: 'Acesso negado' });
     }
-    
+
     const { query } = req.body;
     try {
         const result = await pool.query(query);
@@ -810,11 +810,11 @@ app.post('/api/admin/sql', async (req, res) => {
 app.get('/api/admin/assuntos', async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
     const userEmail = req.headers['x-user-email'];
-    
+
     if (userEmail !== adminEmail) {
         return res.status(403).json({ erro: 'Acesso negado' });
     }
-    
+
     try {
         const result = await pool.query('SELECT * FROM assuntos ORDER BY id');
         res.json({ sucesso: true, assuntos: result.rows });
@@ -827,21 +827,21 @@ app.get('/api/admin/assuntos', async (req, res) => {
 app.get('/api/plano-estudos/:usuario_id', async (req, res) => {
     const { usuario_id } = req.params;
     try {
-        // Buscar disciplinas
+        // Buscar apenas disciplinas ATIVAS
         const disciplinasResult = await pool.query(
-            'SELECT id, nome FROM disciplinas ORDER BY id'
+            'SELECT id, nome FROM disciplinas WHERE ativo = true ORDER BY id'
         );
-        
+
         const disciplinas = disciplinasResult.rows;
-        
+
         // Para cada disciplina, buscar os assuntos e o progresso
         for (const disc of disciplinas) {
-            // Buscar assuntos
+            // Buscar apenas assuntos ATIVOS
             const assuntosResult = await pool.query(
-                'SELECT id, nome FROM assuntos WHERE disciplina_id = $1 ORDER BY id',
+                'SELECT id, nome FROM assuntos WHERE disciplina_id = $1 AND ativo = true ORDER BY id',
                 [disc.id]
             );
-            
+
             // Para cada assunto, buscar progresso do usuário
             for (const assunto of assuntosResult.rows) {
                 // Contar questões totais do assunto
@@ -850,7 +850,7 @@ app.get('/api/plano-estudos/:usuario_id', async (req, res) => {
                     [disc.id, assunto.id]
                 );
                 const total = parseInt(totalResult.rows[0].count);
-                
+
                 // Contar questões respondidas corretamente
                 const acertosResult = await pool.query(
                     `SELECT COUNT(*) FROM respostas_usuario r
@@ -859,14 +859,14 @@ app.get('/api/plano-estudos/:usuario_id', async (req, res) => {
                     [usuario_id, disc.id, assunto.id]
                 );
                 const acertos = parseInt(acertosResult.rows[0].count);
-                
+
                 assunto.progresso = total > 0 ? Math.round((acertos / total) * 100) : 0;
                 assunto.total_questoes = total;
             }
-            
+
             disc.assuntos = assuntosResult.rows;
         }
-        
+
         res.json({ sucesso: true, disciplinas });
     } catch (error) {
         console.error('Erro ao buscar plano de estudos:', error);
@@ -874,6 +874,49 @@ app.get('/api/plano-estudos/:usuario_id', async (req, res) => {
     }
 });
 
+// ==================== ROTAS PARA ATIVAR/DESATIVAR ====================
+
+// Ativar/desativar disciplina
+app.put('/api/admin/disciplinas/:id/ativo', async (req, res) => {
+    const { id } = req.params;
+    const { ativo } = req.body;
+    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    const userEmail = req.headers['x-user-email'];
+
+    if (userEmail !== adminEmail) {
+        return res.status(403).json({ erro: 'Acesso negado' });
+    }
+
+    try {
+        await pool.query('UPDATE disciplinas SET ativo = $1 WHERE id = $2', [ativo, id]);
+        res.json({ sucesso: true });
+    } catch (error) {
+        console.error('Erro ao atualizar disciplina:', error);
+        res.status(500).json({ erro: 'Erro ao atualizar' });
+    }
+});
+
+// Ativar/desativar assunto
+app.put('/api/admin/assuntos/:id/ativo', async (req, res) => {
+    const { id } = req.params;
+    const { ativo } = req.body;
+    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    const userEmail = req.headers['x-user-email'];
+
+    if (userEmail !== adminEmail) {
+        return res.status(403).json({ erro: 'Acesso negado' });
+    }
+
+    try {
+        await pool.query('UPDATE assuntos SET ativo = $1 WHERE id = $2', [ativo, id]);
+        res.json({ sucesso: true });
+    } catch (error) {
+        console.error('Erro ao atualizar assunto:', error);
+        res.status(500).json({ erro: 'Erro ao atualizar' });
+    }
+});
+
+
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando na porta ${PORT}`);
+    console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });

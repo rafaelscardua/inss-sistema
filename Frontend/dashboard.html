@@ -969,6 +969,9 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <strong style="font-size: 1.1em;">📚 ${disc.nome}</strong>
                     <div>
+                        <label style="margin-right: 15px; cursor: pointer; font-size: 13px;">
+                            <input type="checkbox" class="disciplina-ativo" data-id="${disc.id}" ${disc.ativo === true ? 'checked' : ''}> Ativo
+                        </label>
                         <button onclick="editarDisciplina(${disc.id}, '${disc.nome}')" style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">✏️</button>
                         <button onclick="excluirDisciplina(${disc.id})" style="background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-left: 5px;">🗑️</button>
                     </div>
@@ -978,6 +981,9 @@
                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #ddd;">
                             <span>📌 ${a.nome}</span>
                             <div>
+                                <label style="margin-right: 15px; cursor: pointer; font-size: 13px;">
+                                    <input type="checkbox" class="assunto-ativo" data-id="${a.id}" ${a.ativo === true ? 'checked' : ''}> Ativo
+                                </label>
                                 <button onclick="editarAssunto(${a.id}, '${a.nome}', ${disc.id})" style="background: #3498db; color: white; border: none; padding: 3px 8px; border-radius: 4px; cursor: pointer;">✏️</button>
                                 <button onclick="excluirAssunto(${a.id})" style="background: #e74c3c; color: white; border: none; padding: 3px 8px; border-radius: 4px; cursor: pointer; margin-left: 5px;">🗑️</button>
                             </div>
@@ -993,7 +999,84 @@
     `;
             html += '</div>';
             container.innerHTML = html;
+
+            // Adicionar eventos aos checkboxes
+            adicionarEventosAtivo();
         }
+
+// Eventos para toggle de ativo
+function adicionarEventosAtivo() {
+    // Eventos para disciplinas
+    document.querySelectorAll('.disciplina-ativo').forEach(checkbox => {
+        checkbox.removeEventListener('change', handleDisciplinaAtivo);
+        checkbox.addEventListener('change', handleDisciplinaAtivo);
+    });
+    
+    // Eventos para assuntos
+    document.querySelectorAll('.assunto-ativo').forEach(checkbox => {
+        checkbox.removeEventListener('change', handleAssuntoAtivo);
+        checkbox.addEventListener('change', handleAssuntoAtivo);
+    });
+}
+
+async function handleDisciplinaAtivo(e) {
+    e.stopPropagation();
+    const checkbox = e.target;
+    const disciplinaId = checkbox.dataset.id;
+    const ativo = checkbox.checked;
+    
+    const usuario = JSON.parse(localStorage.getItem('usuario'));
+    try {
+        const res = await fetch(`/api/admin/disciplinas/${disciplinaId}/ativo`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-user-email': usuario.email
+            },
+            body: JSON.stringify({ ativo })
+        });
+        
+        if (res.ok) {
+            console.log(`✅ Disciplina ${ativo ? 'ativada' : 'desativada'}`);
+        } else {
+            checkbox.checked = !ativo;
+            alert('❌ Erro ao atualizar');
+        }
+    } catch (error) {
+        checkbox.checked = !ativo;
+        alert('❌ Erro ao atualizar');
+    }
+}
+
+async function handleAssuntoAtivo(e) {
+    e.stopPropagation();
+    const checkbox = e.target;
+    const assuntoId = checkbox.dataset.id;
+    const ativo = checkbox.checked;
+    
+    const usuario = JSON.parse(localStorage.getItem('usuario'));
+    try {
+        const res = await fetch(`/api/admin/assuntos/${assuntoId}/ativo`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-user-email': usuario.email
+            },
+            body: JSON.stringify({ ativo })
+        });
+        
+        if (res.ok) {
+            console.log(`✅ Assunto ${ativo ? 'ativado' : 'desativado'}`);
+        } else {
+            checkbox.checked = !ativo;
+            alert('❌ Erro ao atualizar');
+        }
+    } catch (error) {
+        checkbox.checked = !ativo;
+        alert('❌ Erro ao atualizar');
+    }
+}
+
 
         async function adicionarDisciplina() {
             const nome = prompt("Digite o nome da nova disciplina:");
