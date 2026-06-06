@@ -936,32 +936,41 @@ app.get('/api/admin/usuario/:usuario_id/permissoes', async (req, res) => {
 // Admin: Atualizar permissões de um usuário
 app.put('/api/admin/usuario/:usuario_id/permissoes', async (req, res) => {
     const { usuario_id } = req.params;
-    const { assuntos_ids } = req.body; // array de IDs de assuntos permitidos
+    const { assuntos_ids } = req.body;
     const adminEmail = req.headers['x-user-email'];
     const adminEmailConfig = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    
+    console.log(`📝 Atualizando permissões do usuário ${usuario_id}`);
+    console.log(`Assuntos IDs:`, assuntos_ids);
     
     if (adminEmail !== adminEmailConfig) {
         return res.status(403).json({ erro: 'Acesso negado' });
     }
     
+    if (!assuntos_ids || !Array.isArray(assuntos_ids)) {
+        return res.status(400).json({ erro: 'assuntos_ids deve ser um array' });
+    }
+    
     try {
         // Remover todas as permissões atuais
         await pool.query('DELETE FROM usuario_assuntos WHERE usuario_id = $1', [usuario_id]);
+        console.log(`🗑️ Removidas permissões antigas do usuário ${usuario_id}`);
         
         // Adicionar as novas permissões
         for (const assunto_id of assuntos_ids) {
             await pool.query(
-                'INSERT INTO usuario_assuntos (usuario_id, assunto_id) VALUES ($1, $2)',
+                'INSERT INTO usuario_assuntos (usuario_id, assunto_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
                 [usuario_id, assunto_id]
             );
         }
+        console.log(`✅ Adicionadas ${assuntos_ids.length} permissões para o usuário ${usuario_id}`);
         
-        res.json({ sucesso: true });
+        res.json({ sucesso: true, mensagem: 'Permissões atualizadas' });
     } catch (error) {
-        res.status(500).json({ erro: 'Erro ao atualizar permissões' });
+        console.error('Erro ao atualizar permissões:', error);
+        res.status(500).json({ erro: error.message });
     }
 });
-
 
 
 
