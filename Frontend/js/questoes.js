@@ -119,11 +119,16 @@ function renderizarQuestoes() {
 
             // Atualizar estatísticas
             carregarEstatisticas();
-            atualizarStats();
+            // atualizarStats(); // COMENTADO - não usamos mais esta função
             atualizarBarraProgresso();
 
             // Sincronizar com o plano de estudos
             await sincronizarProgressoPlano();
+
+            // Atualizar os cards do plano de estudos
+            if (typeof atualizarCardsPlano === 'function') {
+                atualizarCardsPlano();
+            }
         };
     });
     atualizarBarraProgresso();
