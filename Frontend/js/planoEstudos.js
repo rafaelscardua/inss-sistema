@@ -117,7 +117,6 @@ function atualizarCardsPlano() {
             totalQuestoesGeral += total;
             totalAcertosGeral += acertos;
 
-            // Tópico dominado = progresso >= 80%
             if ((assunto.progresso || 0) >= 80) {
                 topicosDominados++;
             }
@@ -130,7 +129,10 @@ function atualizarCardsPlano() {
 
     document.getElementById("progressoGeral").innerText = `${progressoGeral}%`;
     document.getElementById("topicosDominados").innerText = topicosDominados;
-
-    // Subtópicos Feitos pode ser removido ou substituído
-    document.getElementById("subtopicosFeitos").innerText = totalAcertosGeral;
+    
+    // Questões Restantes = Total Geral - Total Acertos
+    const questoesRestantes = totalQuestoesGeral - totalAcertosGeral;
+    document.getElementById("subtopicosFeitos").innerText = questoesRestantes;
+    
+    document.getElementById("totalAcertos").innerText = totalAcertosGeral;
 }
