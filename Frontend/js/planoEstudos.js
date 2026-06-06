@@ -57,13 +57,7 @@ function renderizarPlanoEstudos() {
                             <div class="topico-header">
                                 <span class="topico-nome">📌 ${assunto.nome}</span>
                                 <span class="progresso-texto" id="progresso-${assunto.id}">${assunto.progresso || 0}% (${respondidas}/${total})</span>
-                                <select class="status-select" data-id="${assunto.id}">
-                                    <option value="nao_iniciado" ${assunto.status === 'nao_iniciado' ? 'selected' : ''}>🔴 Não iniciado</option>
-                                    <option value="estudando" ${assunto.status === 'estudando' ? 'selected' : ''}>🟡 Estudando</option>
-                                    <option value="revisando" ${assunto.status === 'revisando' ? 'selected' : ''}>🟠 Revisando</option>
-                                    <option value="dominado" ${assunto.status === 'dominado' ? 'selected' : ''}>🟢 Dominado</option>
-                                </select>
-                            </div>
+                        </div>
                             <div id="anexos-${disc.id}-${assunto.id}" class="anexos-container"></div>
                         </div>
                     `;
@@ -82,36 +76,6 @@ function renderizarPlanoEstudos() {
         });
     });
 
-
-
-    // ==================== EVENTOS DOS SELECTS DE STATUS ====================
-    document.querySelectorAll('.status-select').forEach(select => {
-        select.removeEventListener('change', select._listener);
-
-        select._listener = async function (e) {
-            e.stopPropagation();
-            const assuntoId = parseInt(select.dataset.id);
-            const novoStatus = select.value;
-
-            const usuario = JSON.parse(localStorage.getItem('usuario'));
-            const res = await fetch(`/api/assuntos/${assuntoId}/status`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-user-email': usuario.email
-                },
-                body: JSON.stringify({ status: novoStatus })
-            });
-
-            const data = await res.json();
-            if (data.sucesso) {
-                await carregarPlanoEstudos();
-            }
-        };
-
-        select.addEventListener('change', select._listener);
-    });
-
     // Carregar anexos para cada assunto
     for (const disc of disciplinasPlano) {
         for (const assunto of disc.assuntos) {
@@ -122,81 +86,45 @@ function renderizarPlanoEstudos() {
         }
     }
 
-    // ==================== SINCRONIZAR CHECKBOXES ====================
-    document.querySelectorAll('.check-estudado').forEach(cb => {
-        const topico = cb.closest('.topico');
-        const progressoText = topico.querySelector('.progresso-texto');
-        if (progressoText) {
-            const progresso = parseInt(progressoText.innerText.split('%')[0]);
-            cb.checked = (progresso === 100);
-            // Atualizar o atributo data-respondidas
-            if (cb.checked) {
-                const total = parseInt(cb.getAttribute('data-total'));
-                cb.setAttribute('data-respondidas', total);
-            } else {
-                cb.setAttribute('data-respondidas', '0');
-            }
-        }
-    });
+    atualizarCardsPlano();
 }
 
 
-// Atualizar status do assunto
-async function atualizarStatusAssunto(assuntoId, novoStatus) {
-    try {
-        const usuarioSalvo = localStorage.getItem('usuario');
-        const usuario = JSON.parse(usuarioSalvo);
-
-        const res = await fetch(`/api/assuntos/${assuntoId}/status`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-user-email': usuario.email
-            },
-            body: JSON.stringify({ status: novoStatus })
-        });
-        const data = await res.json();
-        if (data.sucesso) {
-            await carregarPlanoEstudos();
-        } else {
-            alert(`❌ Erro: ${data.erro}`);
-        }
-    } catch (e) {
-        console.error('Erro ao atualizar status:', e);
-        alert("❌ Erro ao atualizar status");
-    }
-}
-
-// Incrementar progresso do assunto
-async function incrementarProgressoAssunto(assuntoId, novoValor, total) {
-    try {
-        const usuarioSalvo = localStorage.getItem('usuario');
-        const usuario = JSON.parse(usuarioSalvo);
-
-        const novoProgresso = Math.round((novoValor / total) * 100);
-
-        const res = await fetch(`/api/assuntos/${assuntoId}/progresso`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-user-email': usuario.email
-            },
-            body: JSON.stringify({ progresso: novoProgresso })
-        });
-        const data = await res.json();
-        if (data.sucesso) {
-            await carregarPlanoEstudos();
-        } else {
-            alert(`❌ Erro: ${data.erro}`);
-        }
-    } catch (e) {
-        console.error('Erro ao incrementar progresso:', e);
-        alert("❌ Erro ao incrementar progresso");
-    }
-}
 
 // ==================== ANEXOS ====================
 
 async function carregarAnexos(materia, topico, elementoContainer) {
     // ... mantenha suas funções de anexos existentes ...
+}
+
+
+function atualizarCardsPlano() {
+    let totalQuestoesGeral = 0;
+    let totalAcertosGeral = 0;
+    let topicosDominados = 0;
+    
+    for (const disc of disciplinasPlano) {
+        for (const assunto of disc.assuntos) {
+            const total = assunto.total_questoes || 0;
+            const acertos = Math.round((assunto.progresso || 0) * total / 100);
+            
+            totalQuestoesGeral += total;
+            totalAcertosGeral += acertos;
+            
+            // Tópico dominado = progresso >= 80%
+            if ((assunto.progresso || 0) >= 80) {
+                topicosDominados++;
+            }
+        }
+    }
+    
+    const progressoGeral = totalQuestoesGeral > 0 
+        ? Math.round((totalAcertosGeral / totalQuestoesGeral) * 100) 
+        : 0;
+    
+    document.getElementById("progressoGeral").innerText = `${progressoGeral}%`;
+    document.getElementById("topicosDominados").innerText = topicosDominados;
+    
+    // Subtópicos Feitos pode ser removido ou substituído
+    document.getElementById("subtopicosFeitos").innerText = totalAcertosGeral;
 }
