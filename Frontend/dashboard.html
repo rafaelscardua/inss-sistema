@@ -1003,9 +1003,10 @@
                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #ddd;">
                             <span>📌 ${a.nome}</span>
                             <div>
-                                <label style="margin-right: 15px; cursor: pointer; font-size: 13px;">
+                                <label style="margin-right: 10px; cursor: pointer; font-size: 12px;">
                                     <input type="checkbox" class="assunto-ativo" data-id="${a.id}" ${a.ativo === true ? 'checked' : ''}> Ativo
                                 </label>
+                                <button onclick="uploadAnexo('${disc.nome}', '${a.nome}')" style="background: #9b59b6; color: white; border: none; padding: 3px 8px; border-radius: 4px; cursor: pointer; margin-right: 5px;">📎 Anexo</button>
                                 <button onclick="editarAssunto(${a.id}, '${a.nome}', ${disc.id})" style="background: #3498db; color: white; border: none; padding: 3px 8px; border-radius: 4px; cursor: pointer;">✏️</button>
                                 <button onclick="excluirAssunto(${a.id})" style="background: #e74c3c; color: white; border: none; padding: 3px 8px; border-radius: 4px; cursor: pointer; margin-left: 5px;">🗑️</button>
                             </div>
@@ -1459,6 +1460,56 @@
         // Event listener para o botão salvar
         document.getElementById("salvarPermissoesBtn")?.addEventListener("click", salvarPermissoes);
 
+
+        async function uploadAnexo(materia, topico) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.pdf,.jpg,.jpeg,.png,.gif,.doc,.docx';
+
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    const base64 = event.target.result;
+
+                    const usuario = JSON.parse(localStorage.getItem('usuario'));
+
+                    try {
+                        const res = await fetch('/api/anexos/upload', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'x-user-email': usuario.email
+                            },
+                            body: JSON.stringify({
+                                materia: materia,
+                                topico: topico,
+                                nome_original: file.name,
+                                tamanho_bytes: file.size,
+                                arquivo_base64: base64
+                            })
+                        });
+
+                        const data = await res.json();
+                        if (data.sucesso) {
+                            alert('✅ Anexo enviado com sucesso!');
+                            // Recarregar a lista de disciplinas
+                            carregarDisciplinas();
+                        } else {
+                            alert('❌ Erro ao enviar anexo: ' + (data.erro || 'Erro desconhecido'));
+                        }
+                    } catch (error) {
+                        console.error('Erro:', error);
+                        alert('❌ Erro ao enviar anexo');
+                    }
+                };
+                reader.readAsDataURL(file);
+            };
+
+            input.click();
+        }
 
     </script>
     <!-- MODAL DE PERMISSÕES DO USUÁRIO -->
