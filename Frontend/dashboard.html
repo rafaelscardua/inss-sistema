@@ -908,9 +908,13 @@
         <small>📧 ${u.email}</small><br>
         <small>📅 Cadastro: ${new Date(u.data_criacao).toLocaleDateString()}</small><br>
         <button onclick="verDetalhesUsuario(${u.id}, '${u.nome}')" style="background:#3498db; color:white; border:none; padding:6px 12px; border-radius:5px; margin-right:5px;">📊 Detalhes</button>
-        <button onclick="excluirUsuario(${u.id}, '${u.nome}')" style="background:#e74c3c; color:white; border:none; padding:6px 12px; border-radius:5px;">🗑️ Excluir</button>
+        <button onclick="excluirUsuario(${u.id}, '${u.nome}')" style="background:#e74c3c; color:white; border:none; padding:6px 12px; border-radius:5px; margin-right:5px;">🗑️ Excluir</button>
+        <button onclick="abrirModalPermissoes(${u.id}, '${u.nome}')" style="background:#9b59b6; color:white; border:none; padding:6px 12px; border-radius:5px;">📚 Assuntos</button>
     </div>
 `).join('');
+
+
+
 
                         // Adicionar botão de gerenciar disciplinas APÓS a lista de usuários
                         container.innerHTML += `
@@ -1004,78 +1008,78 @@
             adicionarEventosAtivo();
         }
 
-// Eventos para toggle de ativo
-function adicionarEventosAtivo() {
-    // Eventos para disciplinas
-    document.querySelectorAll('.disciplina-ativo').forEach(checkbox => {
-        checkbox.removeEventListener('change', handleDisciplinaAtivo);
-        checkbox.addEventListener('change', handleDisciplinaAtivo);
-    });
-    
-    // Eventos para assuntos
-    document.querySelectorAll('.assunto-ativo').forEach(checkbox => {
-        checkbox.removeEventListener('change', handleAssuntoAtivo);
-        checkbox.addEventListener('change', handleAssuntoAtivo);
-    });
-}
+        // Eventos para toggle de ativo
+        function adicionarEventosAtivo() {
+            // Eventos para disciplinas
+            document.querySelectorAll('.disciplina-ativo').forEach(checkbox => {
+                checkbox.removeEventListener('change', handleDisciplinaAtivo);
+                checkbox.addEventListener('change', handleDisciplinaAtivo);
+            });
 
-async function handleDisciplinaAtivo(e) {
-    e.stopPropagation();
-    const checkbox = e.target;
-    const disciplinaId = checkbox.dataset.id;
-    const ativo = checkbox.checked;
-    
-    const usuario = JSON.parse(localStorage.getItem('usuario'));
-    try {
-        const res = await fetch(`/api/admin/disciplinas/${disciplinaId}/ativo`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-user-email': usuario.email
-            },
-            body: JSON.stringify({ ativo })
-        });
-        
-        if (res.ok) {
-            console.log(`✅ Disciplina ${ativo ? 'ativada' : 'desativada'}`);
-        } else {
-            checkbox.checked = !ativo;
-            alert('❌ Erro ao atualizar');
+            // Eventos para assuntos
+            document.querySelectorAll('.assunto-ativo').forEach(checkbox => {
+                checkbox.removeEventListener('change', handleAssuntoAtivo);
+                checkbox.addEventListener('change', handleAssuntoAtivo);
+            });
         }
-    } catch (error) {
-        checkbox.checked = !ativo;
-        alert('❌ Erro ao atualizar');
-    }
-}
 
-async function handleAssuntoAtivo(e) {
-    e.stopPropagation();
-    const checkbox = e.target;
-    const assuntoId = checkbox.dataset.id;
-    const ativo = checkbox.checked;
-    
-    const usuario = JSON.parse(localStorage.getItem('usuario'));
-    try {
-        const res = await fetch(`/api/admin/assuntos/${assuntoId}/ativo`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-user-email': usuario.email
-            },
-            body: JSON.stringify({ ativo })
-        });
-        
-        if (res.ok) {
-            console.log(`✅ Assunto ${ativo ? 'ativado' : 'desativado'}`);
-        } else {
-            checkbox.checked = !ativo;
-            alert('❌ Erro ao atualizar');
+        async function handleDisciplinaAtivo(e) {
+            e.stopPropagation();
+            const checkbox = e.target;
+            const disciplinaId = checkbox.dataset.id;
+            const ativo = checkbox.checked;
+
+            const usuario = JSON.parse(localStorage.getItem('usuario'));
+            try {
+                const res = await fetch(`/api/admin/disciplinas/${disciplinaId}/ativo`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-user-email': usuario.email
+                    },
+                    body: JSON.stringify({ ativo })
+                });
+
+                if (res.ok) {
+                    console.log(`✅ Disciplina ${ativo ? 'ativada' : 'desativada'}`);
+                } else {
+                    checkbox.checked = !ativo;
+                    alert('❌ Erro ao atualizar');
+                }
+            } catch (error) {
+                checkbox.checked = !ativo;
+                alert('❌ Erro ao atualizar');
+            }
         }
-    } catch (error) {
-        checkbox.checked = !ativo;
-        alert('❌ Erro ao atualizar');
-    }
-}
+
+        async function handleAssuntoAtivo(e) {
+            e.stopPropagation();
+            const checkbox = e.target;
+            const assuntoId = checkbox.dataset.id;
+            const ativo = checkbox.checked;
+
+            const usuario = JSON.parse(localStorage.getItem('usuario'));
+            try {
+                const res = await fetch(`/api/admin/assuntos/${assuntoId}/ativo`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-user-email': usuario.email
+                    },
+                    body: JSON.stringify({ ativo })
+                });
+
+                if (res.ok) {
+                    console.log(`✅ Assunto ${ativo ? 'ativado' : 'desativado'}`);
+                } else {
+                    checkbox.checked = !ativo;
+                    alert('❌ Erro ao atualizar');
+                }
+            } catch (error) {
+                checkbox.checked = !ativo;
+                alert('❌ Erro ao atualizar');
+            }
+        }
 
 
         async function adicionarDisciplina() {
@@ -1273,7 +1277,149 @@ async function handleAssuntoAtivo(e) {
             carregarDisciplinas();
         }
 
+        // ==================== GERENCIAR PERMISSÕES POR USUÁRIO ====================
+
+        let usuarioPermissoesAtual = null;
+        let assuntosPermissoes = [];
+
+        async function abrirModalPermissoes(usuarioId, usuarioNome) {
+            usuarioPermissoesAtual = usuarioId;
+            document.getElementById("modalPermissoesTitulo").innerHTML = `📚 Permissões - ${usuarioNome}`;
+            document.getElementById("modalPermissoes").style.display = "flex";
+
+            // Carregar assuntos e permissões atuais
+            await carregarAssuntosPermissoes(usuarioId);
+        }
+
+        function fecharModalPermissoes() {
+            document.getElementById("modalPermissoes").style.display = "none";
+            usuarioPermissoesAtual = null;
+        }
+
+        async function carregarAssuntosPermissoes(usuarioId) {
+            const usuario = JSON.parse(localStorage.getItem('usuario'));
+            const container = document.getElementById("permissoesList");
+            container.innerHTML = '<p>Carregando assuntos...</p>';
+
+            try {
+                const res = await fetch(`/api/admin/usuario/${usuarioId}/permissoes`, {
+                    headers: { 'x-user-email': usuario.email }
+                });
+                const data = await res.json();
+
+                if (data.sucesso) {
+                    assuntosPermissoes = data.assuntos;
+
+                    // Agrupar por disciplina
+                    const disciplinas = {};
+                    for (const assunto of assuntosPermissoes) {
+                        if (!disciplinas[assunto.disciplina_id]) {
+                            disciplinas[assunto.disciplina_id] = {
+                                id: assunto.disciplina_id,
+                                nome: `Disciplina ${assunto.disciplina_id}`,
+                                assuntos: []
+                            };
+                        }
+                        disciplinas[assunto.disciplina_id].assuntos.push(assunto);
+                    }
+
+                    // Buscar nomes das disciplinas
+                    for (const discId in disciplinas) {
+                        const discRes = await fetch(`/api/admin/disciplinas`, {
+                            headers: { 'x-user-email': usuario.email }
+                        });
+                        const discData = await discRes.json();
+                        if (discData.sucesso) {
+                            const disc = discData.disciplinas.find(d => d.id == discId);
+                            if (disc) disciplinas[discId].nome = disc.nome;
+                        }
+                    }
+
+                    // Renderizar HTML
+                    let html = '';
+                    for (const discId in disciplinas) {
+                        const disc = disciplinas[discId];
+                        html += `<div style="margin-bottom: 20px; border-left: 3px solid #3498db; padding-left: 15px;">`;
+                        html += `<h4 style="margin-bottom: 10px; color: #3498db;">📚 ${disc.nome}</h4>`;
+                        html += `<div style="display: flex; flex-wrap: wrap; gap: 10px;">`;
+                        for (const assunto of disc.assuntos) {
+                            html += `
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; background: #f5f5f5; padding: 8px 12px; border-radius: 8px;">
+                            <input type="checkbox" class="assunto-permissao" data-id="${assunto.id}" ${assunto.permitido ? 'checked' : ''}>
+                            <span>📌 ${assunto.nome}</span>
+                        </label>
+                    `;
+                        }
+                        html += `</div></div>`;
+                    }
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<p style="color:red;">Erro ao carregar assuntos</p>';
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                container.innerHTML = '<p style="color:red;">Erro ao carregar assuntos</p>';
+            }
+        }
+
+        async function salvarPermissoes() {
+            if (!usuarioPermissoesAtual) return;
+
+            const checkboxes = document.querySelectorAll('.assunto-permissao');
+            const assuntosIds = [];
+            checkboxes.forEach(cb => {
+                if (cb.checked) {
+                    assuntosIds.push(parseInt(cb.dataset.id));
+                }
+            });
+
+            const usuario = JSON.parse(localStorage.getItem('usuario'));
+
+            try {
+                const res = await fetch(`/api/admin/usuario/${usuarioPermissoesAtual}/permissoes`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-user-email': usuario.email
+                    },
+                    body: JSON.stringify({ assuntos_ids: assuntosIds })
+                });
+
+                const data = await res.json();
+                if (data.sucesso) {
+                    alert('✅ Permissões salvas com sucesso!');
+                    fecharModalPermissoes();
+                } else {
+                    alert('❌ Erro ao salvar permissões');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('❌ Erro ao salvar permissões');
+            }
+        }
+
+        // Event listener para o botão salvar
+        document.getElementById("salvarPermissoesBtn")?.addEventListener("click", salvarPermissoes);
+
+
     </script>
+<!-- MODAL DE PERMISSÕES DO USUÁRIO -->
+<div id="modalPermissoes" class="modal" style="display:none;">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h3 id="modalPermissoesTitulo">📚 Permissões do Usuário</h3>
+            <button class="close-modal" onclick="fecharModalPermissoes()">×</button>
+        </div>
+        <div id="permissoesList" style="max-height: 400px; overflow-y: auto; margin-bottom: 20px;">
+            <p>Carregando assuntos...</p>
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button class="btn-add-questao" id="salvarPermissoesBtn">💾 Salvar</button>
+            <button class="btn-small" onclick="fecharModalPermissoes()">Cancelar</button>
+        </div>
+    </div>
+</div>
+
 </body>
 
 </html>

@@ -824,6 +824,7 @@ app.get('/api/admin/assuntos', async (req, res) => {
 });
 
 // Buscar disciplinas com progresso do usuário
+// Buscar disciplinas com progresso do usuário (COM PERMISSÕES)
 app.get('/api/plano-estudos/:usuario_id', async (req, res) => {
     const { usuario_id } = req.params;
     try {
@@ -834,12 +835,16 @@ app.get('/api/plano-estudos/:usuario_id', async (req, res) => {
 
         const disciplinas = disciplinasResult.rows;
 
-        // Para cada disciplina, buscar os assuntos e o progresso
+        // Para cada disciplina, buscar os assuntos PERMITIDOS para o usuário
         for (const disc of disciplinas) {
-            // Buscar apenas assuntos ATIVOS
+            // Buscar apenas assuntos ATIVOS E PERMITIDOS para este usuário
             const assuntosResult = await pool.query(
-                'SELECT id, nome FROM assuntos WHERE disciplina_id = $1 AND ativo = true ORDER BY id',
-                [disc.id]
+                `SELECT a.id, a.nome 
+                 FROM assuntos a
+                 JOIN usuario_assuntos ua ON a.id = ua.assunto_id
+                 WHERE a.disciplina_id = $1 AND a.ativo = true AND ua.usuario_id = $2
+                 ORDER BY a.id`,
+                [disc.id, usuario_id]
             );
 
             // Para cada assunto, buscar progresso do usuário
@@ -873,6 +878,93 @@ app.get('/api/plano-estudos/:usuario_id', async (req, res) => {
         res.status(500).json({ erro: 'Erro ao buscar plano de estudos' });
     }
 });
+
+
+// ==================== ROTAS DE PERMISSÕES POR USUÁRIO ====================
+
+// Buscar assuntos permitidos para um usuário
+app.get('/api/usuario/assuntos/:usuario_id', async (req, res) => {
+    const { usuario_id } = req.params;
+    try {
+        const result = await pool.query(`
+            SELECT a.id, a.nome, a.disciplina_id
+            FROM assuntos a
+            JOIN usuario_assuntos ua ON a.id = ua.assunto_id
+            WHERE ua.usuario_id = $1 AND a.ativo = true
+        `, [usuario_id]);
+        res.json({ sucesso: true, assuntos: result.rows });
+    } catch (error) {
+        res.status(500).json({ erro: 'Erro ao buscar assuntos do usuário' });
+    }
+});
+
+// Admin: Listar permissões de um usuário
+app.get('/api/admin/usuario/:usuario_id/permissoes', async (req, res) => {
+    const { usuario_id } = req.params;
+    const adminEmail = req.headers['x-user-email'];
+    const adminEmailConfig = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    
+    if (adminEmail !== adminEmailConfig) {
+        return res.status(403).json({ erro: 'Acesso negado' });
+    }
+    
+    try {
+        // Buscar todos os assuntos
+        const todosAssuntos = await pool.query('SELECT id, nome, disciplina_id FROM assuntos');
+        
+        // Buscar assuntos permitidos para este usuário
+        const permitidos = await pool.query(
+            'SELECT assunto_id FROM usuario_assuntos WHERE usuario_id = $1',
+            [usuario_id]
+        );
+        
+        const permitidosSet = new Set(permitidos.rows.map(r => r.assunto_id));
+        
+        const assuntos = todosAssuntos.rows.map(a => ({
+            id: a.id,
+            nome: a.nome,
+            disciplina_id: a.disciplina_id,
+            permitido: permitidosSet.has(a.id)
+        }));
+        
+        res.json({ sucesso: true, assuntos });
+    } catch (error) {
+        res.status(500).json({ erro: 'Erro ao buscar permissões' });
+    }
+});
+
+// Admin: Atualizar permissões de um usuário
+app.put('/api/admin/usuario/:usuario_id/permissoes', async (req, res) => {
+    const { usuario_id } = req.params;
+    const { assuntos_ids } = req.body; // array de IDs de assuntos permitidos
+    const adminEmail = req.headers['x-user-email'];
+    const adminEmailConfig = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    
+    if (adminEmail !== adminEmailConfig) {
+        return res.status(403).json({ erro: 'Acesso negado' });
+    }
+    
+    try {
+        // Remover todas as permissões atuais
+        await pool.query('DELETE FROM usuario_assuntos WHERE usuario_id = $1', [usuario_id]);
+        
+        // Adicionar as novas permissões
+        for (const assunto_id of assuntos_ids) {
+            await pool.query(
+                'INSERT INTO usuario_assuntos (usuario_id, assunto_id) VALUES ($1, $2)',
+                [usuario_id, assunto_id]
+            );
+        }
+        
+        res.json({ sucesso: true });
+    } catch (error) {
+        res.status(500).json({ erro: 'Erro ao atualizar permissões' });
+    }
+});
+
+
+
+
 
 // ==================== ROTAS PARA ATIVAR/DESATIVAR ====================
 
