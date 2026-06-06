@@ -52,6 +52,10 @@ function renderizarQuestoes() {
         return;
     }
 
+    // ⭐ Verificar se o usuário é ADMIN ⭐
+    const usuarioAtual = JSON.parse(localStorage.getItem('usuario'));
+    const isAdmin = usuarioAtual && usuarioAtual.email === 'rafaelscardua@gmail.com';
+
     container.innerHTML = filtradas.map(q => {
         const resp = respostasUsuario[q.id] || {};
         const alternativasValidas = Object.entries(q.alternativas).filter(([letra, texto]) => texto && texto.trim() !== "");
@@ -67,8 +71,10 @@ function renderizarQuestoes() {
         return `
             <div class="question-card" id="q${q.id}">
                 <div class="action-icons">
-                    <button class="edit-btn" onclick="abrirModalEdicao(${q.id})">✏️</button>
-                    <button class="delete-btn" onclick="excluirQuestao(${q.id})">🗑️</button>
+                    ${isAdmin ? `
+                        <button class="edit-btn" onclick="abrirModalEdicao(${q.id})">✏️</button>
+                        <button class="delete-btn" onclick="excluirQuestao(${q.id})">🗑️</button>
+                    ` : ''}
                     ${resp.respondida ? `<button class="reset-btn" onclick="resetarResposta(${q.id})" title="Resetar resposta">🔄</button>` : ''}
                 </div>
                 <div class="question-text"><strong>📚 ${q.materia} | ${q.assunto}</strong><br>${q.enunciado}</div>
