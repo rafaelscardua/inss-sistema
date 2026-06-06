@@ -1260,7 +1260,6 @@
         }
 
         function mostrarModalDisciplinas() {
-            // Criar modal para mostrar disciplinas
             const modalExistente = document.getElementById("modal-disciplinas");
             if (modalExistente) modalExistente.remove();
 
@@ -1292,7 +1291,6 @@
     `;
             document.body.appendChild(modal);
 
-            // Carregar disciplinas
             carregarDisciplinas();
         }
 
@@ -1464,7 +1462,7 @@
         async function uploadAnexo(materia, topico) {
             const input = document.createElement('input');
             input.type = 'file';
-            input.accept = '.pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.mmap';
+            input.accept = '.pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,..mmap';
 
             input.onchange = async (e) => {
                 const file = e.target.files[0];
@@ -1509,6 +1507,33 @@
             };
 
             input.click();
+        }
+
+        async function deletarAnexo(anexoId) {
+            if (!confirm('🗑️ Tem certeza que deseja excluir este anexo permanentemente?')) {
+                return;
+            }
+
+            const usuario = JSON.parse(localStorage.getItem('usuario'));
+
+            try {
+                const res = await fetch(`/api/anexos/${anexoId}`, {
+                    method: 'DELETE',
+                    headers: { 'x-user-email': usuario.email }
+                });
+
+                const data = await res.json();
+                if (data.sucesso) {
+                    alert('✅ Anexo excluído com sucesso!');
+                    // Recarregar a página ou a lista
+                    carregarDisciplinas();
+                } else {
+                    alert('❌ Erro ao excluir anexo: ' + (data.erro || 'Erro desconhecido'));
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('❌ Erro ao excluir anexo');
+            }
         }
 
     </script>

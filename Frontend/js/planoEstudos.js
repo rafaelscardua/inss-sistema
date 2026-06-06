@@ -104,6 +104,8 @@ function renderizarPlanoEstudos() {
 async function carregarAnexos(materia, topico, elementoContainer) {
     try {
         const usuario = JSON.parse(localStorage.getItem('usuario'));
+        const isAdmin = usuario.email === 'rafaelscardua@gmail.com';
+
         const res = await fetch(`/api/anexos/${encodeURIComponent(materia)}/${encodeURIComponent(topico)}`, {
             headers: { 'x-user-email': usuario.email }
         });
@@ -115,10 +117,15 @@ async function carregarAnexos(materia, topico, elementoContainer) {
                     <strong>📎 Mapas Mentais e Anexos:</strong>
                     <ul style="margin-top: 5px; list-style: none; padding-left: 0;">
                         ${data.anexos.map(anexo => `
-                            <li style="margin: 5px 0;">
+                            <li style="margin: 5px 0; display: flex; justify-content: space-between; align-items: center;">
                                 <a href="#" onclick="baixarAnexo(${anexo.id}, '${anexo.nome_original}'); return false;" style="text-decoration: none; color: #3498db;">
                                     📄 ${anexo.nome_original} (${formatarBytes(anexo.tamanho_bytes)})
                                 </a>
+                                ${isAdmin ? `
+                                    <button onclick="deletarAnexo(${anexo.id})" style="background: #e74c3c; color: white; border: none; padding: 2px 8px; border-radius: 4px; cursor: pointer; margin-left: 10px;">
+                                        🗑️
+                                    </button>
+                                ` : ''}
                             </li>
                         `).join('')}
                     </ul>
@@ -132,7 +139,6 @@ async function carregarAnexos(materia, topico, elementoContainer) {
         elementoContainer.innerHTML = '';
     }
 }
-
 function formatarBytes(bytes) {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
