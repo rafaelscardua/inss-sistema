@@ -16,6 +16,9 @@ async function carregarPlanoEstudos() {
         if (data.sucesso) {
             disciplinasPlano = data.disciplinas;
             renderizarPlanoEstudos();
+            setTimeout(() => {
+                atualizarCardsPlano();
+            }, 200);
         }
     } catch (e) {
         console.error('Erro ao carregar plano:', e);
@@ -86,7 +89,10 @@ function renderizarPlanoEstudos() {
         }
     }
 
-    atualizarCardsPlano();
+    // Garantir que os cards sejam atualizados após o DOM estar pronto
+    setTimeout(() => {
+        atualizarCardsPlano();
+    }, 100);
 }
 
 
@@ -102,29 +108,29 @@ function atualizarCardsPlano() {
     let totalQuestoesGeral = 0;
     let totalAcertosGeral = 0;
     let topicosDominados = 0;
-    
+
     for (const disc of disciplinasPlano) {
         for (const assunto of disc.assuntos) {
             const total = assunto.total_questoes || 0;
             const acertos = Math.round((assunto.progresso || 0) * total / 100);
-            
+
             totalQuestoesGeral += total;
             totalAcertosGeral += acertos;
-            
+
             // Tópico dominado = progresso >= 80%
             if ((assunto.progresso || 0) >= 80) {
                 topicosDominados++;
             }
         }
     }
-    
-    const progressoGeral = totalQuestoesGeral > 0 
-        ? Math.round((totalAcertosGeral / totalQuestoesGeral) * 100) 
+
+    const progressoGeral = totalQuestoesGeral > 0
+        ? Math.round((totalAcertosGeral / totalQuestoesGeral) * 100)
         : 0;
-    
+
     document.getElementById("progressoGeral").innerText = `${progressoGeral}%`;
     document.getElementById("topicosDominados").innerText = topicosDominados;
-    
+
     // Subtópicos Feitos pode ser removido ou substituído
     document.getElementById("subtopicosFeitos").innerText = totalAcertosGeral;
 }
