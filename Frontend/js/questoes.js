@@ -25,11 +25,21 @@ function atualizarStats() {
 }
 
 function renderizarQuestoes() {
+    // Filtrar questões por permissões do usuário
+    let questoesBase = questoes;
+
+    // Se temos assuntos permitidos, filtrar
+    if (window.assuntosPermitidos && window.assuntosPermitidos.length > 0) {
+        questoesBase = questoes.filter(q =>
+            window.assuntosPermitidos.includes(q.assunto_id)
+        );
+    }
+
     const materia = document.getElementById("filtroMateria")?.value || "todas";
     const assunto = document.getElementById("filtroTopico")?.value || "todos";
     const status = document.getElementById("filtroStatus")?.value || "todas";
 
-    let filtradas = questoes.filter(q => (materia === "todas" || q.materia === materia) && (assunto === "todos" || q.assunto === assunto));
+    let filtradas = questoesBase.filter(q => (materia === "todas" || q.materia === materia) && (assunto === "todos" || q.assunto === assunto));
     if (status === "naoRespondidas") filtradas = filtradas.filter(q => !respostasUsuario[q.id]?.respondida);
     if (status === "corretas") filtradas = filtradas.filter(q => respostasUsuario[q.id]?.acertou === true);
     if (status === "erradas") filtradas = filtradas.filter(q => respostasUsuario[q.id]?.acertou === false);
@@ -80,16 +90,9 @@ function renderizarQuestoes() {
         };
     });
 
-    // Eventos dos botões responder - CORRIGIDO
+    // Eventos dos botões responder
     document.querySelectorAll('.btn-responder').forEach(btn => {
         btn.onclick = async () => {
-            console.log('Chamando atualizarCardsPlano...');
-            if (typeof atualizarCardsPlano === 'function') {
-                atualizarCardsPlano();
-                console.log('atualizarCardsPlano chamada com sucesso');
-            } else {
-                console.log('atualizarCardsPlano não é uma função');
-            }
             const id = parseInt(btn.dataset.id);
             const selected = window.selectedAnswer ? window.selectedAnswer[id] : null;
             if (!selected) {
@@ -99,14 +102,11 @@ function renderizarQuestoes() {
             const quest = questoes.find(q => q.id === id);
             const acertou = (selected === quest.correta);
 
-            // Salvar resposta
             await salvarResposta(id, acertou, selected);
             await carregarRespostas();
 
-            // Atualizar apenas a questão respondida (sem recarregar tudo)
             const questElement = document.getElementById(`q${id}`);
             if (questElement) {
-                // Marcar as alternativas
                 const alternativas = questElement.querySelectorAll('.alternativa');
                 alternativas.forEach(alt => {
                     const letra = alt.dataset.letra;
@@ -114,32 +114,23 @@ function renderizarQuestoes() {
                     if (letra === quest.correta) alt.classList.add('correct-answer');
                     if (letra === selected && selected !== quest.correta) alt.classList.add('wrong-answer');
                 });
-                // Adicionar feedback
                 const feedbackDiv = document.createElement('div');
                 feedbackDiv.className = `feedback ${acertou ? 'correct' : 'wrong'}`;
                 feedbackDiv.innerHTML = acertou ? '✅ Correto!' : `❌ Errado! A resposta correta é ${quest.correta}.`;
                 questElement.appendChild(feedbackDiv);
-                // Remover botão responder
                 const btnResponder = questElement.querySelector('.btn-responder');
                 if (btnResponder) btnResponder.remove();
             }
 
-            // Atualizar estatísticas
             carregarEstatisticas();
-            // atualizarStats(); // COMENTADO - não usamos mais esta função
             atualizarBarraProgresso();
-
-            // Sincronizar com o plano de estudos
             await sincronizarProgressoPlano();
-
-            // Atualizar os cards do plano de estudos
             if (typeof atualizarCardsPlano === 'function') {
                 atualizarCardsPlano();
             }
         };
     });
     atualizarBarraProgresso();
-
 }
 
 // Atualiza a barra de progresso com base nas questões respondidas
@@ -181,15 +172,40 @@ async function sincronizarProgressoPlano() {
     }
 }
 
-function preencherFiltros() {
-    let materias = [...new Set(questoes.map(q => q.materia))];
+async function preencherFiltros() {
+    const usuario = JSON.parse(localStorage.getItem('usuario'));
+
+    // Buscar assuntos permitidos para este usuário
+    let assuntosPermitidos = [];
+    try {
+        const res = await fetch(`/api/usuario/assuntos/${usuario.id}`, {
+            headers: { 'x-user-email': usuario.email }
+        });
+        const data = await res.json();
+        if (data.sucesso) {
+            assuntosPermitidos = data.assuntos.map(a => a.id);
+        }
+    } catch (e) {
+        console.error('Erro ao buscar permissões:', e);
+    }
+
+    // Filtrar questões permitidas
+    let questoesPermitidas = questoes;
+    if (assuntosPermitidos.length > 0) {
+        questoesPermitidas = questoes.filter(q =>
+            assuntosPermitidos.includes(q.assunto_id)
+        );
+    }
+
+    // Materias a partir das questões permitidas
+    let materias = [...new Set(questoesPermitidas.map(q => q.materia))];
     let selectMateria = document.getElementById("filtroMateria");
     if (selectMateria) {
         selectMateria.innerHTML = '<option value="todas">Todas</option>' + materias.map(m => `<option value="${m}">${m}</option>`).join('');
         selectMateria.onchange = () => {
-            let assuntos = [...new Set(questoes.filter(q => q.materia === selectMateria.value).map(q => q.assunto))];
+            let assuntosDaMateria = [...new Set(questoesPermitidas.filter(q => q.materia === selectMateria.value).map(q => q.assunto))];
             let selectTopico = document.getElementById("filtroTopico");
-            if (selectTopico) selectTopico.innerHTML = '<option value="todos">Todos</option>' + assuntos.map(a => `<option value="${a}">${a}</option>`).join('');
+            if (selectTopico) selectTopico.innerHTML = '<option value="todos">Todos</option>' + assuntosDaMateria.map(a => `<option value="${a}">${a}</option>`).join('');
             renderizarQuestoes();
         };
         selectMateria.dispatchEvent(new Event('change'));

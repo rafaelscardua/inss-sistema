@@ -455,11 +455,29 @@
 
         // ==================== INICIALIZAÇÃO ====================
         async function init() {
+
+
             if (!checkAuth()) return;
             await carregarQuestoes();
             await carregarRespostas();
 
             await carregarPlanoEstudos();  // ← NOVO PLANO DE ESTUDOS
+
+            try {
+                const usuarioPerm = JSON.parse(localStorage.getItem('usuario'));
+                const resPerm = await fetch(`/api/usuario/assuntos/${usuarioPerm.id}`, {
+                    headers: { 'x-user-email': usuarioPerm.email }
+                });
+                const dataPerm = await resPerm.json();
+                if (dataPerm.sucesso) {
+                    window.assuntosPermitidos = dataPerm.assuntos.map(a => a.id);
+                    console.log('📚 Assuntos permitidos:', window.assuntosPermitidos);
+                }
+            } catch (e) {
+                console.error('Erro ao carregar permissões:', e);
+            }
+
+            await carregarPlanoEstudos();
 
             // Forçar sincronização dos checkboxes com o progresso
             setTimeout(() => {
