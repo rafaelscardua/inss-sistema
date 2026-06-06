@@ -1363,7 +1363,10 @@
         }
 
         async function salvarPermissoes() {
-            if (!usuarioPermissoesAtual) return;
+            if (!usuarioPermissoesAtual) {
+                alert('Nenhum usuário selecionado');
+                return;
+            }
 
             const checkboxes = document.querySelectorAll('.assunto-permissao');
             const assuntosIds = [];
@@ -1372,6 +1375,13 @@
                     assuntosIds.push(parseInt(cb.dataset.id));
                 }
             });
+
+            console.log('📝 Salvando para usuário:', usuarioPermissoesAtual);
+            console.log('📝 IDs:', assuntosIds);
+
+            if (assuntosIds.length === 0) {
+                alert('⚠️ Nenhum assunto selecionado! O usuário não verá nada no plano.');
+            }
 
             const usuario = JSON.parse(localStorage.getItem('usuario'));
 
@@ -1386,22 +1396,19 @@
                 });
 
                 const data = await res.json();
+                console.log('📝 Resposta:', data);
+
                 if (data.sucesso) {
                     alert('✅ Permissões salvas com sucesso!');
-                    fecharModalPermissoes(); // Fecha o modal
-                    // Aguarda um pouco e reabre para mostrar os dados atualizados
-                    setTimeout(() => {
-                        abrirModalPermissoes(usuarioPermissoesAtual, 'Sarah');
-                    }, 500);
+                    fecharModalPermissoes();
                 } else {
-                    alert('❌ Erro ao salvar permissões');
+                    alert('❌ Erro ao salvar permissões: ' + (data.erro || 'Erro desconhecido'));
                 }
             } catch (error) {
-                console.error('Erro:', error);
+                console.error('❌ Erro:', error);
                 alert('❌ Erro ao salvar permissões');
             }
         }
-
         // Event listener para o botão salvar
         document.getElementById("salvarPermissoesBtn")?.addEventListener("click", salvarPermissoes);
 
