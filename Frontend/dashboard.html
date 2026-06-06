@@ -1388,7 +1388,11 @@
                 const data = await res.json();
                 if (data.sucesso) {
                     alert('✅ Permissões salvas com sucesso!');
-                    fecharModalPermissoes();
+                    fecharModalPermissoes(); // Fecha o modal
+                    // Aguarda um pouco e reabre para mostrar os dados atualizados
+                    setTimeout(() => {
+                        abrirModalPermissoes(usuarioPermissoesAtual, 'Sarah');
+                    }, 500);
                 } else {
                     alert('❌ Erro ao salvar permissões');
                 }
@@ -1403,22 +1407,22 @@
 
 
     </script>
-<!-- MODAL DE PERMISSÕES DO USUÁRIO -->
-<div id="modalPermissoes" class="modal" style="display:none;">
-    <div class="modal-content" style="max-width: 600px;">
-        <div class="modal-header">
-            <h3 id="modalPermissoesTitulo">📚 Permissões do Usuário</h3>
-            <button class="close-modal" onclick="fecharModalPermissoes()">×</button>
-        </div>
-        <div id="permissoesList" style="max-height: 400px; overflow-y: auto; margin-bottom: 20px;">
-            <p>Carregando assuntos...</p>
-        </div>
-        <div style="display: flex; gap: 10px; justify-content: flex-end;">
-            <button class="btn-add-questao" id="salvarPermissoesBtn">💾 Salvar</button>
-            <button class="btn-small" onclick="fecharModalPermissoes()">Cancelar</button>
+    <!-- MODAL DE PERMISSÕES DO USUÁRIO -->
+    <div id="modalPermissoes" class="modal" style="display:none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 id="modalPermissoesTitulo">📚 Permissões do Usuário</h3>
+                <button class="close-modal" onclick="fecharModalPermissoes()">×</button>
+            </div>
+            <div id="permissoesList" style="max-height: 400px; overflow-y: auto; margin-bottom: 20px;">
+                <p>Carregando assuntos...</p>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn-add-questao" id="salvarPermissoesBtn">💾 Salvar</button>
+                <button class="btn-small" onclick="fecharModalPermissoes()">Cancelar</button>
+            </div>
         </div>
     </div>
-</div>
 
 </body>
 
