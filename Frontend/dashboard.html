@@ -1288,6 +1288,36 @@
             document.getElementById("modalPermissoesTitulo").innerHTML = `📚 Permissões - ${usuarioNome}`;
             document.getElementById("modalPermissoes").style.display = "flex";
             await carregarAssuntosPermissoes(usuarioId);
+            // ⭐ ADICIONE ESTA PARTE ⭐
+            const btn = document.getElementById('salvarPermissoesBtn');
+            btn.onclick = async function () {
+                const checkboxes = document.querySelectorAll('.assunto-permissao');
+                const assuntosIds = [];
+                checkboxes.forEach(cb => {
+                    if (cb.checked) {
+                        assuntosIds.push(parseInt(cb.dataset.id));
+                    }
+                });
+
+                const usuario = JSON.parse(localStorage.getItem('usuario'));
+
+                const res = await fetch(`/api/admin/usuario/${usuarioPermissoesAtual}/permissoes`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-user-email': usuario.email
+                    },
+                    body: JSON.stringify({ assuntos_ids: assuntosIds })
+                });
+
+                const data = await res.json();
+                if (data.sucesso) {
+                    alert('✅ Permissões salvas com sucesso!');
+                    fecharModalPermissoes();
+                } else {
+                    alert('❌ Erro: ' + data.erro);
+                }
+            };
         }
 
         function fecharModalPermissoes() {
