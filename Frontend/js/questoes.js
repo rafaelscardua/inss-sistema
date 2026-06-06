@@ -83,6 +83,13 @@ function renderizarQuestoes() {
     // Eventos dos botões responder - CORRIGIDO
     document.querySelectorAll('.btn-responder').forEach(btn => {
         btn.onclick = async () => {
+            console.log('Chamando atualizarCardsPlano...');
+            if (typeof atualizarCardsPlano === 'function') {
+                atualizarCardsPlano();
+                console.log('atualizarCardsPlano chamada com sucesso');
+            } else {
+                console.log('atualizarCardsPlano não é uma função');
+            }
             const id = parseInt(btn.dataset.id);
             const selected = window.selectedAnswer ? window.selectedAnswer[id] : null;
             if (!selected) {
