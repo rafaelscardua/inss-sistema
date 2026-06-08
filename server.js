@@ -1021,3 +1021,50 @@ app.put('/api/admin/assuntos/:id/ativo', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
+
+// ==================== LIMPAR DUPLICATAS ====================
+
+app.post('/api/admin/limpar-duplicatas', async (req, res) => {
+    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    const userEmail = req.headers['x-user-email'];
+    
+    if (userEmail !== adminEmail) {
+        return res.status(403).json({ erro: 'Acesso negado' });
+    }
+    
+    try {
+        // 1. Contar duplicatas antes
+        const antesResult = await pool.query('SELECT COUNT(*) FROM questoes_base');
+        const antes = parseInt(antesResult.rows[0].count);
+        
+        // 2. Remover duplicatas mantendo a mais antiga
+        await pool.query(`
+            DELETE FROM questoes_base a
+            USING questoes_base b
+            WHERE a.id > b.id
+              AND a.materia = b.materia
+              AND a.assunto = b.assunto
+              AND a.enunciado = b.enunciado
+        `);
+        
+        // 3. Remover respostas órfãs
+        await pool.query(`
+            DELETE FROM respostas_usuario ru
+            WHERE NOT EXISTS (
+                SELECT 1 FROM questoes_base qb 
+                WHERE qb.id = ru.questao_id
+            )
+        `);
+        
+        // 4. Contar removidas
+        const depoisResult = await pool.query('SELECT COUNT(*) FROM questoes_base');
+        const depois = parseInt(depoisResult.rows[0].count);
+        const removidas = antes - depois;
+        
+        res.json({ sucesso: true, removidas });
+        
+    } catch (error) {
+        console.error('Erro ao limpar duplicatas:', error);
+        res.status(500).json({ erro: error.message });
+    }
+});

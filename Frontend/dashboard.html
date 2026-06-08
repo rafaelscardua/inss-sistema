@@ -928,7 +928,8 @@
         <button onclick="verDetalhesUsuario(${u.id}, '${u.nome}')" style="background:#3498db; color:white; border:none; padding:6px 12px; border-radius:5px; margin-right:5px;">📊 Detalhes</button>
         <button onclick="excluirUsuario(${u.id}, '${u.nome}')" style="background:#e74c3c; color:white; border:none; padding:6px 12px; border-radius:5px; margin-right:5px;">🗑️ Excluir</button>
         <button onclick="abrirModalPermissoes(${u.id}, '${u.nome}')" style="background:#9b59b6; color:white; border:none; padding:6px 12px; border-radius:5px;">📚 Assuntos</button>
-    </div>
+    <button onclick="limparDuplicatas()" style="background: #e67e22; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin-top: 10px;">🧹 Limpar Duplicatas</button>
+        </div>
 `).join('');
 
 
@@ -1462,7 +1463,7 @@
         async function uploadAnexo(materia, topico) {
             const input = document.createElement('input');
             input.type = 'file';
-            input.accept = '.pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.mmap'; 
+            input.accept = '.pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.mmap';
 
             input.onchange = async (e) => {
                 const file = e.target.files[0];
@@ -1533,6 +1534,46 @@
             } catch (error) {
                 console.error('Erro:', error);
                 alert('❌ Erro ao excluir anexo');
+            }
+        }
+
+        async function limparDuplicatas() {
+            if (!confirm('⚠️ ATENÇÃO! Esta ação irá:\n\n1. Remover questões duplicadas (mantendo a mais antiga)\n2. Limpar respostas órfãs\n\nTem certeza que deseja continuar?')) {
+                return;
+            }
+
+            const usuario = JSON.parse(localStorage.getItem('usuario'));
+
+            try {
+                // 1. Remover duplicatas mantendo a mais antiga
+                const res1 = await fetch('/api/admin/limpar-duplicatas', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-user-email': usuario.email
+                    }
+                });
+
+                const data1 = await res1.json();
+
+                if (data1.sucesso) {
+                    alert(`✅ ${data1.removidas || 0} questões duplicadas removidas!`);
+
+                    // Recarregar tudo
+                    await carregarQuestoes();
+                    await carregarRespostas();
+                    await carregarPlanoEstudos();
+                    preencherFiltros();
+                    renderizarQuestoes();
+                    carregarEstatisticas();
+
+                    alert('✅ Banco de dados limpo e sincronizado!');
+                } else {
+                    alert('❌ Erro ao limpar duplicatas: ' + data1.erro);
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('❌ Erro ao executar limpeza');
             }
         }
 
