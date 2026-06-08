@@ -18,7 +18,11 @@
             <div style="display: flex; gap: 10px;">
                 <span class="user-info" id="userName">Carregando...</span>
                 <button class="logout-btn" onclick="logout()">🚪 Sair</button>
-                <button class="dark-btn" id="darkModeBtn">🌙 Modo Escuro</button>
+                <div style="display: flex; gap: 8px;">
+                    <button class="theme-btn" data-theme="light">☀️ Claro</button>
+                    <button class="theme-btn" data-theme="dark">🌙 Escuro</button>
+                    <button class="theme-btn" data-theme="concurso">🎯 Concurso Pro</button>
+                </div>
             </div>
         </div>
 
@@ -928,7 +932,7 @@
         <button onclick="verDetalhesUsuario(${u.id}, '${u.nome}')" style="background:#3498db; color:white; border:none; padding:6px 12px; border-radius:5px; margin-right:5px;">📊 Detalhes</button>
         <button onclick="excluirUsuario(${u.id}, '${u.nome}')" style="background:#e74c3c; color:white; border:none; padding:6px 12px; border-radius:5px; margin-right:5px;">🗑️ Excluir</button>
         <button onclick="abrirModalPermissoes(${u.id}, '${u.nome}')" style="background:#9b59b6; color:white; border:none; padding:6px 12px; border-radius:5px;">📚 Assuntos</button>
-    <button onclick="limparDuplicatas()" style="background: #e67e22; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin-top: 10px;">🧹 Limpar Duplicatas</button>
+        <button onclick="limparDuplicatas()" style="background: #e67e22; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin-top: 10px;">🧹 Limpar Duplicatas</button>
         </div>
 `).join('');
 
@@ -1576,6 +1580,30 @@
                 alert('❌ Erro ao executar limpeza');
             }
         }
+        // ==================== GERENCIAMENTO DE TEMAS ====================
+
+        function aplicarTema(theme) {
+            // Remove todas as classes de tema
+            document.body.classList.remove('light-mode', 'dark-mode', 'concurso-mode');
+
+            // Adiciona a classe do tema selecionado
+            document.body.classList.add(`${theme}-mode`);
+
+            // Salva no localStorage
+            localStorage.setItem('selected_theme', theme);
+        }
+
+        // Carregar tema salvo ao iniciar
+        const savedTheme = localStorage.getItem('selected_theme') || 'light';
+        aplicarTema(savedTheme);
+
+        // Adicionar eventos aos botões de tema
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const theme = btn.getAttribute('data-theme');
+                aplicarTema(theme);
+            });
+        });
 
     </script>
     <!-- MODAL DE PERMISSÕES DO USUÁRIO -->
