@@ -34,6 +34,176 @@ body.dark-mode {
     color: #e0e0e0;
 }
 
+/* ==================== TEMA PADRÃO (CONCURSO PRO) ==================== */
+:root {
+    --bg-primary: #F4F7FB;
+    --card-bg: #FFFFFF;
+    --header-bg: #1E3A5F;
+    --text-primary: #1F2937;
+    --btn-primary: #22C55E;
+    --btn-primary-hover: #16A34A;
+    --btn-secondary: #3B82F6;
+    --btn-secondary-hover: #2563EB;
+    --correct-bg: #DCFCE7;
+    --correct-border: #22C55E;
+    --wrong-bg: #FEE2E2;
+    --wrong-border: #EF4444;
+    --border-color: #E5E7EB;
+    --progress-bar-bg: #22C55E;
+    --tab-active: #22C55E;
+    --tab-inactive: #E5E7EB;
+}
+
+/* ==================== TEMA ESCURO (CONCURSO PRO DARK) ==================== */
+body.dark-mode {
+    --bg-primary: #0F172A;
+    --card-bg: #1E293B;
+    --header-bg: #1D4ED8;
+    --text-primary: #F8FAFC;
+    --btn-primary: #22C55E;
+    --btn-primary-hover: #16A34A;
+    --btn-secondary: #3B82F6;
+    --btn-secondary-hover: #2563EB;
+    --correct-bg: #064E3B;
+    --correct-border: #22C55E;
+    --wrong-bg: #7F1D1D;
+    --wrong-border: #EF4444;
+    --border-color: #334155;
+    --progress-bar-bg: #22C55E;
+    --tab-active: #22C55E;
+    --tab-inactive: #334155;
+}
+
+/* ==================== APLICANDO AS CORES ==================== */
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+}
+
+/* Header */
+.header {
+    background: var(--header-bg);
+    color: white;
+}
+
+/* Cards */
+.stat-card, .question-card, .filtros-box, .import-box, .backup-box, .cronometro-box {
+    background: var(--card-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+/* Botão principal (verde) */
+.btn-add-questao, .btn-start, .btn-responder, .btn-filtrar {
+    background: var(--btn-primary);
+}
+.btn-add-questao:hover, .btn-start:hover, .btn-responder:hover, .btn-filtrar:hover {
+    background: var(--btn-primary-hover);
+}
+
+/* Botão secundário (azul) */
+.btn-import, .btn-backup, .btn-estudar, .edit-btn {
+    background: var(--btn-secondary);
+}
+.btn-import:hover, .btn-backup:hover, .btn-estudar:hover, .edit-btn:hover {
+    background: var(--btn-secondary-hover);
+}
+
+/* Botão reset (laranja mantido) */
+.reset-btn {
+    background: #F59E0B;
+    color: white;
+}
+.reset-btn:hover {
+    background: #D97706;
+}
+
+/* Botão excluir (vermelho mantido) */
+.delete-btn, .btn-danger, .logout-btn {
+    background: #EF4444;
+}
+.delete-btn:hover, .btn-danger:hover, .logout-btn:hover {
+    background: #DC2626;
+}
+
+/* Acertos e Erros nas alternativas */
+.alternativa.correct-answer {
+    background: var(--correct-bg);
+    border-left: 4px solid var(--correct-border);
+}
+
+.alternativa.wrong-answer {
+    background: var(--wrong-bg);
+    border-left: 4px solid var(--wrong-border);
+    text-decoration: line-through;
+}
+
+.alternativa.selected {
+    background: #DBEAFE;
+    border-color: #3B82F6;
+}
+
+body.dark-mode .alternativa.selected {
+    background: #1E40AF;
+    border-color: #3B82F6;
+}
+
+/* Feedback */
+.feedback.correct {
+    background: var(--correct-bg);
+    color: var(--correct-border);
+}
+
+.feedback.wrong {
+    background: var(--wrong-bg);
+    color: var(--wrong-border);
+}
+
+/* Tabs */
+.tab-btn {
+    background: var(--tab-inactive);
+    color: var(--text-primary);
+}
+
+.tab-btn.active {
+    background: var(--tab-active);
+    color: white;
+}
+
+/* Progress bar */
+.progress-bar-fill, .progress-bar {
+    background: var(--progress-bar-bg);
+}
+
+/* Materia header */
+.materia-header {
+    background: var(--header-bg);
+    color: white;
+}
+
+/* Inputs, selects, textarea */
+select, input, textarea {
+    background: var(--card-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+/* Modals */
+.modal-content {
+    background: var(--card-bg);
+    color: var(--text-primary);
+}
+
+/* Topico background */
+.topico {
+    background: var(--card-bg);
+    border-left: 4px solid var(--btn-secondary);
+}
+
+
 body.dark-mode .materia,
 body.dark-mode .stat-card,
 body.dark-mode .question-card,
@@ -44,6 +214,63 @@ body.dark-mode .cronometro-box,
 body.dark-mode .modal-content {
     background: #2d2d44;
     color: #e0e0e0;
+}
+
+/* ==================== TEMA CLARO ==================== */
+body.light-mode {
+    --bg-primary: #F0F2F5;
+    --card-bg: #FFFFFF;
+    --header-bg: #1E3A5F;
+    --text-primary: #1E2A3A;
+    --btn-primary: #22C55E;
+    --btn-primary-hover: #16A34A;
+    --btn-secondary: #3B82F6;
+    --correct-bg: #DCFCE7;
+    --correct-border: #22C55E;
+    --wrong-bg: #FEE2E2;
+    --wrong-border: #EF4444;
+    --border-color: #E2E8F0;
+    --progress-bar-bg: #22C55E;
+    --tab-active: #22C55E;
+    --tab-inactive: #CBD5E1;
+}
+
+/* ==================== TEMA ESCURO ==================== */
+body.dark-mode {
+    --bg-primary: #0A0C10;
+    --card-bg: #1A1D24;
+    --header-bg: #1E3A8A;
+    --text-primary: #E2E8F0;
+    --btn-primary: #10B981;
+    --btn-primary-hover: #059669;
+    --btn-secondary: #3B82F6;
+    --correct-bg: #064E3B;
+    --correct-border: #10B981;
+    --wrong-bg: #7F1D1D;
+    --wrong-border: #EF4444;
+    --border-color: #2D3748;
+    --progress-bar-bg: #10B981;
+    --tab-active: #10B981;
+    --tab-inactive: #2D3748;
+}
+
+/* ==================== TEMA CONCURSO PRO (BEM DIFERENTE) ==================== */
+body.concurso-mode {
+    --bg-primary: #FEF9E6;
+    --card-bg: #FFF8E7;
+    --header-bg: #6B2E5F;
+    --text-primary: #2C1810;
+    --btn-primary: #E67E22;
+    --btn-primary-hover: #D35400;
+    --btn-secondary: #16A085;
+    --correct-bg: #E8F8F5;
+    --correct-border: #D35400;
+    --wrong-bg: #FDEDEC;
+    --wrong-border: #C0392B;
+    --border-color: #F0DBA5;
+    --progress-bar-bg: #E67E22;
+    --tab-active: #E67E22;
+    --tab-inactive: #F0DBA5;
 }
 
 .container {
