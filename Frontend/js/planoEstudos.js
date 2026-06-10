@@ -154,20 +154,29 @@ async function baixarAnexo(id, nomeOriginal) {
             headers: { 'x-user-email': usuario.email }
         });
         const data = await res.json();
-
+        
         if (data.sucesso && data.arquivo_base64) {
-            const link = document.createElement('a');
-            link.href = data.arquivo_base64;
-            link.download = nomeOriginal;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            // Em vez de baixar, abrir em nova aba
+            const url = data.arquivo_base64;
+            
+            // Para PDFs, abre diretamente no navegador
+            if (nomeOriginal.toLowerCase().endsWith('.pdf')) {
+                window.open(url, '_blank');
+            } else {
+                // Para outros arquivos, faz o download
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = nomeOriginal;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
         } else {
-            alert('Erro ao baixar anexo');
+            alert('Erro ao abrir anexo');
         }
     } catch (error) {
-        console.error('Erro ao baixar:', error);
-        alert('Erro ao baixar anexo');
+        console.error('Erro:', error);
+        alert('Erro ao abrir anexo');
     }
 }
 
