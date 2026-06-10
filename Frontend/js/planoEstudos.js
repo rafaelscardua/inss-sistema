@@ -156,16 +156,39 @@ async function baixarAnexo(id, nomeOriginal) {
         const data = await res.json();
         
         if (data.sucesso && data.arquivo_base64) {
-            // Em vez de baixar, abrir em nova aba
-            const url = data.arquivo_base64;
+            const extensao = nomeOriginal.split('.').pop().toLowerCase();
             
-            // Para PDFs, abre diretamente no navegador
-            if (nomeOriginal.toLowerCase().endsWith('.pdf')) {
+            // Para arquivos que podem ser visualizados no navegador
+            if (extensao === 'pdf') {
+                // Criar blob com o tipo correto
+                const byteCharacters = atob(data.arquivo_base64.split(',')[1] || data.arquivo_base64);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
                 window.open(url, '_blank');
-            } else {
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            } 
+            else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extensao)) {
+                // Imagens
+                const byteCharacters = atob(data.arquivo_base64.split(',')[1] || data.arquivo_base64);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: `image/${extensao === 'jpg' ? 'jpeg' : extensao}` });
+                const url = URL.createObjectURL(blob);
+                window.open(url, '_blank');
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }
+            else {
                 // Para outros arquivos, faz o download
                 const link = document.createElement('a');
-                link.href = url;
+                link.href = data.arquivo_base64;
                 link.download = nomeOriginal;
                 document.body.appendChild(link);
                 link.click();
