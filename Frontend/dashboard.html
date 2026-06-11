@@ -652,6 +652,7 @@
             });
             // Event listeners para os botões de progresso (depois que o plano carregar)
             // Forçar cliques nos checkboxes
+            await popularFiltrosExercicios();
         }
 
         init();
@@ -1951,6 +1952,56 @@
                 aplicarTema(theme);
             });
         });
+
+        // ==================== POPULAR FILTROS DE EXERCÍCIOS ====================
+
+        async function popularFiltrosExercicios() {
+            try {
+                const res = await fetch('/api/exercicios');
+                const data = await res.json();
+                let exercicios = data.exercicios || [];
+
+                // Extrair matérias únicas
+                const materias = [...new Set(exercicios.map(ex => ex.materia))].filter(Boolean).sort();
+
+                const selectMateria = document.getElementById("filtroExercicioMateria");
+                if (selectMateria) {
+                    selectMateria.innerHTML = '<option value="todas">📚 Todas as matérias</option>';
+                    materias.forEach(m => {
+                        selectMateria.innerHTML += `<option value="${m}">${m}</option>`;
+                    });
+                }
+
+                // Evento para quando mudar a matéria, popular os assuntos
+                if (selectMateria) {
+                    selectMateria.onchange = () => {
+                        const materiaSelecionada = selectMateria.value;
+                        const assuntos = [...new Set(
+                            exercicios
+                                .filter(ex => materiaSelecionada === 'todas' || ex.materia === materiaSelecionada)
+                                .map(ex => ex.assunto)
+                        )].filter(Boolean).sort();
+
+                        const selectAssunto = document.getElementById("filtroExercicioAssunto");
+                        if (selectAssunto) {
+                            selectAssunto.innerHTML = '<option value="todos">📌 Todos os assuntos</option>';
+                            assuntos.forEach(a => {
+                                selectAssunto.innerHTML += `<option value="${a}">${a}</option>`;
+                            });
+                        }
+                    };
+                    // Disparar mudança inicial
+                    selectMateria.onchange();
+                }
+
+                // Se não houver exercícios, mostrar mensagem
+                if (exercicios.length === 0) {
+                    console.log('Nenhum exercício encontrado para popular os filtros');
+                }
+            } catch (error) {
+                console.error('Erro ao popular filtros de exercícios:', error);
+            }
+        }
 
     </script>
     <!-- MODAL DE PERMISSÕES DO USUÁRIO -->
