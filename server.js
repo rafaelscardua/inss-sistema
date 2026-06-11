@@ -20,7 +20,7 @@ const storage = multer.diskStorage({
     filename: (req, file, cb) => cb(null, Date.now() + '_' + file.originalname)
 });
 
-const upload = multer({ 
+const upload = multer({
     storage,
     limits: { fileSize: 50 * 1024 * 1024 } // 50MB
 });
@@ -708,7 +708,7 @@ app.get('/api/admin/disciplinas', async (req, res) => {
         // Buscar assuntos para cada disciplina
         for (let i = 0; i < disciplinas.length; i++) {
             const assuntosResult = await pool.query(
-                'SELECT id, nome, ordem, ativo FROM assuntos WHERE disciplina_id = $1 ORDER BY ordem, id',
+                'SELECT id, nome, ordem, ativo FROM assuntos WHERE disciplina_id = $1 ORDER BY ordem NULLS LAST, id',
                 [disciplinas[i].id]
             );
             disciplinas[i].assuntos = assuntosResult.rows;
@@ -955,30 +955,30 @@ app.get('/api/admin/usuario/:usuario_id/permissoes', async (req, res) => {
     const { usuario_id } = req.params;
     const adminEmail = req.headers['x-user-email'];
     const adminEmailConfig = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
-    
+
     if (adminEmail !== adminEmailConfig) {
         return res.status(403).json({ erro: 'Acesso negado' });
     }
-    
+
     try {
         // Buscar todos os assuntos
         const todosAssuntos = await pool.query('SELECT id, nome, disciplina_id FROM assuntos');
-        
+
         // Buscar assuntos permitidos para este usuário
         const permitidos = await pool.query(
             'SELECT assunto_id FROM usuario_assuntos WHERE usuario_id = $1',
             [usuario_id]
         );
-        
+
         const permitidosSet = new Set(permitidos.rows.map(r => r.assunto_id));
-        
+
         const assuntos = todosAssuntos.rows.map(a => ({
             id: a.id,
             nome: a.nome,
             disciplina_id: a.disciplina_id,
             permitido: permitidosSet.has(a.id)
         }));
-        
+
         res.json({ sucesso: true, assuntos });
     } catch (error) {
         res.status(500).json({ erro: 'Erro ao buscar permissões' });
@@ -991,23 +991,23 @@ app.put('/api/admin/usuario/:usuario_id/permissoes', async (req, res) => {
     const { assuntos_ids } = req.body;
     const adminEmail = req.headers['x-user-email'];
     const adminEmailConfig = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
-    
+
     console.log(`📝 Atualizando permissões do usuário ${usuario_id}`);
     console.log(`Assuntos IDs:`, assuntos_ids);
-    
+
     if (adminEmail !== adminEmailConfig) {
         return res.status(403).json({ erro: 'Acesso negado' });
     }
-    
+
     if (!assuntos_ids || !Array.isArray(assuntos_ids)) {
         return res.status(400).json({ erro: 'assuntos_ids deve ser um array' });
     }
-    
+
     try {
         // Remover todas as permissões atuais
         await pool.query('DELETE FROM usuario_assuntos WHERE usuario_id = $1', [usuario_id]);
         console.log(`🗑️ Removidas permissões antigas do usuário ${usuario_id}`);
-        
+
         // Adicionar as novas permissões
         for (const assunto_id of assuntos_ids) {
             await pool.query(
@@ -1016,7 +1016,7 @@ app.put('/api/admin/usuario/:usuario_id/permissoes', async (req, res) => {
             );
         }
         console.log(`✅ Adicionadas ${assuntos_ids.length} permissões para o usuário ${usuario_id}`);
-        
+
         res.json({ sucesso: true, mensagem: 'Permissões atualizadas' });
     } catch (error) {
         console.error('Erro ao atualizar permissões:', error);
@@ -1103,22 +1103,22 @@ app.get('/api/exercicios', async (req, res) => {
 // Criar exercício (flexível - aceita qualquer formato)
 app.post('/api/exercicios', async (req, res) => {
     const { materia, assunto, enunciado, alternativas, correta, solucao, explicacao } = req.body;
-    
+
     try {
         // Validar campos obrigatórios
         if (!materia || !assunto || !enunciado) {
             return res.status(400).json({ erro: 'Campos obrigatórios: materia, assunto, enunciado' });
         }
-        
+
         // Se alternativas não existir, criar um padrão dissertativo
         let alternativasFinal = alternativas;
         let corretaFinal = correta || '';
-        
+
         if (!alternativasFinal || Object.keys(alternativasFinal).length === 0) {
             alternativasFinal = { "RESPOSTA": "Resposta dissertativa" };
             corretaFinal = "RESPOSTA";
         }
-        
+
         // Garantir que alternativas seja um objeto válido
         if (typeof alternativasFinal === 'string') {
             try {
@@ -1127,15 +1127,15 @@ app.post('/api/exercicios', async (req, res) => {
                 alternativasFinal = { "RESPOSTA": alternativasFinal };
             }
         }
-        
+
         const result = await pool.query(
             `INSERT INTO exercicios (materia, assunto, enunciado, alternativas, correta, solucao, explicacao) 
              VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
             [materia, assunto, enunciado, JSON.stringify(alternativasFinal), corretaFinal, solucao || '', explicacao || '']
         );
-        
+
         res.json({ sucesso: true, exercicio: result.rows[0] });
-        
+
     } catch (error) {
         console.error('Erro detalhado ao criar exercício:', error);
         res.status(500).json({ erro: error.message });
@@ -1204,6 +1204,77 @@ app.delete('/api/favoritos/:usuario_id/:questao_id', async (req, res) => {
     }
 });
 
+// Mover assunto (subir/descer)
+app.put('/api/admin/assuntos/:id/mover', async (req, res) => {
+    const { id } = req.params;
+    const { direcao } = req.body;
+    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    const userEmail = req.headers['x-user-email'];
+
+    if (userEmail !== adminEmail) {
+        return res.status(403).json({ erro: 'Acesso negado' });
+    }
+
+    if (!direcao || (direcao !== 'subir' && direcao !== 'descer')) {
+        return res.status(400).json({ erro: 'Direção inválida. Use "subir" ou "descer"' });
+    }
+
+    try {
+        // Buscar assunto atual
+        const assuntoAtual = await pool.query(
+            'SELECT disciplina_id, ordem FROM assuntos WHERE id = $1',
+            [id]
+        );
+
+        if (assuntoAtual.rows.length === 0) {
+            return res.status(404).json({ erro: 'Assunto não encontrado' });
+        }
+
+        const disciplina_id = assuntoAtual.rows[0].disciplina_id;
+        const ordemAtual = assuntoAtual.rows[0].ordem;
+
+        if (direcao === 'subir') {
+            // Buscar assunto imediatamente acima (menor ordem)
+            const acima = await pool.query(
+                `SELECT id, ordem FROM assuntos 
+                 WHERE disciplina_id = $1 AND ordem < $2 
+                 ORDER BY ordem DESC LIMIT 1`,
+                [disciplina_id, ordemAtual]
+            );
+
+            if (acima.rows.length > 0) {
+                const outroAssuntoId = acima.rows[0].id;
+                const novaOrdem = acima.rows[0].ordem;
+
+                await pool.query('UPDATE assuntos SET ordem = $1 WHERE id = $2', [ordemAtual, outroAssuntoId]);
+                await pool.query('UPDATE assuntos SET ordem = $1 WHERE id = $2', [novaOrdem, id]);
+            }
+
+        } else if (direcao === 'descer') {
+            // Buscar assunto imediatamente abaixo (maior ordem)
+            const abaixo = await pool.query(
+                `SELECT id, ordem FROM assuntos 
+                 WHERE disciplina_id = $1 AND ordem > $2 
+                 ORDER BY ordem ASC LIMIT 1`,
+                [disciplina_id, ordemAtual]
+            );
+
+            if (abaixo.rows.length > 0) {
+                const outroAssuntoId = abaixo.rows[0].id;
+                const novaOrdem = abaixo.rows[0].ordem;
+
+                await pool.query('UPDATE assuntos SET ordem = $1 WHERE id = $2', [ordemAtual, outroAssuntoId]);
+                await pool.query('UPDATE assuntos SET ordem = $1 WHERE id = $2', [novaOrdem, id]);
+            }
+        }
+
+        res.json({ sucesso: true });
+
+    } catch (error) {
+        console.error('Erro ao mover assunto:', error);
+        res.status(500).json({ erro: error.message });
+    }
+});
 
 app.listen(PORT, () => {
     console.log(`🚀 Servidor rodando na porta ${PORT}`);
@@ -1214,16 +1285,16 @@ app.listen(PORT, () => {
 app.post('/api/admin/limpar-duplicatas', async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
     const userEmail = req.headers['x-user-email'];
-    
+
     if (userEmail !== adminEmail) {
         return res.status(403).json({ erro: 'Acesso negado' });
     }
-    
+
     try {
         // 1. Contar duplicatas antes
         const antesResult = await pool.query('SELECT COUNT(*) FROM questoes_base');
         const antes = parseInt(antesResult.rows[0].count);
-        
+
         // 2. Remover duplicatas mantendo a mais antiga
         await pool.query(`
             DELETE FROM questoes_base a
@@ -1233,7 +1304,7 @@ app.post('/api/admin/limpar-duplicatas', async (req, res) => {
               AND a.assunto = b.assunto
               AND a.enunciado = b.enunciado
         `);
-        
+
         // 3. Remover respostas órfãs
         await pool.query(`
             DELETE FROM respostas_usuario ru
@@ -1242,14 +1313,14 @@ app.post('/api/admin/limpar-duplicatas', async (req, res) => {
                 WHERE qb.id = ru.questao_id
             )
         `);
-        
+
         // 4. Contar removidas
         const depoisResult = await pool.query('SELECT COUNT(*) FROM questoes_base');
         const depois = parseInt(depoisResult.rows[0].count);
         const removidas = antes - depois;
-        
+
         res.json({ sucesso: true, removidas });
-        
+
     } catch (error) {
         console.error('Erro ao limpar duplicatas:', error);
         res.status(500).json({ erro: error.message });
