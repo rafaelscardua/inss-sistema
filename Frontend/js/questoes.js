@@ -70,13 +70,14 @@ function renderizarQuestoes() {
 
         return `
             <div class="question-card" id="q${q.id}">
-                <div class="action-icons">
-                    ${isAdmin ? `
-                        <button class="edit-btn" onclick="abrirModalEdicao(${q.id})">✏️</button>
-                        <button class="delete-btn" onclick="excluirQuestao(${q.id})">🗑️</button>
-                    ` : ''}
-                    ${resp.respondida ? `<button class="reset-btn" onclick="resetarResposta(${q.id})" title="Resetar resposta">🔄</button>` : ''}
-                </div>
+                 <div class="action-icons">
+    <button class="favorito-btn" data-id="${q.id}" onclick="toggleFavorito(${q.id})">❤️</button>
+    ${isAdmin ? `
+        <button class="edit-btn" onclick="abrirModalEdicao(${q.id})">✏️</button>
+        <button class="delete-btn" onclick="excluirQuestao(${q.id})">🗑️</button>
+    ` : ''}
+    ${resp.respondida ? `<button class="reset-btn" onclick="resetarResposta(${q.id})" title="Resetar resposta">🔄</button>` : ''}
+</div>
                 <div class="question-text"><strong>📚 ${q.materia} | ${q.assunto}</strong><br>${q.enunciado}</div>
                 <div class="alternativas" id="alt-${q.id}">${alternativasHtml}</div>
                 ${!resp.respondida ? `<button class="btn-responder" data-id="${q.id}">✅ Responder</button>` : ''}

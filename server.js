@@ -235,7 +235,53 @@ app.put('/api/assuntos/:id/status', async (req, res) => {
     }
 });
 
+// ==================== FAVORITOS ====================
 
+// Buscar favoritos do usuário
+app.get('/api/favoritos/:usuario_id', async (req, res) => {
+    const { usuario_id } = req.params;
+    try {
+        const result = await pool.query(
+            `SELECT q.*, f.data_favorito 
+             FROM favoritos_usuario f
+             JOIN questoes_base q ON f.questao_id = q.id
+             WHERE f.usuario_id = $1
+             ORDER BY f.data_favorito DESC`,
+            [usuario_id]
+        );
+        res.json({ sucesso: true, favoritos: result.rows });
+    } catch (error) {
+        res.status(500).json({ erro: 'Erro ao buscar favoritos' });
+    }
+});
+
+// Adicionar favorito
+app.post('/api/favoritos', async (req, res) => {
+    const { usuario_id, questao_id } = req.body;
+    try {
+        await pool.query(
+            'INSERT INTO favoritos_usuario (usuario_id, questao_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+            [usuario_id, questao_id]
+        );
+        res.json({ sucesso: true });
+    } catch (error) {
+        res.status(500).json({ erro: 'Erro ao adicionar favorito' });
+    }
+});
+
+// Remover favorito
+app.delete('/api/favoritos/:usuario_id/:questao_id', async (req, res) => {
+    const { usuario_id, questao_id } = req.params;
+    try {
+        await pool.query(
+            'DELETE FROM favoritos_usuario WHERE usuario_id = $1 AND questao_id = $2',
+            [usuario_id, questao_id]
+        );
+        res.json({ sucesso: true });
+    } catch (error) {
+        res.status(500).json({ erro: 'Erro ao remover favorito' });
+    }
+});
 
 
 
@@ -1020,6 +1066,57 @@ app.put('/api/admin/assuntos/:id/ativo', async (req, res) => {
     } catch (error) {
         console.error('Erro ao atualizar assunto:', error);
         res.status(500).json({ erro: 'Erro ao atualizar' });
+    }
+});
+
+// ==================== FAVORITOS ====================
+
+// Buscar favoritos do usuário
+app.get('/api/favoritos/:usuario_id', async (req, res) => {
+    const { usuario_id } = req.params;
+    try {
+        const result = await pool.query(
+            `SELECT q.*, f.data_favorito 
+             FROM favoritos_usuario f
+             JOIN questoes_base q ON f.questao_id = q.id
+             WHERE f.usuario_id = $1
+             ORDER BY f.data_favorito DESC`,
+            [usuario_id]
+        );
+        res.json({ sucesso: true, favoritos: result.rows });
+    } catch (error) {
+        console.error('Erro ao buscar favoritos:', error);
+        res.status(500).json({ erro: 'Erro ao buscar favoritos' });
+    }
+});
+
+// Adicionar favorito
+app.post('/api/favoritos', async (req, res) => {
+    const { usuario_id, questao_id } = req.body;
+    try {
+        await pool.query(
+            'INSERT INTO favoritos_usuario (usuario_id, questao_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+            [usuario_id, questao_id]
+        );
+        res.json({ sucesso: true });
+    } catch (error) {
+        console.error('Erro ao adicionar favorito:', error);
+        res.status(500).json({ erro: 'Erro ao adicionar favorito' });
+    }
+});
+
+// Remover favorito
+app.delete('/api/favoritos/:usuario_id/:questao_id', async (req, res) => {
+    const { usuario_id, questao_id } = req.params;
+    try {
+        await pool.query(
+            'DELETE FROM favoritos_usuario WHERE usuario_id = $1 AND questao_id = $2',
+            [usuario_id, questao_id]
+        );
+        res.json({ sucesso: true });
+    } catch (error) {
+        console.error('Erro ao remover favorito:', error);
+        res.status(500).json({ erro: 'Erro ao remover favorito' });
     }
 });
 

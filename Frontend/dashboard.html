@@ -29,6 +29,7 @@
         <div class="tabs">
             <button class="tab-btn active" data-tab="estudos">📖 PLANO</button>
             <button class="tab-btn" data-tab="questoes">📝 QUESTÕES</button>
+            <button class="tab-btn" data-tab="favoritos">⭐ FAVORITOS</button>
             <button class="tab-btn" data-tab="cronometro">⏱️ POMODORO</button>
             <button class="tab-btn" data-tab="importar">📥 IMPORTAR</button>
             <button class="tab-btn" data-tab="add">➕ ADICIONAR</button>
@@ -91,6 +92,23 @@
                 <div class="progress-bar" id="barraProgressoSimulado">0%</div>
             </div>
             <div id="questoesList"></div>
+        </div>
+
+        <!-- FAVORITOS -->
+        <div id="tab-favoritos" class="tab-content">
+            <div class="filtros-box">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3>⭐ Minhas Questões Favoritas</h3>
+                    <button class="btn-small btn-danger" id="limparFavoritosBtn">🗑️ Limpar todos</button>
+                </div>
+                <div class="filtro-group">
+                    <label>📚 Filtrar por Matéria</label>
+                    <select id="filtroFavoritoMateria">
+                        <option value="todas">Todas</option>
+                    </select>
+                </div>
+            </div>
+            <div id="favoritosList"></div>
         </div>
 
         <!-- CRONÔMETRO -->
@@ -464,7 +482,7 @@
             if (!checkAuth()) return;
             await carregarQuestoes();
             await carregarRespostas();
-
+            await carregarFavoritos();
             await carregarPlanoEstudos();  // ← NOVO PLANO DE ESTUDOS
 
             try {
@@ -535,6 +553,10 @@
                     content.classList.add('collapsed');
                 });
             });
+
+            document.getElementById("limparFavoritosBtn")?.addEventListener("click", limparTodosFavoritos);
+            document.getElementById("filtroFavoritoMateria")?.addEventListener("change", renderizarFavoritos); F
+
 
             document.getElementById("filtrarQuestoesBtn")?.addEventListener("click", renderizarQuestoes);
             document.getElementById("salvarNovaQuestao")?.addEventListener("click", adicionarNovaQuestao);
@@ -983,6 +1005,8 @@
         }, 1500);
     </script>
 
+
+
     <script>
         // ==================== GERENCIAR DISCIPLINAS E ASSUNTOS ====================
 
@@ -1073,6 +1097,168 @@
                 checkbox.removeEventListener('change', handleAssuntoAtivo);
                 checkbox.addEventListener('change', handleAssuntoAtivo);
             });
+        }
+
+
+        // ==================== FAVORITOS ====================
+
+        let favoritosUsuario = new Set();
+
+        async function carregarFavoritos() {
+            const usuario = JSON.parse(localStorage.getItem('usuario'));
+            try {
+                const res = await fetch(`/api/favoritos/${usuario.id}`, {
+                    headers: { 'x-user-email': usuario.email }
+                });
+                const data = await res.json();
+                if (data.sucesso) {
+                    favoritosUsuario.clear();
+                    data.favoritos.forEach(f => favoritosUsuario.add(f.id));
+                    atualizarBotoesFavorito();
+                }
+            } catch (e) {
+                console.error('Erro ao carregar favoritos:', e);
+            }
+        }
+
+        async function toggleFavorito(questaoId) {
+            const usuario = JSON.parse(localStorage.getItem('usuario'));
+            const isFavorito = favoritosUsuario.has(questaoId);
+
+            try {
+                if (isFavorito) {
+                    await fetch(`/api/favoritos/${usuario.id}/${questaoId}`, {
+                        method: 'DELETE',
+                        headers: { 'x-user-email': usuario.email }
+                    });
+                    favoritosUsuario.delete(questaoId);
+                } else {
+                    await fetch('/api/favoritos', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'x-user-email': usuario.email },
+                        body: JSON.stringify({ usuario_id: usuario.id, questao_id: questaoId })
+                    });
+                    favoritosUsuario.add(questaoId);
+                }
+                atualizarBotoesFavorito();
+                if (document.getElementById("tab-favoritos")?.classList.contains('active')) {
+                    renderizarFavoritos();
+                }
+            } catch (e) {
+                console.error('Erro ao favoritar:', e);
+            }
+        }
+
+        function atualizarBotoesFavorito() {
+            document.querySelectorAll('.favorito-btn').forEach(btn => {
+                const id = parseInt(btn.dataset.id);
+                if (favoritosUsuario.has(id)) {
+                    btn.innerHTML = '❤️';
+                    btn.style.color = '#e74c3c';
+                } else {
+                    btn.innerHTML = '🤍';
+                    btn.style.color = '#999';
+                }
+            });
+        }
+
+        async function renderizarFavoritos() {
+            const container = document.getElementById("favoritosList");
+            if (!container) return;
+
+            const usuario = JSON.parse(localStorage.getItem('usuario'));
+            const materiaFiltro = document.getElementById("filtroFavoritoMateria")?.value || "todas";
+
+            try {
+                const res = await fetch(`/api/favoritos/${usuario.id}`, {
+                    headers: { 'x-user-email': usuario.email }
+                });
+                const data = await res.json();
+
+                let favoritos = data.favoritos || [];
+
+                if (materiaFiltro !== "todas") {
+                    favoritos = favoritos.filter(f => f.materia === materiaFiltro);
+                }
+
+                if (favoritos.length === 0) {
+                    container.innerHTML = "<p style='text-align:center; padding:40px;'>⭐ Nenhuma questão favoritada ainda.<br>Clique no ❤️ nas questões para adicionar aos favoritos.</p>";
+                    return;
+                }
+
+                // Agrupar por matéria
+                const porMateria = {};
+                favoritos.forEach(f => {
+                    if (!porMateria[f.materia]) porMateria[f.materia] = [];
+                    porMateria[f.materia].push(f);
+                });
+
+                // Popular filtro de matérias
+                const filtroMateria = document.getElementById("filtroFavoritoMateria");
+                if (filtroMateria && filtroMateria.options.length <= 1) {
+                    const materias = Object.keys(porMateria);
+                    materias.forEach(m => {
+                        filtroMateria.innerHTML += `<option value="${m}">${m}</option>`;
+                    });
+                }
+
+                let html = '';
+                for (const [materia, questoes] of Object.entries(porMateria)) {
+                    html += `
+                <div class="materia" style="margin-bottom: 20px;">
+                    <div class="materia-header" style="cursor: pointer;">
+                        <div><b>📚 ${materia}</b> <span style="font-size:0.8em;">${questoes.length} questões</span></div>
+                    </div>
+                    <div class="materia-content" style="padding: 15px;">
+                        ${questoes.map(q => `
+                            <div class="question-card" style="margin-bottom: 15px; padding: 15px;">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                    <div style="flex:1;">
+                                        <strong>${q.assunto}</strong><br>
+                                        <small>${q.enunciado.substring(0, 150)}...</small>
+                                    </div>
+                                    <div style="display: flex; gap: 10px;">
+                                        <button class="btn-small" onclick="irParaQuestao(${q.id})">🔍 Ver questão</button>
+                                        <button class="btn-small btn-danger" onclick="toggleFavorito(${q.id})">❤️ Remover</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+                }
+                container.innerHTML = html;
+
+                // Adicionar eventos de expandir/recolher
+                document.querySelectorAll('#favoritosList .materia-header').forEach(header => {
+                    header.addEventListener('click', () => {
+                        const content = header.nextElementSibling;
+                        content.classList.toggle('collapsed');
+                    });
+                });
+            } catch (error) {
+                console.error('Erro:', error);
+                container.innerHTML = '<p>Erro ao carregar favoritos</p>';
+            }
+        }
+
+        async function limparTodosFavoritos() {
+            if (!confirm('⚠️ Tem certeza que deseja remover TODAS as questões favoritas?')) return;
+
+            const usuario = JSON.parse(localStorage.getItem('usuario'));
+            const favoritosIds = Array.from(favoritosUsuario);
+
+            for (const id of favoritosIds) {
+                await fetch(`/api/favoritos/${usuario.id}/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'x-user-email': usuario.email }
+                });
+            }
+            favoritosUsuario.clear();
+            atualizarBotoesFavorito();
+            renderizarFavoritos();
+            alert('✅ Todos os favoritos foram removidos!');
         }
 
         async function handleDisciplinaAtivo(e) {
