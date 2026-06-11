@@ -1069,6 +1069,63 @@ app.put('/api/admin/assuntos/:id/ativo', async (req, res) => {
     }
 });
 
+
+// ==================== EXERCÍCIOS ====================
+
+// Listar exercícios
+app.get('/api/exercicios', async (req, res) => {
+    const { materia, assunto } = req.query;
+    let query = 'SELECT * FROM exercicios';
+    let params = [];
+    let conditions = [];
+
+    if (materia && materia !== 'todas') {
+        conditions.push(`materia = $${params.length + 1}`);
+        params.push(materia);
+    }
+    if (assunto && assunto !== 'todos') {
+        conditions.push(`assunto = $${params.length + 1}`);
+        params.push(assunto);
+    }
+    if (conditions.length > 0) {
+        query += ' WHERE ' + conditions.join(' AND ');
+    }
+    query += ' ORDER BY id';
+
+    try {
+        const result = await pool.query(query, params);
+        res.json({ sucesso: true, exercicios: result.rows });
+    } catch (error) {
+        res.status(500).json({ erro: 'Erro ao buscar exercícios' });
+    }
+});
+
+// Criar exercício
+app.post('/api/exercicios', async (req, res) => {
+    const { materia, assunto, enunciado, alternativas, correta, solucao, explicacao } = req.body;
+    try {
+        const result = await pool.query(
+            `INSERT INTO exercicios (materia, assunto, enunciado, alternativas, correta, solucao, explicacao) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+            [materia, assunto, enunciado, alternativas, correta, solucao, explicacao || '']
+        );
+        res.json({ sucesso: true, exercicio: result.rows[0] });
+    } catch (error) {
+        res.status(500).json({ erro: 'Erro ao criar exercício' });
+    }
+});
+
+// Deletar exercício
+app.delete('/api/exercicios/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('DELETE FROM exercicios WHERE id = $1', [id]);
+        res.json({ sucesso: true });
+    } catch (error) {
+        res.status(500).json({ erro: 'Erro ao deletar exercício' });
+    }
+});
+
 // ==================== FAVORITOS ====================
 
 // Buscar favoritos do usuário

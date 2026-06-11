@@ -29,6 +29,7 @@
         <div class="tabs">
             <button class="tab-btn active" data-tab="estudos">📖 PLANO</button>
             <button class="tab-btn" data-tab="questoes">📝 QUESTÕES</button>
+            <button class="tab-btn" data-tab="exercicios">📝 EXERCÍCIOS</button>
             <button class="tab-btn" data-tab="favoritos">⭐ FAVORITOS</button>
             <button class="tab-btn" data-tab="cronometro">⏱️ POMODORO</button>
             <button class="tab-btn" data-tab="importar">📥 IMPORTAR</button>
@@ -63,6 +64,21 @@
             </div>
             <div id="materiasContainer"></div>
         </div>
+
+        <!-- EXERCÍCIOS -->
+        <div id="tab-exercicios" class="tab-content">
+            <div class="filtros-box">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                    <div class="filtro-group" style="flex:1;"><label>📚 Matéria</label><select
+                            id="filtroExercicioMateria"></select></div>
+                    <div class="filtro-group" style="flex:1;"><label>📌 Assunto</label><select
+                            id="filtroExercicioAssunto"></select></div>
+                    <div><button class="btn-filtrar" id="filtrarExerciciosBtn">🔍 Filtrar</button></div>
+                </div>
+            </div>
+            <div id="exerciciosList"></div>
+        </div>
+
 
         <!-- QUESTÕES -->
         <div id="tab-questoes" class="tab-content">
@@ -590,6 +606,10 @@
                     document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
                     document.getElementById(`tab-${tabBtn.dataset.tab}`).classList.add('active');
 
+                    if (tabBtn.dataset.tab === 'exercicios') {
+                        renderizarExercicios();
+                    }
+
                     if (tabBtn.dataset.tab === 'questoes') renderizarQuestoes();
                     if (tabBtn.dataset.tab === 'stats') carregarEstatisticas();
                     if (tabBtn.dataset.tab === 'favoritos') {
@@ -712,6 +732,29 @@
 
             return false;
         };
+
+
+        async function deletarExercicio(id) {
+            if (!confirm('🗑️ Tem certeza que deseja excluir este exercício?')) return;
+
+            const usuario = JSON.parse(localStorage.getItem('usuario'));
+            try {
+                const res = await fetch(`/api/exercicios/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'x-user-email': usuario.email }
+                });
+                const data = await res.json();
+                if (data.sucesso) {
+                    alert('✅ Exercício excluído!');
+                    renderizarExercicios();
+                } else {
+                    alert('❌ Erro ao excluir exercício');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('❌ Erro ao excluir exercício');
+            }
+        }
 
         // Função para atualizar apenas a barra de progresso (sem recarregar tudo)
         async function atualizarBarraProgresso() {
@@ -1099,6 +1142,59 @@
                 checkbox.removeEventListener('change', handleAssuntoAtivo);
                 checkbox.addEventListener('change', handleAssuntoAtivo);
             });
+        }
+
+
+        async function renderizarExercicios() {
+            const container = document.getElementById("exerciciosList");
+            if (!container) return;
+
+            const materia = document.getElementById("filtroExercicioMateria")?.value || "todas";
+            const assunto = document.getElementById("filtroExercicioAssunto")?.value || "todos";
+
+            let url = `/api/exercicios?materia=${materia}&assunto=${assunto}`;
+
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                let exercicios = data.exercicios || [];
+
+                if (exercicios.length === 0) {
+                    container.innerHTML = "<p style='text-align:center; padding:40px;'>📝 Nenhum exercício encontrado.</p>";
+                    return;
+                }
+
+                container.innerHTML = exercicios.map(ex => `
+            <div class="question-card" id="ex-${ex.id}">
+                <div class="action-icons">
+                    <button class="delete-btn" onclick="deletarExercicio(${ex.id})">🗑️</button>
+                </div>
+                <div class="question-text"><strong>📚 ${ex.materia} | ${ex.assunto}</strong><br>${ex.enunciado}</div>
+                <div class="alternativas">
+                    ${Object.entries(ex.alternativas).map(([letra, texto]) => `
+                        <div class="alternativa" data-letra="${letra}" data-exid="${ex.id}"><strong>${letra})</strong> ${texto}</div>
+                    `).join('')}
+                </div>
+                <div id="solucao-${ex.id}" style="display: none; margin-top: 10px; padding: 10px; background: #e8f4f8; border-radius: 8px;">
+                    <strong>📖 Solução:</strong> ${ex.solucao}
+                </div>
+                <button class="btn-small" onclick="mostrarSolucao(${ex.id})">📖 Ver Solução</button>
+                <button class="btn-small btn-danger" onclick="favoritarExercicio(${ex.id})">❤️ Favoritar</button>
+            </div>
+        `).join('');
+            } catch (error) {
+                console.error('Erro:', error);
+                container.innerHTML = '<p>Erro ao carregar exercícios</p>';
+            }
+        }
+
+        function mostrarSolucao(id) {
+            const div = document.getElementById(`solucao-${id}`);
+            if (div.style.display === 'none') {
+                div.style.display = 'block';
+            } else {
+                div.style.display = 'none';
+            }
         }
 
 
