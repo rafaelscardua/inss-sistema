@@ -145,15 +145,17 @@
 
         <!-- IMPORTAÇÃO -->
         <div id="tab-importar" class="tab-content">
-            <div class="filtro-group">
-                <label>📋 Tipo de Importação</label>
-                <select id="tipoImportacao" onchange="toggleTipoImportacao()">
-                    <option value="questoes">📝 Questões (com gabarito)</option>
-                    <option value="exercicios">📖 Exercícios (com solução)</option>
-                </select>
-            </div>
             <div class="import-box">
                 <h3>📥 Importar Questões</h3>
+
+                <div class="filtro-group">
+                    <label>📋 Tipo de Importação</label>
+                    <select id="tipoImportacao" onchange="toggleTipoImportacao()">
+                        <option value="questoes">📝 Questões (com gabarito)</option>
+                        <option value="exercicios">📖 Exercícios (com solução)</option>
+                    </select>
+                </div>
+
                 <div class="filtro-group">
                     <label>📚 Matéria padrão</label>
                     <select id="importMateriaSelect" onchange="toggleMateriaInput(); carregarAssuntosImportacao()">
@@ -163,6 +165,7 @@
                     <input type="text" id="importMateriaNova" placeholder="Digite nova matéria"
                         style="display:none; margin-top:5px;">
                 </div>
+
                 <div class="filtro-group">
                     <label>📌 Assunto padrão</label>
                     <select id="importAssuntoSelect" onchange="toggleAssuntoInput()">
@@ -172,20 +175,27 @@
                     <input type="text" id="importAssuntoNova" placeholder="Digite novo assunto"
                         style="display:none; margin-top:5px;">
                 </div>
-                <div class="filtro-group"><label>📋 Questões (cole aqui)</label><textarea id="importTexto" rows="10"
-                        placeholder="Cole as questões..."></textarea></div>
-                <div class="filtro-group"><label>📋 Gabarito (opcional)</label><textarea id="importGabarito" rows="4"
-                        placeholder="1. B&#10;2. D&#10;3. CORRETO"></textarea></div>
+
+                <div class="filtro-group">
+                    <label>📋 Questões (cole aqui)</label>
+                    <textarea id="importTexto" rows="10" placeholder="Cole as questões..."></textarea>
+                </div>
+
+                <div class="filtro-group">
+                    <label id="labelGabarito">📋 Gabarito (opcional)</label>
+                    <textarea id="importGabarito" rows="4" placeholder="1. B&#10;2. D&#10;3. CORRETO"></textarea>
+                </div>
+
                 <button class="btn-import" id="detectarQuestoesBtn">🔍 Detectar</button>
             </div>
+
             <div id="previewArea" style="display:none;">
                 <div class="import-box">
-                    <div id="previewList"></div><button class="btn-add-questao" id="confirmarImportacaoBtn">✅
-                        Importar</button>
+                    <div id="previewList"></div>
+                    <button class="btn-add-questao" id="confirmarImportacaoBtn">✅ Importar</button>
                 </div>
             </div>
         </div>
-
         <!-- ADICIONAR MANUAL -->
         <div id="tab-add" class="tab-content">
             <div class="question-card">
@@ -312,9 +322,11 @@
                     style="height: 100px;">
                     <option value="todos" selected>Todos os assuntos</option>
                 </select><small>Segure Ctrl para selecionar múltiplas</small></div>
-            <div class="filtro-group"><label><input type="checkbox" id="simuladoApenasNaoRespondidas"> Apenas questões
+            <div class="filtro-group"><label><input type="checkbox" id="simuladoApenasNaoRespondidas">
+                    Apenas questões
                     NÃO respondidas</label></div>
-            <div class="filtro-group"><label><input type="checkbox" id="simuladoApenasErradas"> Apenas questões que
+            <div class="filtro-group"><label><input type="checkbox" id="simuladoApenasErradas"> Apenas
+                    questões que
                     errei (revisão)</label></div>
             <div class="filtro-group"><label><input type="checkbox" id="simuladoTimer"> ⏱️ Ativar
                     temporizador</label><input type="number" id="simuladoTimerMinutos" placeholder="Minutos" value="30"
