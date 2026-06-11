@@ -204,7 +204,7 @@ function detectarQuestoesNormal() {
 
 function detectarExercicios() {
     const texto = document.getElementById("importTexto").value;
-    const solucaoAlternativa = document.getElementById("importGabarito")?.value.trim(); // NOVO: campo solução opcional
+    const solucaoAlternativa = document.getElementById("importGabarito")?.value.trim();
 
     // Pegar matéria e assunto
     const materiaSelect = document.getElementById("importMateriaSelect");
@@ -236,6 +236,7 @@ function detectarExercicios() {
         let alternativas = {};
         let solucao = "";
         let correta = "";
+        let tipo = "dissertativa"; // padrão
 
         for (let linha of linhas) {
             linha = linha.trim();
@@ -246,49 +247,81 @@ function detectarExercicios() {
                 continue;
             }
 
+            // Detecta alternativas (A, B, C, D, E)
             let matchAlt = linha.match(/^([a-eA-E])[\.\)]\s*(.*)/);
             if (matchAlt) {
+                tipo = "multipla_escolha";
                 let letra = matchAlt[1].toUpperCase();
                 let textoAlt = matchAlt[2];
                 alternativas[letra] = textoAlt;
                 continue;
             }
 
+            // Detecta Verdadeiro/Falso
+            if (linha.toUpperCase() === 'VERDADEIRO' || linha.toUpperCase() === 'V') {
+                tipo = "verdadeiro_falso";
+                alternativas = { "A": "Verdadeiro", "B": "Falso" };
+                continue;
+            }
+            if (linha.toUpperCase() === 'FALSO' || linha.toUpperCase() === 'F') {
+                tipo = "verdadeiro_falso";
+                alternativas = { "A": "Verdadeiro", "B": "Falso" };
+                continue;
+            }
+
+            // Detecta número da questão
             let matchNum = linha.match(/^(\d+)[\.\)]\s*(.*)/);
             if (matchNum && !enunciado) {
                 enunciado = matchNum[2];
                 continue;
             }
 
+            // Constrói o enunciado
             if (!enunciado) {
                 enunciado += " " + linha;
             }
         }
 
-        // PRIORIDADE: 1º campo "Solução (opcional)", 2º linha SOLUÇÃO:, 3º vazio
+        // Se não tem alternativas e é dissertativa, criar estrutura
+        if (tipo === "dissertativa" && Object.keys(alternativas).length === 0) {
+            alternativas = {
+                "RESPOSTA": "Campo para resposta dissertativa"
+            };
+        }
+
+        // Prioridade: campo "Solução (opcional)" > linha SOLUÇÃO:
         if (solucaoAlternativa) {
             solucao = solucaoAlternativa;
         }
 
-        // Determina alternativa correta (se houver)
-        const letras = ['A', 'B', 'C', 'D', 'E'];
-        for (let letra of letras) {
-            if (solucao.toUpperCase().includes(`LETRA ${letra}`) ||
-                solucao.toUpperCase().includes(`ALTERNATIVA ${letra}`) ||
-                solucao.toUpperCase().startsWith(letra)) {
-                correta = letra;
-                break;
+        // Determina alternativa correta (apenas para múltipla escolha)
+        if (tipo === "multipla_escolha") {
+            const letras = ['A', 'B', 'C', 'D', 'E'];
+            for (let letra of letras) {
+                if (solucao.toUpperCase().includes(`LETRA ${letra}`) ||
+                    solucao.toUpperCase().includes(`ALTERNATIVA ${letra}`) ||
+                    solucao.toUpperCase().startsWith(letra)) {
+                    correta = letra;
+                    break;
+                }
+            }
+        } else if (tipo === "verdadeiro_falso") {
+            if (solucao.toUpperCase().includes('VERDADEIRO') || solucao.toUpperCase().includes('V')) {
+                correta = "A";
+            } else if (solucao.toUpperCase().includes('FALSO') || solucao.toUpperCase().includes('F')) {
+                correta = "B";
             }
         }
 
-        if (enunciado && Object.keys(alternativas).length > 0) {
+        if (enunciado) {
             exerciciosTemp.push({
                 materia: materia,
                 assunto: assunto,
                 enunciado: enunciado,
                 alternativas: alternativas,
-                correta: correta || 'A',
-                solucao: solucao || 'Solução não fornecida'
+                correta: correta || (tipo === "dissertativa" ? "RESPOSTA" : ""),
+                solucao: solucao || 'Solução não fornecida',
+                tipo: tipo  // Guarda o tipo do exercício
             });
         }
     }
@@ -296,6 +329,10 @@ function detectarExercicios() {
     questoesDetectadas = exerciciosTemp;
     mostrarPreviewExercicios();
 }
+
+
+
+
 
 function mostrarPreviewExercicios() {
     const previewArea = document.getElementById("previewArea");
