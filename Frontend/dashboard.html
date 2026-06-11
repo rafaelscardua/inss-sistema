@@ -115,7 +115,7 @@
                 <h3>📥 Importar Questões</h3>
                 <div class="filtro-group">
                     <label>📚 Matéria padrão</label>
-                    <select id="importMateriaSelect" onchange="toggleMateriaInput()">
+                    <select id="importMateriaSelect" onchange="toggleMateriaInput(); carregarAssuntosImportacao()">
                         <option value="">-- Selecione --</option>
                         <option value="nova">+ Nova matéria...</option>
                     </select>
@@ -515,6 +515,7 @@
             renderizarQuestoes();
             carregarEstatisticas();
             atualizarStats();
+            carregarAssuntosImportacao();
 
             // Se for admin, carrega dados do painel
             if (usuario.email === 'rafaelscardua@gmail.com') {
@@ -807,6 +808,33 @@
                 input.style.display = "none";
             }
         }
+
+        // Carregar assuntos baseado na matéria selecionada (usando dados locais)
+        function carregarAssuntosImportacao() {
+            const materiaSelect = document.getElementById("importMateriaSelect");
+            const assuntoSelect = document.getElementById("importAssuntoSelect");
+            const materia = materiaSelect.value;
+
+            if (!materia || materia === 'nova') return;
+
+            // Se ainda não temos questões carregadas, aguarda
+            if (typeof questoes === 'undefined' || questoes.length === 0) return;
+
+            // Filtrar assuntos das questões existentes para esta matéria
+            const assuntosFiltrados = [...new Set(
+                questoes.filter(q => q.materia === materia).map(q => q.assunto)
+            )].sort();
+
+            // Recriar o select
+            assuntoSelect.innerHTML = '<option value="">-- Selecione --</option>';
+            assuntoSelect.innerHTML += '<option value="nova">+ Novo assunto...</option>';
+
+            assuntosFiltrados.forEach(assunto => {
+                assuntoSelect.innerHTML += `<option value="${assunto}">${assunto}</option>`;
+            });
+        }
+
+
 
         function toggleAssuntoInput() {
             const select = document.getElementById("importAssuntoSelect");
