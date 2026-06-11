@@ -895,7 +895,7 @@ app.get('/api/plano-estudos/:usuario_id', async (req, res) => {
                  FROM assuntos a
                  JOIN usuario_assuntos ua ON a.id = ua.assunto_id
                  WHERE a.disciplina_id = $1 AND a.ativo = true AND ua.usuario_id = $2
-                 ORDER BY a.id`,
+                 ORDER BY a.ordem NULLS LAST, a.id`,  // ← ORDEM POR ORDEM
                 [disc.id, usuario_id]
             );
 
