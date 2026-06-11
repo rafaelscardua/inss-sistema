@@ -204,6 +204,7 @@ function detectarQuestoesNormal() {
 
 function detectarExercicios() {
     const texto = document.getElementById("importTexto").value;
+    const solucaoAlternativa = document.getElementById("importGabarito")?.value.trim(); // NOVO: campo solução opcional
 
     // Pegar matéria e assunto
     const materiaSelect = document.getElementById("importMateriaSelect");
@@ -239,6 +240,7 @@ function detectarExercicios() {
         for (let linha of linhas) {
             linha = linha.trim();
 
+            // Detecta SOLUÇÃO: se existir (opcional)
             if (linha.toUpperCase().startsWith('SOLUÇÃO:') || linha.toUpperCase().startsWith('SOLUCAO:')) {
                 solucao = linha.replace(/SOLUÇÃO:\s*/i, '').replace(/SOLUCAO:\s*/i, '');
                 continue;
@@ -263,6 +265,12 @@ function detectarExercicios() {
             }
         }
 
+        // PRIORIDADE: 1º campo "Solução (opcional)", 2º linha SOLUÇÃO:, 3º vazio
+        if (solucaoAlternativa) {
+            solucao = solucaoAlternativa;
+        }
+
+        // Determina alternativa correta (se houver)
         const letras = ['A', 'B', 'C', 'D', 'E'];
         for (let letra of letras) {
             if (solucao.toUpperCase().includes(`LETRA ${letra}`) ||
@@ -294,7 +302,7 @@ function mostrarPreviewExercicios() {
     const previewList = document.getElementById("previewList");
 
     if (questoesDetectadas.length === 0) {
-        previewList.innerHTML = "<p style='color:red;'>Nenhum exercício detectado! Verifique o formato (use SOLUÇÃO: no final).</p>";
+        previewList.innerHTML = "<p style='color:red;'>Nenhum exercício detectado! Verifique o formato.</p>";
         previewArea.style.display = "block";
         return;
     }
@@ -304,10 +312,9 @@ function mostrarPreviewExercicios() {
             <strong>Exercício ${idx + 1}</strong><br>
             <strong>Enunciado:</strong> ${ex.enunciado.substring(0, 200)}${ex.enunciado.length > 200 ? '...' : ''}<br>
             <strong>Alternativas:</strong> ${Object.entries(ex.alternativas).map(([k, v]) => `${k}) ${v.substring(0, 50)}`).join(' | ')}<br>
-            <strong>📖 Solução Detectada:</strong> ${ex.solucao.substring(0, 100)}...<br>
             <div class="filtro-group" style="margin-top:10px;">
-                <label>✏️ Editar Solução (se necessário):</label>
-                <input type="text" id="solucao_${idx}" value="${ex.solucao.replace(/"/g, '&quot;')}" style="width:100%;">
+                <label>✏️ Solução (multilinha):</label><br>
+                <textarea id="solucao_${idx}" rows="3" style="width:100%;">${ex.solucao.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
             </div>
         </div>
     `).join('');
@@ -316,33 +323,7 @@ function mostrarPreviewExercicios() {
 }
 
 // Modificar a função importarQuestoes para lidar com exercícios no preview
-const originalImportarQuestoes = window.importarQuestoes;
-window.importarQuestoes = async function () {
-    const tipo = document.getElementById("tipoImportacao")?.value || "questoes";
 
-    if (tipo === 'exercicios') {
-        let importados = 0;
-        for (let i = 0; i < questoesDetectadas.length; i++) {
-            let ex = questoesDetectadas[i];
-            let solucao = document.getElementById(`solucao_${i}`)?.value.trim();
-            if (solucao) ex.solucao = solucao;
-
-            const res = await fetch(`${API_URL}/api/exercicios`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(ex)
-            });
-            if ((await res.json()).sucesso) importados++;
-        }
-        alert(`✅ ${importados} exercícios importados!`);
-        document.getElementById("previewArea").style.display = "none";
-        document.getElementById("importTexto").value = "";
-        questoesDetectadas = [];
-        if (typeof renderizarExercicios === 'function') renderizarExercicios();
-    } else {
-        await originalImportarQuestoes();
-    }
-}; F
 
 function mostrarPreview() {
     const previewArea = document.getElementById("previewArea");
