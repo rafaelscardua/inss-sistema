@@ -623,14 +623,13 @@
             if (localStorage.getItem("inss_dark") === "true") document.body.classList.add("dark-mode");
 
             document.querySelectorAll('.tab-btn').forEach(tabBtn => {
-                tabBtn.addEventListener('click', () => {
+                tabBtn.addEventListener('click', async () => {  // ✅ ADICIONE 'async' AQUI
                     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                     tabBtn.classList.add('active');
                     document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
                     document.getElementById(`tab-${tabBtn.dataset.tab}`).classList.add('active');
 
                     if (tabBtn.dataset.tab === 'exercicios') {
-                        // Forçar recarregamento dos filtros e exercícios
                         await popularFiltrosExercicios();
                         await renderizarExercicios();
                     }
@@ -642,6 +641,7 @@
                     }
                     // ADMIN
                     if (tabBtn.dataset.tab === 'admin') {
+                        const usuario = JSON.parse(localStorage.getItem('usuario'));
                         if (usuario.email === 'rafaelscardua@gmail.com') {
                             if (typeof carregarAdminUsuarios === 'function') {
                                 carregarAdminUsuarios();
@@ -652,6 +652,11 @@
                     }
                 });
             });
+
+
+
+
+
             // Event listeners para os botões de progresso (depois que o plano carregar)
             // Forçar cliques nos checkboxes
             await popularFiltrosExercicios();
