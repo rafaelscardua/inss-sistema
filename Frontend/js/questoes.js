@@ -179,6 +179,43 @@ async function sincronizarProgressoPlano() {
     }
 }
 
+async function toggleFavorito(questaoId) {
+    const usuario = JSON.parse(localStorage.getItem('usuario'));
+    const isFavorito = favoritosUsuario.has(questaoId);
+
+    try {
+        if (isFavorito) {
+            await fetch(`/api/favoritos/${usuario.id}/${questaoId}`, {
+                method: 'DELETE',
+                headers: { 'x-user-email': usuario.email }
+            });
+            favoritosUsuario.delete(questaoId);
+        } else {
+            await fetch('/api/favoritos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-user-email': usuario.email },
+                body: JSON.stringify({ usuario_id: usuario.id, questao_id: questaoId })
+            });
+            favoritosUsuario.add(questaoId);
+        }
+
+        // Atualizar os botões na tela
+        atualizarBotoesFavorito();
+
+        // Se a aba favoritos estiver aberta, recarregar ela
+        const abaFavoritos = document.getElementById('tab-favoritos');
+        if (abaFavoritos && abaFavoritos.classList.contains('active')) {
+            if (typeof renderizarFavoritos === 'function') {
+                await renderizarFavoritos();
+            }
+        }
+    } catch (e) {
+        console.error('Erro ao favoritar:', e);
+    }
+}
+
+
+
 async function preencherFiltros() {
     const usuario = JSON.parse(localStorage.getItem('usuario'));
 

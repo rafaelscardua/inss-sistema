@@ -592,7 +592,9 @@
 
                     if (tabBtn.dataset.tab === 'questoes') renderizarQuestoes();
                     if (tabBtn.dataset.tab === 'stats') carregarEstatisticas();
-
+                    if (tabBtn.dataset.tab === 'favoritos') {
+                        renderizarFavoritos();
+                    }
                     // ADMIN
                     if (tabBtn.dataset.tab === 'admin') {
                         if (usuario.email === 'rafaelscardua@gmail.com') {
