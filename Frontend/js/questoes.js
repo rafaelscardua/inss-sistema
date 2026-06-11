@@ -131,6 +131,7 @@ function renderizarQuestoes() {
 
             carregarEstatisticas();
             atualizarBarraProgresso();
+            atualizarBotoesFavorito();
             await sincronizarProgressoPlano();
             if (typeof atualizarCardsPlano === 'function') {
                 atualizarCardsPlano();
@@ -138,6 +139,7 @@ function renderizarQuestoes() {
         };
     });
     atualizarBarraProgresso();
+    atualizarBotoesFavorito();
 }
 
 // Atualiza a barra de progresso com base nas questões respondidas
