@@ -1100,18 +1100,45 @@ app.get('/api/exercicios', async (req, res) => {
     }
 });
 
-// Criar exercício
+// Criar exercício (flexível - aceita qualquer formato)
 app.post('/api/exercicios', async (req, res) => {
     const { materia, assunto, enunciado, alternativas, correta, solucao, explicacao } = req.body;
+    
     try {
+        // Validar campos obrigatórios
+        if (!materia || !assunto || !enunciado) {
+            return res.status(400).json({ erro: 'Campos obrigatórios: materia, assunto, enunciado' });
+        }
+        
+        // Se alternativas não existir, criar um padrão dissertativo
+        let alternativasFinal = alternativas;
+        let corretaFinal = correta || '';
+        
+        if (!alternativasFinal || Object.keys(alternativasFinal).length === 0) {
+            alternativasFinal = { "RESPOSTA": "Resposta dissertativa" };
+            corretaFinal = "RESPOSTA";
+        }
+        
+        // Garantir que alternativas seja um objeto válido
+        if (typeof alternativasFinal === 'string') {
+            try {
+                alternativasFinal = JSON.parse(alternativasFinal);
+            } catch (e) {
+                alternativasFinal = { "RESPOSTA": alternativasFinal };
+            }
+        }
+        
         const result = await pool.query(
             `INSERT INTO exercicios (materia, assunto, enunciado, alternativas, correta, solucao, explicacao) 
              VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-            [materia, assunto, enunciado, alternativas, correta, solucao, explicacao || '']
+            [materia, assunto, enunciado, JSON.stringify(alternativasFinal), corretaFinal, solucao || '', explicacao || '']
         );
+        
         res.json({ sucesso: true, exercicio: result.rows[0] });
+        
     } catch (error) {
-        res.status(500).json({ erro: 'Erro ao criar exercício' });
+        console.error('Erro detalhado ao criar exercício:', error);
+        res.status(500).json({ erro: error.message });
     }
 });
 
