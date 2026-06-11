@@ -630,7 +630,9 @@
                     document.getElementById(`tab-${tabBtn.dataset.tab}`).classList.add('active');
 
                     if (tabBtn.dataset.tab === 'exercicios') {
-                        renderizarExercicios();
+                        // Forçar recarregamento dos filtros e exercícios
+                        await popularFiltrosExercicios();
+                        await renderizarExercicios();
                     }
 
                     if (tabBtn.dataset.tab === 'questoes') renderizarQuestoes();
