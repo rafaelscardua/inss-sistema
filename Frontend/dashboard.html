@@ -145,6 +145,13 @@
 
         <!-- IMPORTAÇÃO -->
         <div id="tab-importar" class="tab-content">
+            <div class="filtro-group">
+                <label>📋 Tipo de Importação</label>
+                <select id="tipoImportacao" onchange="toggleTipoImportacao()">
+                    <option value="questoes">📝 Questões (com gabarito)</option>
+                    <option value="exercicios">📖 Exercícios (com solução)</option>
+                </select>
+            </div>
             <div class="import-box">
                 <h3>📥 Importar Questões</h3>
                 <div class="filtro-group">
@@ -489,6 +496,10 @@
             }
             document.querySelectorAll("#tab-add input, #tab-add textarea").forEach(el => el.value = "");
         }
+
+
+
+
 
 
         // ==================== INICIALIZAÇÃO ====================
@@ -901,7 +912,19 @@
             });
         }
 
-
+        function toggleTipoImportacao() {
+            const tipo = document.getElementById("tipoImportacao").value;
+            const labelGabarito = document.querySelector("#importGabarito")?.closest('.filtro-group');
+            if (labelGabarito) {
+                if (tipo === 'exercicios') {
+                    labelGabarito.querySelector('label').innerHTML = '📖 Solução (opcional)';
+                    document.getElementById("importGabarito").placeholder = "1. A - Backup é cópia de segurança\n2. B - Firewall filtra tráfego";
+                } else {
+                    labelGabarito.querySelector('label').innerHTML = '📋 Gabarito (opcional)';
+                    document.getElementById("importGabarito").placeholder = "1. B\n2. D\n3. CORRETO";
+                }
+            }
+        }
 
         function toggleAssuntoInput() {
             const select = document.getElementById("importAssuntoSelect");

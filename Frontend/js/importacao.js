@@ -186,3 +186,151 @@ async function importarQuestoes() {
     document.getElementById("importTexto").value = "";
     questoesDetectadas = [];
 }
+
+// ==================== IMPORTAÇÃO DE EXERCÍCIOS ====================
+
+async function importarExercicios() {
+    const texto = document.getElementById("importTexto").value;
+    
+    // Pegar matéria e assunto selecionados
+    const materiaSelect = document.getElementById("importMateriaSelect");
+    const assuntoSelect = document.getElementById("importAssuntoSelect");
+    
+    let materia = materiaSelect.value;
+    let assunto = assuntoSelect.value;
+    
+    if (materia === 'nova') {
+        materia = document.getElementById("importMateriaNova").value.trim();
+        if (!materia) {
+            alert('Digite o nome da nova matéria!');
+            return;
+        }
+    }
+    
+    if (assunto === 'nova') {
+        assunto = document.getElementById("importAssuntoNova").value.trim();
+        if (!assunto) {
+            alert('Digite o nome do novo assunto!');
+            return;
+        }
+    }
+    
+    if (!materia || !assunto) {
+        alert('Selecione ou digite uma matéria e um assunto!');
+        return;
+    }
+    
+    const blocos = texto.split(/\n\s*\n/);
+    let exercicios = [];
+    let importados = 0;
+    
+    for (let bloco of blocos) {
+        if (!bloco.trim()) continue;
+        
+        let linhas = bloco.split('\n');
+        let enunciado = "";
+        let alternativas = {};
+        let solucao = "";
+        let correta = "";
+        
+        for (let linha of linhas) {
+            linha = linha.trim();
+            
+            // Verificar se é a linha da solução
+            if (linha.toUpperCase().startsWith('SOLUÇÃO:') || linha.toUpperCase().startsWith('SOLUCAO:')) {
+                solucao = linha.replace(/SOLUÇÃO:\s*/i, '').replace(/SOLUCAO:\s*/i, '');
+                continue;
+            }
+            
+            // Verificar se é alternativa
+            let matchAlt = linha.match(/^([a-eA-E])[\.\)]\s*(.*)/);
+            if (matchAlt) {
+                let letra = matchAlt[1].toUpperCase();
+                let textoAlt = matchAlt[2];
+                alternativas[letra] = textoAlt;
+                continue;
+            }
+            
+            // Verificar se é número da questão
+            let matchNum = linha.match(/^(\d+)[\.\)]\s*(.*)/);
+            if (matchNum && !enunciado) {
+                enunciado = matchNum[2];
+                continue;
+            }
+            
+            if (!enunciado) {
+                enunciado += " " + linha;
+            }
+        }
+        
+        // Determinar alternativa correta pela solução
+        const letras = ['A', 'B', 'C', 'D', 'E'];
+        for (let letra of letras) {
+            if (solucao.toUpperCase().includes(`LETRA ${letra}`) || 
+                solucao.toUpperCase().includes(`ALTERNATIVA ${letra}`) ||
+                solucao.toUpperCase().startsWith(letra)) {
+                correta = letra;
+                break;
+            }
+        }
+        
+        if (enunciado && Object.keys(alternativas).length > 0) {
+            exercicios.push({
+                materia: materia,
+                assunto: assunto,
+                enunciado: enunciado,
+                alternativas: alternativas,
+                correta: correta || 'A',
+                solucao: solucao || 'Solução não fornecida'
+            });
+        }
+    }
+    
+    // Salvar exercícios
+    for (const ex of exercicios) {
+        try {
+            const res = await fetch(`${API_URL}/api/exercicios`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(ex)
+            });
+            const data = await res.json();
+            if (data.sucesso) importados++;
+        } catch (error) {
+            console.error('Erro ao salvar exercício:', error);
+        }
+    }
+    
+    alert(`✅ ${importados} exercícios importados!`);
+    
+    // Limpar campos
+    document.getElementById("importTexto").value = "";
+    document.getElementById("previewArea").style.display = "none";
+    
+    // Recarregar lista se a aba estiver ativa
+    if (typeof renderizarExercicios === 'function') {
+        renderizarExercicios();
+    }
+}
+
+// Modificar a função detectarQuestoes para considerar o tipo
+const originalDetectarQuestoes = window.detectarQuestoes;
+window.detectarQuestoes = function() {
+    const tipo = document.getElementById("tipoImportacao")?.value || "questoes";
+    if (tipo === 'exercicios') {
+        alert('Para exercícios, use o botão "Importar" diretamente. O formato deve conter SOLUÇÃO: no final.');
+        return;
+    }
+    if (originalDetectarQuestoes) originalDetectarQuestoes();
+};
+
+// Modificar a função importarQuestoes para considerar o tipo
+const originalImportarQuestoes = window.importarQuestoes;
+window.importarQuestoes = async function() {
+    const tipo = document.getElementById("tipoImportacao")?.value || "questoes";
+    if (tipo === 'exercicios') {
+        await importarExercicios();
+    } else {
+        if (originalImportarQuestoes) await originalImportarQuestoes();
+    }
+};
