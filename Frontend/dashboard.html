@@ -1210,8 +1210,8 @@
                         <div class="alternativa" data-letra="${letra}" data-exid="${ex.id}"><strong>${letra})</strong> ${texto}</div>
                     `).join('')}
                 </div>
-                <div id="solucao-${ex.id}" style="display: none; margin-top: 10px; padding: 10px; background: #e8f4f8; border-radius: 8px;">
-                    <strong>📖 Solução:</strong> ${ex.solucao}
+                <div id="solucao-${ex.id}" style="display: none; margin-top: 10px; padding: 10px; background: #e8f4f8; border-radius: 8px; white-space: pre-wrap;">
+                    <strong>📖 Solução:</strong> ${ex.solucao.replace(/\n/g, '<br>')}
                 </div>
                 <button class="btn-small" onclick="mostrarSolucao(${ex.id})">📖 Ver Solução</button>
                 <button class="btn-small btn-danger" onclick="favoritarExercicio(${ex.id})">❤️ Favoritar</button>
