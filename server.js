@@ -34,8 +34,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+// Limite aumentado para 200mb porque o backup completo (com anexos em base64) pode ser grande
+app.use(express.json({ limit: '200mb' }));
+app.use(express.urlencoded({ limit: '200mb', extended: true }));
 app.use(express.static(__dirname + '/Frontend'));
 app.use(express.static('Frontend'));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -1299,6 +1300,136 @@ app.put('/api/admin/assuntos/:id/mover', async (req, res) => {
     } catch (error) {
         console.error('Erro ao mover assunto:', error);
         res.status(500).json({ erro: error.message });
+    }
+});
+
+// ==================== BACKUP E RESTAURAÇÃO COMPLETA DO BANCO (ADMIN) ====================
+
+// Lista de tabelas que fazem parte do backup. Se uma tabela não existir no banco
+// (ex.: schema ainda não tem `exercicios` criada), ela é simplesmente ignorada.
+const TABELAS_BACKUP = [
+    'usuarios',
+    'disciplinas',
+    'assuntos',
+    'questoes_base',
+    'exercicios',
+    'respostas_usuario',
+    'notas_usuario',
+    'anexos_topico',
+    'favoritos_usuario',
+    'usuario_assuntos',
+    'progresso_usuario'
+];
+
+// Exportar backup completo do banco (admin) - inclui TODOS os usuários e anexos
+app.get('/api/admin/backup', async (req, res) => {
+    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    const userEmail = req.headers['x-user-email'];
+
+    if (userEmail !== adminEmail) {
+        return res.status(403).json({ sucesso: false, erro: 'Acesso negado' });
+    }
+
+    try {
+        const backup = {
+            versao: 2,
+            data: new Date().toISOString(),
+            tabelas: {}
+        };
+
+        for (const tabela of TABELAS_BACKUP) {
+            try {
+                const result = await pool.query(`SELECT * FROM ${tabela}`);
+                backup.tabelas[tabela] = result.rows;
+            } catch (err) {
+                // Tabela não existe nesse banco (ex.: schema mais antigo) - só avisa e segue
+                console.warn(`⚠️ Tabela "${tabela}" não encontrada durante o backup, pulando.`);
+            }
+        }
+
+        res.json({ sucesso: true, backup });
+    } catch (error) {
+        console.error('Erro ao gerar backup:', error);
+        res.status(500).json({ sucesso: false, erro: 'Erro ao gerar backup: ' + error.message });
+    }
+});
+
+// Restaurar backup completo do banco (admin) - APAGA TUDO e substitui pelos dados do arquivo
+app.post('/api/admin/restore', async (req, res) => {
+    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    const userEmail = req.headers['x-user-email'];
+
+    if (userEmail !== adminEmail) {
+        return res.status(403).json({ sucesso: false, erro: 'Acesso negado' });
+    }
+
+    const { backup } = req.body;
+    if (!backup || !backup.tabelas || typeof backup.tabelas !== 'object') {
+        return res.status(400).json({ sucesso: false, erro: 'Arquivo de backup inválido' });
+    }
+
+    // Só mexe nas tabelas que: (1) estão na whitelist do servidor E (2) vieram no arquivo
+    const tabelasParaRestaurar = TABELAS_BACKUP.filter(t => Array.isArray(backup.tabelas[t]));
+
+    if (tabelasParaRestaurar.length === 0) {
+        return res.status(400).json({ sucesso: false, erro: 'Nenhuma tabela reconhecida no arquivo de backup' });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // Desabilita triggers (inclui checagem de foreign keys) para poder inserir sem se
+        // preocupar com a ordem entre tabelas relacionadas
+        for (const tabela of tabelasParaRestaurar) {
+            await client.query(`ALTER TABLE ${tabela} DISABLE TRIGGER ALL`);
+        }
+
+        // Apaga todos os dados atuais dessas tabelas e reseta os IDs (auto-incremento)
+        await client.query(`TRUNCATE ${tabelasParaRestaurar.join(', ')} RESTART IDENTITY CASCADE`);
+
+        // Reinsere linha por linha, respeitando as colunas de cada tabela
+        for (const tabela of tabelasParaRestaurar) {
+            const linhas = backup.tabelas[tabela];
+            for (const linha of linhas) {
+                const colunas = Object.keys(linha);
+                if (colunas.length === 0) continue;
+                const placeholders = colunas.map((_, i) => `$${i + 1}`).join(', ');
+                const valores = colunas.map(c => linha[c]);
+                await client.query(
+                    `INSERT INTO ${tabela} (${colunas.map(c => `"${c}"`).join(', ')}) VALUES (${placeholders})`,
+                    valores
+                );
+            }
+        }
+
+        // Reabilita os triggers/foreign keys
+        for (const tabela of tabelasParaRestaurar) {
+            await client.query(`ALTER TABLE ${tabela} ENABLE TRIGGER ALL`);
+        }
+
+        // Corrige as sequências de auto-incremento para continuarem depois do maior ID restaurado
+        for (const tabela of tabelasParaRestaurar) {
+            try {
+                await client.query(`
+                    SELECT setval(
+                        pg_get_serial_sequence('${tabela}', 'id'),
+                        GREATEST((SELECT COALESCE(MAX(id), 0) FROM ${tabela}), 1)
+                    )
+                `);
+            } catch (e) {
+                // Tabela sem coluna "id" serial - ignora
+            }
+        }
+
+        await client.query('COMMIT');
+        res.json({ sucesso: true, mensagem: 'Backup restaurado com sucesso!', tabelas: tabelasParaRestaurar });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Erro ao restaurar backup:', error);
+        res.status(500).json({ sucesso: false, erro: 'Erro ao restaurar backup: ' + error.message });
+    } finally {
+        client.release();
     }
 });
 
