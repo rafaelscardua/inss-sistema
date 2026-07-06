@@ -804,6 +804,7 @@ app.post('/api/admin/assuntos', async (req, res) => {
 });
 
 // Editar assunto
+// Editar assunto
 app.put('/api/admin/assuntos/:id', async (req, res) => {
     const { id } = req.params;
     const { nome } = req.body;
@@ -815,10 +816,35 @@ app.put('/api/admin/assuntos/:id', async (req, res) => {
     }
 
     try {
+        // 1. Buscar o nome antigo do assunto
+        const assuntoAntigo = await pool.query(
+            'SELECT nome FROM assuntos WHERE id = $1',
+            [id]
+        );
+
+        if (assuntoAntigo.rows.length === 0) {
+            return res.status(404).json({ erro: 'Assunto não encontrado' });
+        }
+
+        const nomeAntigo = assuntoAntigo.rows[0].nome;
+
+        // 2. Atualizar o nome do assunto na tabela assuntos
         await pool.query('UPDATE assuntos SET nome = $1 WHERE id = $2', [nome, id]);
+
+        // 3. Atualizar o campo 'assunto' em todas as questões que usam este assunto
+        await pool.query(
+            'UPDATE questoes_base SET assunto = $1 WHERE assunto_id = $2',
+            [nome, id]
+        );
+
+        console.log(`✅ Assunto atualizado: "${nomeAntigo}" → "${nome}" (${id})`);
+        console.log(`📝 Questões atualizadas: assunto_id = ${id}`);
+
         res.json({ sucesso: true });
+
     } catch (error) {
-        res.status(500).json({ erro: 'Erro ao editar assunto' });
+        console.error('Erro ao editar assunto:', error);
+        res.status(500).json({ erro: 'Erro ao editar assunto: ' + error.message });
     }
 });
 
