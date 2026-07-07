@@ -867,24 +867,6 @@ app.delete('/api/admin/assuntos/:id', async (req, res) => {
     }
 });
 
-// Rota temporária para debug (apenas admin)
-app.post('/api/admin/sql', async (req, res) => {
-    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
-    const userEmail = req.headers['x-user-email'];
-
-    if (userEmail !== adminEmail) {
-        return res.status(403).json({ erro: 'Acesso negado' });
-    }
-
-    const { query } = req.body;
-    try {
-        const result = await pool.query(query);
-        res.json({ rows: result.rows });
-    } catch (error) {
-        res.status(500).json({ erro: error.message });
-    }
-});
-
 // Listar todos os assuntos (admin)
 app.get('/api/admin/assuntos', async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
