@@ -5,21 +5,15 @@ let paginaAtualQuestoes = 1;
 const QUESTOES_POR_PAGINA = 20;
 
 function atualizarStats() {
-    let totalSub = 0, completos = 0, topicosDom = 0;
-    dadosEstudo.materias.forEach(m => m.topicos.forEach(t => {
-        if (t.status === 3) topicosDom++;
-        t.subtopicos?.forEach(s => {
-            totalSub++;
-            if (s.feito) completos++;
-        });
-    }));
-
-    document.getElementById("progressoGeral").innerText = totalSub === 0 ? 0 : Math.round((completos / totalSub) * 100) + "%";
-    document.getElementById("topicosDominados").innerText = topicosDom;
-    document.getElementById("subtopicosFeitos").innerText = completos;
+    // ATENÇÃO: "progressoGeral", "topicosDominados", "subtopicosFeitos" e "totalAcertos"
+    // são os cartões da aba PLANO. Quem calcula esses valores de verdade (a partir do
+    // banco de dados) é atualizarCardsPlano(), em planoEstudos.js. Essa função aqui
+    // usava uma estrutura antiga (dadosEstudo) que nunca é atualizada de verdade e
+    // sempre dava 0 - como as duas escreviam nos mesmos cartões, essa sobrescrevia
+    // por cima do valor certo. Por isso ela cuida só dos 3 cartões da aba ESTATÍSTICAS
+    // daqui pra baixo, que são exclusivos dela.
 
     let acertos = Object.values(respostasUsuario).filter(r => r.acertou === true).length;
-    document.getElementById("totalAcertos").innerText = acertos;
     document.getElementById("totalQuestoes").innerText = questoes.length;
 
     let respondidas = Object.values(respostasUsuario).filter(r => r.respondida === true).length;
