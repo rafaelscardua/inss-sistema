@@ -1,305 +1,267 @@
-<style>* {
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+* {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-
-
-#adminUsuariosList {
-    color: inherit;
-}
-
-#adminUsuariosList .question-card {
-    background: var(--card-bg, white);
-    color: var(--text-color, #2c3e50);
-}
-
-/* Para o modo escuro */
-body.dark-mode #adminUsuariosList .question-card {
-    background: #2d2d44;
-    color: #e0e0e0;
-}
-
-
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
-    color: #2c3e50;
-    transition: all 0.3s;
-}
-
-body.dark-mode {
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-    color: #e0e0e0;
-}
-
-/* ==================== TEMA PADRÃO (CONCURSO PRO) ==================== */
+/* ==================== FONTES ==================== */
 :root {
-    --bg-primary: #F4F7FB;
-    --card-bg: #FFFFFF;
-    --header-bg: #1E3A5F;
-    --text-primary: #1F2937;
-    --btn-primary: #22C55E;
-    --btn-primary-hover: #16A34A;
-    --btn-secondary: #3B82F6;
-    --btn-secondary-hover: #2563EB;
-    --correct-bg: #DCFCE7;
-    --correct-border: #22C55E;
-    --wrong-bg: #FEE2E2;
-    --wrong-border: #EF4444;
-    --border-color: #E5E7EB;
-    --progress-bar-bg: #22C55E;
-    --tab-active: #22C55E;
-    --tab-inactive: #E5E7EB;
-}
-
-/* ==================== TEMA ESCURO (CONCURSO PRO DARK) ==================== */
-body.dark-mode {
-    --bg-primary: #0F172A;
-    --card-bg: #1E293B;
-    --header-bg: #1D4ED8;
-    --text-primary: #F8FAFC;
-    --btn-primary: #22C55E;
-    --btn-primary-hover: #16A34A;
-    --btn-secondary: #3B82F6;
-    --btn-secondary-hover: #2563EB;
-    --correct-bg: #064E3B;
-    --correct-border: #22C55E;
-    --wrong-bg: #7F1D1D;
-    --wrong-border: #EF4444;
-    --border-color: #334155;
-    --progress-bar-bg: #22C55E;
-    --tab-active: #22C55E;
-    --tab-inactive: #334155;
-}
-
-/* ==================== APLICANDO AS CORES ==================== */
-
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    transition: all 0.3s ease;
-}
-
-/* Header */
-.header {
-    background: var(--header-bg);
-    color: white;
-}
-
-/* Cards */
-.stat-card, .question-card, .filtros-box, .import-box, .backup-box, .cronometro-box {
-    background: var(--card-bg);
-    color: var(--text-primary);
-    border: 1px solid var(--border-color);
-}
-
-/* Botão principal (verde) */
-.btn-add-questao, .btn-start, .btn-responder, .btn-filtrar {
-    background: var(--btn-primary);
-}
-.btn-add-questao:hover, .btn-start:hover, .btn-responder:hover, .btn-filtrar:hover {
-    background: var(--btn-primary-hover);
-}
-
-/* Botão secundário (azul) */
-.btn-import, .btn-backup, .btn-estudar, .edit-btn {
-    background: var(--btn-secondary);
-}
-.btn-import:hover, .btn-backup:hover, .btn-estudar:hover, .edit-btn:hover {
-    background: var(--btn-secondary-hover);
-}
-
-/* Botão reset (laranja mantido) */
-.reset-btn {
-    background: #F59E0B;
-    color: white;
-}
-.reset-btn:hover {
-    background: #D97706;
-}
-
-/* Botão excluir (vermelho mantido) */
-.delete-btn, .btn-danger, .logout-btn {
-    background: #EF4444;
-}
-.delete-btn:hover, .btn-danger:hover, .logout-btn:hover {
-    background: #DC2626;
-}
-
-/* Acertos e Erros nas alternativas */
-.alternativa.correct-answer {
-    background: var(--correct-bg);
-    border-left: 4px solid var(--correct-border);
-}
-
-.alternativa.wrong-answer {
-    background: var(--wrong-bg);
-    border-left: 4px solid var(--wrong-border);
-    text-decoration: line-through;
-}
-
-.alternativa.selected {
-    background: #DBEAFE;
-    border-color: #3B82F6;
-}
-
-body.dark-mode .alternativa.selected {
-    background: #1E40AF;
-    border-color: #3B82F6;
-}
-
-/* Feedback */
-.feedback.correct {
-    background: var(--correct-bg);
-    color: var(--correct-border);
-}
-
-.feedback.wrong {
-    background: var(--wrong-bg);
-    color: var(--wrong-border);
-}
-
-/* Tabs */
-.tab-btn {
-    background: var(--tab-inactive);
-    color: var(--text-primary);
-}
-
-.tab-btn.active {
-    background: var(--tab-active);
-    color: white;
-}
-
-/* Progress bar */
-.progress-bar-fill, .progress-bar {
-    background: var(--progress-bar-bg);
-}
-
-/* Materia header */
-.materia-header {
-    background: var(--header-bg);
-    color: white;
-}
-
-/* Inputs, selects, textarea */
-select, input, textarea {
-    background: var(--card-bg);
-    color: var(--text-primary);
-    border: 1px solid var(--border-color);
-}
-
-/* Modals */
-.modal-content {
-    background: var(--card-bg);
-    color: var(--text-primary);
-}
-
-/* Topico background */
-.topico {
-    background: var(--card-bg);
-    border-left: 4px solid var(--btn-secondary);
-}
-
-
-body.dark-mode .materia,
-body.dark-mode .stat-card,
-body.dark-mode .question-card,
-body.dark-mode .filtros-box,
-body.dark-mode .import-box,
-body.dark-mode .backup-box,
-body.dark-mode .cronometro-box,
-body.dark-mode .modal-content {
-    background: #2d2d44;
-    color: #e0e0e0;
+    --font-body: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --font-display: 'Fraunces', Georgia, serif;
+    --font-mono: 'IBM Plex Mono', 'Consolas', monospace;
+    --radius: 10px;
+    --radius-lg: 16px;
+    --shadow-card: 0 1px 3px rgba(16, 24, 32, 0.06), 0 1px 2px rgba(16, 24, 32, 0.04);
 }
 
 /* ==================== TEMA CLARO ==================== */
 body.light-mode {
-    --bg-primary: #F0F2F5;
+    --bg-primary: #EEF1F5;
     --card-bg: #FFFFFF;
-    --header-bg: #1E3A5F;
-    --text-primary: #1E2A3A;
-    --btn-primary: #22C55E;
-    --btn-primary-hover: #16A34A;
-    --btn-secondary: #3B82F6;
-    --correct-bg: #DCFCE7;
-    --correct-border: #22C55E;
-    --wrong-bg: #FEE2E2;
-    --wrong-border: #EF4444;
-    --border-color: #E2E8F0;
-    --progress-bar-bg: #22C55E;
-    --tab-active: #22C55E;
-    --tab-inactive: #CBD5E1;
+    --header-bg: #132A46;
+    --header-text: #F3F6FA;
+    --text-primary: #1B2733;
+    --text-secondary: #5B6B82;
+    --btn-primary: #0F7B62;
+    --btn-primary-hover: #0B5F4C;
+    --btn-secondary: #2F6FA6;
+    --btn-secondary-hover: #255A87;
+    --danger: #D14343;
+    --danger-hover: #B23333;
+    --warning: #C97A2B;
+    --warning-hover: #A9631E;
+    --correct-bg: #E4F6EF;
+    --correct-border: #1FA97D;
+    --wrong-bg: #FBEAEA;
+    --wrong-border: #D14343;
+    --border-color: #DDE3EA;
+    --progress-bar-bg: #0F7B62;
+    --tab-active: #0F7B62;
+    --tab-active-text: #E1F5EE;
+    --tab-inactive: #E4E8ED;
+    --timer-accent: #C23B3B;
+    --timer-track: #F3D9D9;
+    --input-bg: #FFFFFF;
+    --pill-bg: rgba(255, 255, 255, 0.12);
+    --pill-text: #C9D4E0;
 }
 
 /* ==================== TEMA ESCURO ==================== */
 body.dark-mode {
-    --bg-primary: #0A0C10;
-    --card-bg: #1A1D24;
-    --header-bg: #1E3A8A;
-    --text-primary: #E2E8F0;
-    --btn-primary: #10B981;
-    --btn-primary-hover: #059669;
-    --btn-secondary: #3B82F6;
-    --correct-bg: #064E3B;
-    --correct-border: #10B981;
-    --wrong-bg: #7F1D1D;
-    --wrong-border: #EF4444;
-    --border-color: #2D3748;
-    --progress-bar-bg: #10B981;
-    --tab-active: #10B981;
-    --tab-inactive: #2D3748;
+    --bg-primary: #0F1720;
+    --card-bg: #1B2530;
+    --header-bg: #0B1622;
+    --header-text: #EAF0F6;
+    --text-primary: #E7ECF1;
+    --text-secondary: #97A6B5;
+    --btn-primary: #1FA980;
+    --btn-primary-hover: #189270;
+    --btn-secondary: #4C8FC7;
+    --btn-secondary-hover: #3E77A8;
+    --danger: #E86464;
+    --danger-hover: #D24E4E;
+    --warning: #E0A253;
+    --warning-hover: #C68638;
+    --correct-bg: #143829;
+    --correct-border: #2ECC91;
+    --wrong-bg: #3A1B1B;
+    --wrong-border: #E86464;
+    --border-color: #2A3742;
+    --progress-bar-bg: #1FA980;
+    --tab-active: #1FA980;
+    --tab-active-text: #072019;
+    --tab-inactive: #24303B;
+    --timer-accent: #E2635B;
+    --timer-track: #3A2323;
+    --input-bg: #141C25;
+    --pill-bg: rgba(255, 255, 255, 0.06);
+    --pill-text: #9BAAB9;
 }
 
-/* ==================== TEMA CONCURSO PRO (BEM DIFERENTE) ==================== */
+/* ==================== TEMA CONCURSO PRO ==================== */
 body.concurso-mode {
-    --bg-primary: #FEF9E6;
-    --card-bg: #FFF8E7;
-    --header-bg: #6B2E5F;
-    --text-primary: #2C1810;
-    --btn-primary: #E67E22;
-    --btn-primary-hover: #D35400;
-    --btn-secondary: #16A085;
-    --correct-bg: #E8F8F5;
-    --correct-border: #D35400;
-    --wrong-bg: #FDEDEC;
-    --wrong-border: #C0392B;
-    --border-color: #F0DBA5;
-    --progress-bar-bg: #E67E22;
-    --tab-active: #E67E22;
-    --tab-inactive: #F0DBA5;
+    --bg-primary: #F7F1E6;
+    --card-bg: #FFFFFF;
+    --header-bg: #5C1F3D;
+    --header-text: #F7EDF1;
+    --text-primary: #2B1B20;
+    --text-secondary: #7A6259;
+    --btn-primary: #B8842E;
+    --btn-primary-hover: #9C6E22;
+    --btn-secondary: #3E6E5E;
+    --btn-secondary-hover: #315A4C;
+    --danger: #A23B3B;
+    --danger-hover: #86302F;
+    --warning: #B8842E;
+    --warning-hover: #9C6E22;
+    --correct-bg: #EAF3EC;
+    --correct-border: #3E6E5E;
+    --wrong-bg: #FBEAEA;
+    --wrong-border: #A23B3B;
+    --border-color: #E8DCC8;
+    --progress-bar-bg: #B8842E;
+    --tab-active: #B8842E;
+    --tab-active-text: #FFF8EA;
+    --tab-inactive: #F0E4CC;
+    --timer-accent: #A23B3B;
+    --timer-track: #F1DAD6;
+    --input-bg: #FFFFFF;
+    --pill-bg: rgba(255, 255, 255, 0.14);
+    --pill-text: #E9D9C9;
+}
+
+/* ==================== BASE ==================== */
+body {
+    font-family: var(--font-body);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background 0.2s ease, color 0.2s ease;
+    min-height: 100vh;
+    padding-bottom: 40px;
+}
+
+h1, h2, h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+h3 {
+    font-size: 1.05em;
+    margin-bottom: 12px;
+}
+
+a { color: var(--btn-secondary); }
+
+*:focus-visible {
+    outline: 2px solid var(--btn-secondary);
+    outline-offset: 2px;
 }
 
 .container {
     max-width: 1400px;
     margin: 0 auto;
     padding: 20px;
+    min-height: 100vh;
+    height: auto;
+    overflow: visible;
+    padding-bottom: 100px;
 }
 
+/* ==================== HEADER ==================== */
+.header {
+    background: var(--header-bg);
+    color: var(--header-text);
+    padding: 20px 24px;
+    border-radius: var(--radius-lg);
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.header h1 {
+    font-size: 1.3em;
+    color: var(--header-text);
+    margin-bottom: 4px;
+}
+
+.header p {
+    color: var(--pill-text);
+    font-size: 0.85em;
+}
+
+.user-info {
+    background: var(--pill-bg);
+    color: var(--header-text);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.logout-btn {
+    background: transparent;
+    color: var(--header-text);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    font-family: var(--font-body);
+    transition: background 0.15s ease;
+}
+
+.logout-btn:hover {
+    background: rgba(214, 69, 69, 0.35);
+    border-color: rgba(214, 69, 69, 0.6);
+}
+
+.theme-btn {
+    background: var(--pill-bg);
+    color: var(--pill-text);
+    border: 1px solid transparent;
+    padding: 8px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 13px;
+    font-family: var(--font-body);
+    transition: all 0.15s ease;
+}
+
+.theme-btn:hover {
+    color: var(--header-text);
+}
+
+.theme-btn.active {
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--header-bg);
+}
+
+.dark-btn {
+    background: var(--pill-bg);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    color: var(--header-text);
+    font-weight: 500;
+    font-family: var(--font-body);
+}
+
+/* ==================== TABS ==================== */
 .tabs {
     display: flex;
-    gap: 10px;
-    margin-bottom: 25px;
+    gap: 8px;
+    margin-bottom: 24px;
     flex-wrap: wrap;
 }
 
 .tab-btn {
-    padding: 12px 25px;
+    padding: 11px 20px;
     border: none;
-    border-radius: 10px;
-    font-weight: bold;
+    border-radius: 9px;
+    font-weight: 500;
+    font-size: 0.92em;
     cursor: pointer;
-    background: #ecf0f1;
-    color: #2c3e50;
-    transition: all 0.2s;
+    background: var(--tab-inactive);
+    color: var(--text-secondary);
+    font-family: var(--font-body);
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.tab-btn:hover {
+    color: var(--text-primary);
 }
 
 .tab-btn.active {
-    background: #27ae60;
-    color: white;
+    background: var(--tab-active);
+    color: var(--tab-active-text);
 }
 
 .tab-content {
@@ -310,336 +272,366 @@ body.concurso-mode {
     display: block;
 }
 
-.header {
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-    color: white;
-    padding: 20px;
-    border-radius: 15px;
-    margin-bottom: 25px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 15px;
+#tab-admin {
+    display: block !important;
+    min-height: 500px !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 20px !important;
+    background: var(--bg-primary);
 }
 
-.user-info {
-    background: rgba(255, 255, 255, 0.2);
-    padding: 8px 15px;
-    border-radius: 20px;
-    font-size: 14px;
-}
-
-.logout-btn {
-    background: #e74c3c;
-    color: white;
-    border: none;
-    padding: 8px 15px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-.dark-btn {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    padding: 10px 20px;
-    border-radius: 25px;
-    cursor: pointer;
-    color: white;
-    font-weight: bold;
+/* ==================== CARDS GENÉRICOS ==================== */
+.stat-card,
+.question-card,
+.filtros-box,
+.import-box,
+.backup-box,
+.cronometro-box,
+.materia,
+.modal-content {
+    background: var(--card-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
 }
 
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 15px;
-    margin-bottom: 25px;
+    gap: 14px;
+    margin-bottom: 24px;
 }
 
 .stat-card {
-    background: white;
-    padding: 15px;
-    border-radius: 15px;
+    padding: 18px;
     text-align: center;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card h3 {
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 0.85em;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
 }
 
 .stat-card .value {
-    font-size: 2em;
-    font-weight: bold;
-    color: #27ae60;
+    font-family: var(--font-mono);
+    font-size: 1.8em;
+    font-weight: 600;
+    color: var(--btn-primary);
 }
 
-.cronometro-box {
-    background: white;
-    padding: 25px;
-    border-radius: 15px;
-    text-align: center;
-    margin-bottom: 25px;
+.filtros-box,
+.import-box,
+.backup-box {
+    padding: 20px;
+    margin-bottom: 20px;
 }
 
-.timer-display {
-    font-size: 4em;
-    font-weight: bold;
-    font-family: monospace;
-    margin: 20px 0;
+.backup-box h3,
+.import-box h3,
+.filtros-box h3 {
+    color: var(--text-primary);
+}
+
+/* ==================== BOTÕES ==================== */
+button {
+    font-family: var(--font-body);
+}
+
+.btn-add-questao,
+.btn-start,
+.btn-responder,
+.btn-filtrar {
+    background: var(--btn-primary);
+    color: white;
+    border: none;
+    padding: 11px 22px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    margin-top: 10px;
+    margin-right: 10px;
+    transition: background 0.15s ease;
+}
+
+.btn-add-questao:hover,
+.btn-start:hover,
+.btn-responder:hover,
+.btn-filtrar:hover {
+    background: var(--btn-primary-hover);
+}
+
+.btn-import,
+.btn-backup,
+.btn-estudar,
+.edit-btn,
+.btn-pause {
+    background: var(--btn-secondary);
+    color: white;
+    border: none;
+    padding: 11px 22px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    margin-top: 10px;
+    margin-right: 10px;
+    transition: background 0.15s ease;
+}
+
+.btn-import:hover,
+.btn-backup:hover,
+.btn-estudar:hover,
+.edit-btn:hover,
+.btn-pause:hover {
+    background: var(--btn-secondary-hover);
+}
+
+.reset-btn {
+    background: var(--warning);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.reset-btn:hover {
+    background: var(--warning-hover);
+}
+
+.delete-btn,
+.btn-danger,
+.btn-reset {
+    background: var(--danger);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.delete-btn:hover,
+.btn-danger:hover,
+.btn-reset:hover {
+    background: var(--danger-hover);
+}
+
+.edit-btn,
+.delete-btn {
+    font-size: 16px;
+    padding: 6px 10px;
+    margin: 0 0 0 6px;
+}
+
+.btn-small {
+    background: var(--tab-inactive);
+    color: var(--text-primary);
+    border: none;
+    padding: 9px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.15s ease;
+}
+
+.btn-small:hover {
+    background: var(--border-color);
+}
+
+.close-modal {
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+
+/* Cronômetro Pomodoro */
+.btn-start {
+    background: var(--btn-primary);
+}
+
+.btn-pause {
+    background: var(--btn-secondary);
+}
+
+.btn-reset {
+    background: var(--danger);
+    color: white;
+    padding: 11px 22px;
+    font-weight: 500;
+    margin-top: 10px;
+    margin-right: 10px;
 }
 
 .timer-buttons button {
     margin: 5px;
     padding: 12px 25px;
     border: none;
-    border-radius: 10px;
-    font-weight: bold;
+    border-radius: 8px;
+    font-weight: 500;
     cursor: pointer;
-}
-
-.btn-start {
-    background: #27ae60;
     color: white;
 }
 
-.btn-pause {
-    background: #f39c12;
-    color: white;
-}
-
-.btn-reset {
-    background: #e74c3c;
-    color: white;
-}
-
-.materia {
-    background: white;
-    border-radius: 15px;
-    margin-bottom: 20px;
-    overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.materia-header {
-    background: #34495e;
-    color: white;
-    padding: 15px 20px;
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.progress-bar-container {
-    width: 150px;
-    height: 8px;
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.progress-bar-fill {
-    height: 100%;
-    background: #2ecc71;
-    width: 0%;
-}
-
-.materia-content {
-    padding: 20px;
-}
-
-.materia-content.collapsed {
-    display: none;
-}
-
-.topico {
+/* ==================== CRONÔMETRO — ELEMENTO ASSINATURA ==================== */
+.cronometro-box {
+    padding: 32px 25px;
+    text-align: center;
     margin-bottom: 25px;
-    border-left: 4px solid #3498db;
-    padding: 15px;
-    background: #f8f9fa;
-    border-radius: 0 10px 10px 0;
 }
 
-body.dark-mode .topico {
-    background: #25253a;
-}
-
-.topico-header {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    flex-wrap: wrap;
-}
-
-.status-select {
-    padding: 6px 12px;
-    border-radius: 20px;
-    border: 1px solid #ddd;
-    cursor: pointer;
-}
-
-.subtopicos {
-    margin-left: 20px;
-    margin-top: 12px;
-}
-
-.subtopico {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px 0;
-    border-bottom: 1px dashed #e0e0e0;
-}
-
-.question-card {
-    background: white;
-    border-radius: 15px;
-    padding: 20px;
+.cronometro-box h2 {
+    color: var(--text-primary);
+    font-size: 1.3em;
     margin-bottom: 20px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.timer-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 220px;
+    height: 220px;
+    margin: 10px auto 25px;
+    border-radius: 50%;
+    border: 10px solid var(--timer-track);
+    font-size: 2.6em;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--timer-accent);
+}
+
+/* ==================== ALTERNATIVAS / FEEDBACK ==================== */
+.question-card {
+    padding: 20px;
+    margin-bottom: 16px;
     position: relative;
+}
+
+.question-text {
+    font-size: 1.02em;
+    line-height: 1.55;
+    margin-bottom: 15px;
+    padding-right: 90px;
+    color: var(--text-primary);
 }
 
 .action-icons {
     position: absolute;
-    top: 15px;
-    right: 15px;
+    top: 16px;
+    right: 16px;
     display: flex;
-    gap: 8px;
+    gap: 4px;
 }
 
-.edit-btn,
-.delete-btn {
+.favorito-btn {
     background: none;
     border: none;
-    font-size: 18px;
+    font-size: 16px;
     cursor: pointer;
     padding: 5px 8px;
     border-radius: 8px;
 }
 
-.edit-btn {
-    color: #3498db;
-}
-
-.delete-btn {
-    color: #e74c3c;
-}
-
-.question-text {
-    font-size: 1.05em;
-    margin-bottom: 15px;
-    padding-right: 80px;
-}
-
 .alternativas {
-    margin: 15px 0;
+    margin: 14px 0;
 }
 
 .alternativa {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 10px;
-    margin: 5px 0;
-    border-radius: 10px;
+    padding: 11px 14px;
+    margin: 6px 0;
+    border-radius: 8px;
     cursor: pointer;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.alternativa:hover {
+    border-color: var(--btn-secondary);
 }
 
 .alternativa.selected {
-    background: #d4edda;
-    border-color: #27ae60;
+    background: rgba(47, 111, 166, 0.1);
+    border-color: var(--btn-secondary);
 }
 
 .alternativa.correct-answer {
-    background: #d4edda;
-    border-left: 4px solid #27ae60;
+    background: var(--correct-bg);
+    border-color: var(--correct-border);
+    color: var(--text-primary);
 }
 
 .alternativa.wrong-answer {
-    background: #f8d7da;
-    border-left: 4px solid #e74c3c;
+    background: var(--wrong-bg);
+    border-color: var(--wrong-border);
     text-decoration: line-through;
-}
-
-.btn-responder,
-.btn-add-questao,
-.btn-import,
-.btn-backup {
-    background: #3498db;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
-    margin-top: 10px;
-    margin-right: 10px;
-}
-
-.btn-add-questao {
-    background: #27ae60;
-}
-
-.btn-import {
-    background: #9b59b6;
-}
-
-.btn-backup {
-    background: #e67e22;
+    color: var(--text-primary);
 }
 
 .feedback {
-    margin-top: 10px;
-    padding: 10px;
+    margin-top: 12px;
+    padding: 12px 14px;
     border-radius: 8px;
+    font-weight: 500;
 }
 
 .feedback.correct {
-    background: #d4edda;
-    color: #155724;
+    background: var(--correct-bg);
+    color: var(--correct-border);
 }
 
 .feedback.wrong {
-    background: #f8d7da;
-    color: #721c24;
+    background: var(--wrong-bg);
+    color: var(--wrong-border);
 }
 
-.filtros-box,
-.import-box,
-.backup-box {
-    background: white;
-    padding: 20px;
-    border-radius: 15px;
-    margin-bottom: 20px;
-}
-
+/* ==================== FORMULÁRIOS ==================== */
 .filtro-group {
     margin-bottom: 15px;
 }
 
 .filtro-group label {
     display: block;
-    font-weight: bold;
-    margin-bottom: 5px;
+    font-weight: 500;
+    margin-bottom: 6px;
+    color: var(--text-secondary);
+    font-size: 0.9em;
 }
 
 select,
 input,
 textarea {
     width: 100%;
-    padding: 10px;
+    padding: 10px 12px;
     border-radius: 8px;
-    border: 1px solid #ddd;
-    font-family: inherit;
+    border: 1px solid var(--border-color);
+    font-family: var(--font-body);
+    background: var(--input-bg);
+    color: var(--text-primary);
 }
 
+select:focus,
+input:focus,
+textarea:focus {
+    border-color: var(--btn-secondary);
+}
+
+/* ==================== MODAIS ==================== */
 .modal {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(10, 15, 20, 0.55);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -647,9 +639,8 @@ textarea {
 }
 
 .modal-content {
-    background: white;
     padding: 25px;
-    border-radius: 20px;
+    border-radius: var(--radius-lg);
     width: 90%;
     max-width: 700px;
     max-height: 85vh;
@@ -662,13 +653,6 @@ textarea {
     margin-bottom: 20px;
 }
 
-.close-modal {
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-}
-
 .preview-questoes {
     max-height: 500px;
     overflow-y: auto;
@@ -676,11 +660,11 @@ textarea {
 }
 
 .preview-item {
-    background: #f8f9fa;
+    background: var(--bg-primary);
     padding: 15px;
     margin-bottom: 10px;
-    border-radius: 10px;
-    border-left: 4px solid #27ae60;
+    border-radius: 8px;
+    border-left: 3px solid var(--btn-primary);
 }
 
 .action-buttons {
@@ -690,191 +674,117 @@ textarea {
     flex-wrap: wrap;
 }
 
-.btn-small {
-    background: #95a5a6;
-    color: white;
-    border: none;
-    padding: 8px 15px;
-    border-radius: 8px;
-    cursor: pointer;
-}
-
-.btn-danger {
-    background: #e74c3c;
-}
-
 .lista-questoes {
     max-height: 400px;
     overflow-y: auto;
-    background: #f8f9fa;
-    border-radius: 10px;
+    background: var(--bg-primary);
+    border-radius: 8px;
     padding: 15px;
 }
 
 .lista-questoes div {
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid var(--border-color);
     padding: 10px;
     cursor: pointer;
+    color: var(--text-primary);
 }
 
 .lista-questoes div:hover {
-    background: #e0e0e0;
+    background: var(--card-bg);
 }
 
-body.dark-mode .lista-questoes {
-    background: #25253a;
+/* ==================== PLANO DE ESTUDOS ==================== */
+.materia {
+    margin-bottom: 16px;
+    overflow: hidden;
 }
 
-body.dark-mode .lista-questoes div:hover {
-    background: #3d3d5c;
+.materia-header {
+    background: var(--header-bg);
+    color: var(--header-text);
+    padding: 15px 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-@media (max-width: 768px) {
-    .container {
-        padding: 10px;
-    }
-
-    .timer-display {
-        font-size: 2.5em;
-    }
+.progress-bar-container {
+    width: 150px;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 4px;
+    overflow: hidden;
 }
 
-/* Estilos específicos para o Painel Admin - FORA DO MEDIA */
-#adminUsuariosList {
-    padding: 20px;
+.progress-bar-fill {
+    height: 100%;
+    background: var(--progress-bar-bg);
+    width: 0%;
+    transition: none !important;
 }
 
-#adminUsuariosList>div {
-    background: white !important;
-    border-radius: 15px !important;
-    padding: 20px !important;
-    margin-bottom: 15px !important;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
-}
-
-#adminUsuariosList strong {
-    color: #2c3e50 !important;
-}
-
-#adminUsuariosList small {
-    color: #7f8c8d !important;
-}
-
-/* Modo escuro */
-body.dark-mode #adminUsuariosList>div {
-    background: #2d2d44 !important;
-}
-
-body.dark-mode #adminUsuariosList strong {
-    color: #e0e0e0 !important;
-}
-
-body.dark-mode #adminUsuariosList small {
-    color: #aaa !important;
-}
-
-.container {
-    min-height: 100vh;
-    height: auto;
-    overflow: visible;
-}
-
-#tab-admin {
-    display: block !important;
-    min-height: 500px !important;
-    height: auto !important;
-    overflow: visible !important;
-    padding: 20px !important;
-    background: var(--bg-color, white);
-}
-
-/* Forçar página a ter altura suficiente */
-html,
-body {
-    height: auto !important;
-    min-height: 100vh !important;
-}
-
-.container {
-    height: auto !important;
-    min-height: 100vh !important;
-    padding-bottom: 100px !important;
-}
-
-/* Controle de expansão/recolhimento dos itens de matéria */
-.materia .materia-content.collapsed {
-    display: none;
-}
-
-
-
-/* Estrutura para os itens de matéria */
-
-
-body.dark-mode .materia-item {
-    background: #2d2d44;
-}
-
-/* Topicos e subtopicos dentro do conteudo */
 .materia-content {
     padding: 20px;
 }
 
-.topico {
-    margin-bottom: 25px;
-    border-left: 4px solid #3498db;
-    padding: 15px;
-    background: #f8f9fa;
-    border-radius: 0 10px 10px 0;
-}
-
-body.dark-mode .topico {
-    background: #25253a;
-}
-
-/* ===== CONTROLE DE EXPANSÃO DO PLANO DE ESTUDOS ===== */
-
-
-/* Apenas para garantir que o conteúdo normal seja exibido */
-.materia:not(.collapsed) .materia-content {
-    display: block;
-}
-
-/* Cursor de mão no cabeçalho para indicar que é clicável */
-.materia-header {
-    cursor: pointer;
-}
-
-/* Forçar esconder conteúdo recolhido */
+.materia-content.collapsed,
 .materia .materia-content.collapsed {
     display: none !important;
 }
 
-
-/* Garantir que botão não ative o cabeçalho */
-.btn-estudar {
-    position: relative;
-    z-index: 10;
-    pointer-events: auto;
+.materia:not(.collapsed) .materia-content {
+    display: block;
 }
 
-/* Isolar os botões de estudo para não propagar clique */
-.btn-estudar, .status-select {
-    position: relative;
-    z-index: 100;
-    pointer-events: auto;
+.topico {
+    margin-bottom: 20px;
+    border-left: 3px solid var(--btn-secondary);
+    padding: 15px;
+    background: var(--bg-primary);
+    border-radius: 0 8px 8px 0;
 }
 
 .topico-header {
     position: relative;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
 }
 
-/* Garantir que o clique no botão não afete o cabeçalho */
-.btn-estudar {
-    pointer-events: auto !important;
+.topico-nome {
+    color: var(--text-primary);
+    font-weight: 500;
 }
 
-/* Isolar completamente o botão */
+.progresso-texto {
+    color: var(--text-secondary);
+    font-size: 0.85em;
+    font-family: var(--font-mono);
+}
+
+.status-select {
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    width: auto;
+}
+
+.subtopicos {
+    margin-left: 20px;
+    margin-top: 12px;
+}
+
+.subtopico {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--border-color);
+}
+
 .btn-estudar {
     position: relative !important;
     z-index: 9999 !important;
@@ -882,37 +792,75 @@ body.dark-mode .topico {
     cursor: pointer !important;
 }
 
-/* Impedir que o clique passe para o cabeçalho */
-.topico-header {
-    position: relative;
-    z-index: 1;
-}
-
-.btn-estudar {
-    position: relative;
-    z-index: 10;
-}
-
-/* Garantir que a barra de progresso seja atualizável */
-.progress-bar-fill {
-    transition: none !important;
-}
-
 .progress-container {
-    background: #e0e0e0;
+    background: var(--tab-inactive);
     border-radius: 20px;
-    height: 30px;
-    margin-bottom: 20px; /* espaçamento opcional */
+    height: 28px;
+    margin-bottom: 20px;
+    overflow: hidden;
 }
+
 .progress-bar {
-    background: #4caf50;
+    background: var(--progress-bar-bg);
     border-radius: 20px;
     height: 100%;
     width: 0%;
     text-align: center;
-    line-height: 30px;
+    line-height: 28px;
     color: white;
+    font-size: 0.85em;
+    font-weight: 500;
     transition: width 0.3s ease;
 }
 
-</style>
+/* ==================== PAINEL ADMIN ==================== */
+#adminUsuariosList {
+    padding: 20px;
+    color: var(--text-primary);
+}
+
+#adminUsuariosList > div {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-lg) !important;
+    padding: 20px !important;
+    margin-bottom: 12px !important;
+    box-shadow: var(--shadow-card) !important;
+}
+
+#adminUsuariosList strong {
+    color: var(--text-primary) !important;
+}
+
+#adminUsuariosList small {
+    color: var(--text-secondary) !important;
+}
+
+#adminUsuariosList .question-card {
+    background: var(--card-bg);
+    color: var(--text-primary);
+}
+
+/* ==================== RESPONSIVO ==================== */
+@media (max-width: 768px) {
+    .container {
+        padding: 12px;
+    }
+
+    .timer-display {
+        width: 170px;
+        height: 170px;
+        font-size: 2em;
+        border-width: 8px;
+    }
+
+    .question-text {
+        padding-right: 0;
+    }
+
+    .action-icons {
+        position: static;
+        justify-content: flex-end;
+        margin-bottom: 10px;
+    }
+}

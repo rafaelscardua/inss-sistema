@@ -1947,6 +1947,11 @@
             // Adiciona a classe do tema selecionado
             document.body.classList.add(`${theme}-mode`);
 
+            // Marca visualmente qual botão de tema está ativo
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-theme') === theme);
+            });
+
             // Salva no localStorage
             localStorage.setItem('selected_theme', theme);
         }
