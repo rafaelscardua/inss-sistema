@@ -841,6 +841,82 @@ textarea:focus {
     color: var(--text-primary);
 }
 
+/* ==================== META DIÁRIA ==================== */
+.meta-diaria-box {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    padding: 18px 20px;
+    margin-bottom: 20px;
+}
+
+.meta-diaria-topo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.meta-diaria-label {
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.meta-diaria-valor {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--btn-primary);
+    margin-right: auto;
+}
+
+.meta-diaria-barra {
+    width: 100%;
+    height: 10px;
+    background: var(--tab-inactive);
+    border-radius: 20px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.meta-diaria-fill {
+    height: 100%;
+    background: var(--btn-primary);
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+.meta-diaria-fill.meta-completa {
+    background: var(--timer-accent);
+}
+
+.meta-diaria-streak {
+    color: var(--text-secondary);
+    font-size: 0.88em;
+}
+
+/* ==================== PAGINAÇÃO DA LISTA DE QUESTÕES ==================== */
+.paginacao {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 18px;
+}
+
+.paginacao-texto {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    font-family: var(--font-mono);
+}
+
+.btn-small:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
 /* ==================== RESPONSIVO ==================== */
 @media (max-width: 768px) {
     .container {

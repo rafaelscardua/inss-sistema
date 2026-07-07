@@ -40,6 +40,17 @@
 
         <!-- PLANO DE ESTUDOS -->
         <div id="tab-estudos" class="tab-content active">
+            <div class="meta-diaria-box" id="metaDiariaBox">
+                <div class="meta-diaria-topo">
+                    <span class="meta-diaria-label">🎯 Meta de hoje</span>
+                    <span class="meta-diaria-valor" id="metaProgressoTexto">0/20 hoje</span>
+                    <button class="btn-small" id="editarMetaBtn">✏️ Editar meta</button>
+                </div>
+                <div class="meta-diaria-barra">
+                    <div class="meta-diaria-fill" id="metaProgressoFill" style="width:0%"></div>
+                </div>
+                <div class="meta-diaria-streak" id="metaStreakTexto">Responda hoje para começar sua sequência</div>
+            </div>
             <div class="stats-grid">
                 <div class="stat-card">
                     <h3>📊 Progresso</h3>
@@ -108,6 +119,7 @@
                 <div class="progress-bar" id="barraProgressoSimulado">0%</div>
             </div>
             <div id="questoesList"></div>
+            <div id="paginacaoQuestoes" class="paginacao"></div>
         </div>
 
         <!-- FAVORITOS -->
@@ -354,6 +366,7 @@
     <script src="js/config.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/api.js"></script>
+    <script src="js/metaDiaria.js"></script>
     <script src="js/planoEstudos.js"></script>
     <script src="js/cronometro.js"></script>
     <script src="js/estatisticas.js"></script>
@@ -538,7 +551,8 @@
                 console.error('Erro ao carregar permissões:', e);
             }
 
-            await carregarPlanoEstudos();
+            // (removida uma segunda chamada duplicada a carregarPlanoEstudos() que
+            // existia aqui antes - ela rodava a mesma busca duas vezes à toa)
 
             // Forçar sincronização dos checkboxes com o progresso
             setTimeout(() => {
@@ -573,6 +587,7 @@
             carregarEstatisticas();
             atualizarStats();
             carregarAssuntosImportacao();
+            carregarMetaDiaria();
 
             // Se for admin, carrega dados do painel
             if (usuario.email === 'rafaelscardua@gmail.com') {
@@ -597,7 +612,8 @@
             document.getElementById("filtroFavoritoMateria")?.addEventListener("change", renderizarFavoritos);
 
 
-            document.getElementById("filtrarQuestoesBtn")?.addEventListener("click", renderizarQuestoes);
+            document.getElementById("filtrarQuestoesBtn")?.addEventListener("click", () => renderizarQuestoes(true));
+            document.getElementById("editarMetaBtn")?.addEventListener("click", editarMetaDiaria);
             document.getElementById("filtrarExerciciosBtn")?.addEventListener("click", renderizarExercicios);
             document.getElementById("salvarNovaQuestao")?.addEventListener("click", adicionarNovaQuestao);
             document.getElementById("detectarQuestoesBtn")?.addEventListener("click", detectarQuestoes);

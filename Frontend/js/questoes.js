@@ -1,5 +1,9 @@
 // ==================== FUNÇÕES DE QUESTÕES ====================
 
+// Paginação da lista (evita renderizar centenas de cards no DOM de uma vez)
+let paginaAtualQuestoes = 1;
+const QUESTOES_POR_PAGINA = 20;
+
 function atualizarStats() {
     let totalSub = 0, completos = 0, topicosDom = 0;
     dadosEstudo.materias.forEach(m => m.topicos.forEach(t => {
@@ -24,7 +28,9 @@ function atualizarStats() {
     document.getElementById("revisarQuestoes").innerText = Object.values(respostasUsuario).filter(r => r.acertou === false).length;
 }
 
-function renderizarQuestoes() {
+function renderizarQuestoes(resetarPagina = false) {
+    if (resetarPagina) paginaAtualQuestoes = 1;
+
     // Filtrar questões por permissões do usuário
     let questoesBase = questoes;
 
@@ -49,14 +55,23 @@ function renderizarQuestoes() {
 
     if (filtradas.length === 0) {
         container.innerHTML = "<p style='text-align:center; padding:40px;'>Nenhuma questão encontrada</p>";
+        renderizarPaginacaoQuestoes(0);
         return;
     }
+
+    // Corrige a página atual caso o filtro tenha mudado a quantidade de resultados
+    const totalPaginas = Math.max(1, Math.ceil(filtradas.length / QUESTOES_POR_PAGINA));
+    if (paginaAtualQuestoes > totalPaginas) paginaAtualQuestoes = totalPaginas;
+    if (paginaAtualQuestoes < 1) paginaAtualQuestoes = 1;
+
+    const inicio = (paginaAtualQuestoes - 1) * QUESTOES_POR_PAGINA;
+    const questoesDaPagina = filtradas.slice(inicio, inicio + QUESTOES_POR_PAGINA);
 
     // ⭐ Verificar se o usuário é ADMIN ⭐
     const usuarioAtual = JSON.parse(localStorage.getItem('usuario'));
     const isAdmin = usuarioAtual && usuarioAtual.email === 'rafaelscardua@gmail.com';
 
-    container.innerHTML = filtradas.map(q => {
+    container.innerHTML = questoesDaPagina.map(q => {
         const resp = respostasUsuario[q.id] || {};
         const alternativasValidas = Object.entries(q.alternativas).filter(([letra, texto]) => texto && texto.trim() !== "");
         let alternativasHtml = alternativasValidas.map(([letra, texto]) => {
@@ -136,10 +151,45 @@ function renderizarQuestoes() {
             if (typeof atualizarCardsPlano === 'function') {
                 atualizarCardsPlano();
             }
+            if (typeof carregarMetaDiaria === 'function') carregarMetaDiaria();
         };
     });
     atualizarBarraProgresso();
     atualizarBotoesFavorito();
+    renderizarPaginacaoQuestoes(totalPaginas);
+}
+
+// Renderiza os controles de "página anterior / próxima" da lista de questões
+function renderizarPaginacaoQuestoes(totalPaginas) {
+    const container = document.getElementById("paginacaoQuestoes");
+    if (!container) return;
+
+    if (totalPaginas <= 1) {
+        container.innerHTML = "";
+        return;
+    }
+
+    container.innerHTML = `
+        <button class="btn-small" id="paginaAnteriorBtn" ${paginaAtualQuestoes === 1 ? 'disabled' : ''}>← Anterior</button>
+        <span class="paginacao-texto">Página ${paginaAtualQuestoes} de ${totalPaginas}</span>
+        <button class="btn-small" id="paginaProximaBtn" ${paginaAtualQuestoes === totalPaginas ? 'disabled' : ''}>Próxima →</button>
+    `;
+
+    document.getElementById("paginaAnteriorBtn")?.addEventListener("click", () => {
+        if (paginaAtualQuestoes > 1) {
+            paginaAtualQuestoes--;
+            renderizarQuestoes();
+            document.getElementById("questoesList")?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+
+    document.getElementById("paginaProximaBtn")?.addEventListener("click", () => {
+        if (paginaAtualQuestoes < totalPaginas) {
+            paginaAtualQuestoes++;
+            renderizarQuestoes();
+            document.getElementById("questoesList")?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
 }
 
 // Atualiza a barra de progresso com base nas questões respondidas
@@ -252,7 +302,7 @@ async function preencherFiltros() {
             let assuntosDaMateria = [...new Set(questoesPermitidas.filter(q => q.materia === selectMateria.value).map(q => q.assunto))];
             let selectTopico = document.getElementById("filtroTopico");
             if (selectTopico) selectTopico.innerHTML = '<option value="todos">Todos</option>' + assuntosDaMateria.map(a => `<option value="${a}">${a}</option>`).join('');
-            renderizarQuestoes();
+            renderizarQuestoes(true);
         };
         selectMateria.dispatchEvent(new Event('change'));
     }

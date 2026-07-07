@@ -107,6 +107,7 @@ function mostrarQuestaoAleatoria() {
         // Atualizar estatísticas
         if(typeof carregarEstatisticas === 'function') carregarEstatisticas();
         if(typeof atualizarStats === 'function') atualizarStats();
+        if(typeof carregarMetaDiaria === 'function') carregarMetaDiaria();
     };
     
     document.getElementById("sairAleatorioBtn").onclick = () => encerrarModoAleatorio();

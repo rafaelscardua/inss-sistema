@@ -904,57 +904,147 @@ app.get('/api/admin/assuntos', async (req, res) => {
 
 // Buscar disciplinas com progresso do usuário
 // Buscar disciplinas com progresso do usuário (COM PERMISSÕES)
+// OTIMIZADO: antes fazia 1 + D + (2 × A) queries (uma cascata por disciplina/assunto).
+// Agora faz sempre 2 queries, não importa quantas disciplinas/assuntos existam.
 app.get('/api/plano-estudos/:usuario_id', async (req, res) => {
     const { usuario_id } = req.params;
     try {
-        // Buscar apenas disciplinas ATIVAS
+        // 1ª query: disciplinas ativas
         const disciplinasResult = await pool.query(
             'SELECT id, nome FROM disciplinas WHERE ativo = true ORDER BY id'
         );
 
-        const disciplinas = disciplinasResult.rows;
+        // 2ª query: todos os assuntos permitidos para o usuário, já com total de questões
+        // e acertos calculados via agregação (GROUP BY), em vez de uma query por assunto
+        const assuntosResult = await pool.query(
+            `SELECT
+                a.disciplina_id,
+                a.id AS assunto_id,
+                a.nome AS assunto_nome,
+                a.ordem,
+                COUNT(DISTINCT q.id) AS total_questoes,
+                COUNT(DISTINCT r.questao_id) AS acertos
+             FROM assuntos a
+             JOIN usuario_assuntos ua ON ua.assunto_id = a.id AND ua.usuario_id = $1
+             LEFT JOIN questoes_base q ON q.disciplina_id = a.disciplina_id AND q.assunto_id = a.id
+             LEFT JOIN respostas_usuario r ON r.questao_id = q.id AND r.usuario_id = $1 AND r.acertou = true
+             WHERE a.ativo = true
+             GROUP BY a.disciplina_id, a.id, a.nome, a.ordem
+             ORDER BY a.ordem NULLS LAST, a.id`,
+            [usuario_id]
+        );
 
-        // Para cada disciplina, buscar os assuntos PERMITIDOS para o usuário
-        for (const disc of disciplinas) {
-            // Buscar apenas assuntos ATIVOS E PERMITIDOS para este usuário
-            const assuntosResult = await pool.query(
-                `SELECT a.id, a.nome 
-                 FROM assuntos a
-                 JOIN usuario_assuntos ua ON a.id = ua.assunto_id
-                 WHERE a.disciplina_id = $1 AND a.ativo = true AND ua.usuario_id = $2
-                 ORDER BY a.ordem NULLS LAST, a.id`,  // ← ORDEM POR ORDEM
-                [disc.id, usuario_id]
-            );
-
-            // Para cada assunto, buscar progresso do usuário
-            for (const assunto of assuntosResult.rows) {
-                // Contar questões totais do assunto
-                const totalResult = await pool.query(
-                    'SELECT COUNT(*) FROM questoes_base WHERE disciplina_id = $1 AND assunto_id = $2',
-                    [disc.id, assunto.id]
-                );
-                const total = parseInt(totalResult.rows[0].count);
-
-                // Contar questões respondidas corretamente
-                const acertosResult = await pool.query(
-                    `SELECT COUNT(*) FROM respostas_usuario r
-                     JOIN questoes_base q ON r.questao_id = q.id
-                     WHERE r.usuario_id = $1 AND q.disciplina_id = $2 AND q.assunto_id = $3 AND r.acertou = true`,
-                    [usuario_id, disc.id, assunto.id]
-                );
-                const acertos = parseInt(acertosResult.rows[0].count);
-
-                assunto.progresso = total > 0 ? Math.round((acertos / total) * 100) : 0;
-                assunto.total_questoes = total;
+        // Agrupa os assuntos por disciplina em memória (rápido, já são poucos registros)
+        const assuntosPorDisciplina = new Map();
+        for (const row of assuntosResult.rows) {
+            const total = parseInt(row.total_questoes);
+            const acertos = parseInt(row.acertos);
+            const assunto = {
+                id: row.assunto_id,
+                nome: row.assunto_nome,
+                total_questoes: total,
+                progresso: total > 0 ? Math.round((acertos / total) * 100) : 0
+            };
+            if (!assuntosPorDisciplina.has(row.disciplina_id)) {
+                assuntosPorDisciplina.set(row.disciplina_id, []);
             }
-
-            disc.assuntos = assuntosResult.rows;
+            assuntosPorDisciplina.get(row.disciplina_id).push(assunto);
         }
+
+        const disciplinas = disciplinasResult.rows.map(d => ({
+            id: d.id,
+            nome: d.nome,
+            assuntos: assuntosPorDisciplina.get(d.id) || []
+        }));
 
         res.json({ sucesso: true, disciplinas });
     } catch (error) {
         console.error('Erro ao buscar plano de estudos:', error);
         res.status(500).json({ erro: 'Erro ao buscar plano de estudos' });
+    }
+});
+
+// ==================== META DIÁRIA E SEQUÊNCIA (STREAK) ====================
+
+// Calcula quantos dias consecutivos o usuário bateu a meta diária.
+// "dias" vem ordenado do mais recente para o mais antigo.
+function calcularStreak(dias, metaDiaria, hojeStr) {
+    const mapa = new Map(dias.map(d => [d.dia, parseInt(d.total)]));
+
+    const cursor = new Date(hojeStr + 'T00:00:00Z');
+    const formatar = (data) => data.toISOString().slice(0, 10);
+
+    // Se hoje ainda não bateu a meta, não conta hoje ainda (mas também não quebra
+    // o streak dos dias anteriores) - começa a contagem a partir de ontem
+    const hojeBateu = (mapa.get(hojeStr) || 0) >= metaDiaria;
+    if (!hojeBateu) {
+        cursor.setUTCDate(cursor.getUTCDate() - 1);
+    }
+
+    let streak = 0;
+    while ((mapa.get(formatar(cursor)) || 0) >= metaDiaria) {
+        streak++;
+        cursor.setUTCDate(cursor.getUTCDate() - 1);
+    }
+    return streak;
+}
+
+// Buscar meta diária, progresso de hoje e sequência atual
+app.get('/api/meta/:usuario_id', async (req, res) => {
+    const { usuario_id } = req.params;
+    try {
+        const usuarioResult = await pool.query('SELECT meta_diaria FROM usuarios WHERE id = $1', [usuario_id]);
+        if (usuarioResult.rows.length === 0) {
+            return res.status(404).json({ sucesso: false, erro: 'Usuário não encontrado' });
+        }
+        const metaDiaria = usuarioResult.rows[0].meta_diaria || 20;
+
+        // Usa o fuso/relógio do próprio Postgres como referência de "hoje", pra não
+        // depender do fuso horário do servidor Node
+        const hojeResult = await pool.query(`SELECT to_char(NOW(), 'YYYY-MM-DD') AS hoje`);
+        const hojeStr = hojeResult.rows[0].hoje;
+
+        const diasResult = await pool.query(
+            `SELECT to_char(data_resposta, 'YYYY-MM-DD') AS dia, COUNT(DISTINCT questao_id) AS total
+             FROM respostas_usuario
+             WHERE usuario_id = $1
+             GROUP BY dia
+             ORDER BY dia DESC
+             LIMIT 400`,
+            [usuario_id]
+        );
+
+        const respondidasHoje = diasResult.rows.find(d => d.dia === hojeStr);
+        const streak = calcularStreak(diasResult.rows, metaDiaria, hojeStr);
+
+        res.json({
+            sucesso: true,
+            meta_diaria: metaDiaria,
+            respondidas_hoje: respondidasHoje ? parseInt(respondidasHoje.total) : 0,
+            streak
+        });
+    } catch (error) {
+        console.error('Erro ao buscar meta diária:', error);
+        res.status(500).json({ sucesso: false, erro: 'Erro ao buscar meta diária' });
+    }
+});
+
+// Atualizar a meta diária do usuário
+app.put('/api/meta/:usuario_id', async (req, res) => {
+    const { usuario_id } = req.params;
+    const { meta_diaria } = req.body;
+
+    const valor = parseInt(meta_diaria);
+    if (!valor || valor <= 0 || valor > 1000) {
+        return res.status(400).json({ sucesso: false, erro: 'Meta inválida. Use um número entre 1 e 1000.' });
+    }
+
+    try {
+        await pool.query('UPDATE usuarios SET meta_diaria = $1 WHERE id = $2', [valor, usuario_id]);
+        res.json({ sucesso: true, meta_diaria: valor });
+    } catch (error) {
+        console.error('Erro ao atualizar meta diária:', error);
+        res.status(500).json({ sucesso: false, erro: 'Erro ao atualizar meta diária' });
     }
 });
 
