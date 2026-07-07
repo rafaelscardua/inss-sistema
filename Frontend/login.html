@@ -169,6 +169,7 @@
                 const data = await res.json();
                 if (data.sucesso) {
                     localStorage.setItem('usuario', JSON.stringify(data.usuario));
+                    localStorage.setItem('inss_token', data.token);
                     window.location.href = '/dashboard.html';
                 } else {
                     document.getElementById('loginError').textContent = data.erro;

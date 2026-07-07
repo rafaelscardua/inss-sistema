@@ -1,8 +1,15 @@
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const { pool, initDatabase } = require('./db');
 require('dotenv').config();
+
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    console.error('❌ JWT_SECRET não definida! Defina essa variável de ambiente (uma string longa e aleatória) no Railway.');
+    process.exit(1);
+}
 
 const multer = require('multer');
 const fs = require('fs');
@@ -40,6 +47,60 @@ app.use(express.urlencoded({ limit: '200mb', extended: true }));
 app.use(express.static(__dirname + '/Frontend'));
 app.use(express.static('Frontend'));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// ==================== AUTENTICAÇÃO REAL (JWT) ====================
+// Antes, várias rotas confiavam num header (x-user-email) que o próprio
+// navegador envia - ou seja, qualquer pessoa podia forjar esse header e se
+// passar por outro usuário (inclusive o admin), sem precisar de senha.
+// Agora a identidade vem de um token assinado pelo servidor no login, que só
+// o próprio servidor sabe validar.
+
+// Gera um token para o usuário logado, válido por 30 dias
+function gerarToken(usuario) {
+    return jwt.sign(
+        { id: usuario.id, nome: usuario.nome, email: usuario.email },
+        JWT_SECRET,
+        { expiresIn: '30d' }
+    );
+}
+
+// Middleware "leve": roda em toda requisição. Se vier um token válido no
+// header Authorization, preenche req.usuario com os dados verificados.
+// Não bloqueia quem não tiver token (rotas públicas como /api/login precisam
+// continuar funcionando sem isso) - quem exige login usa exigirLogin/exigirAdmin.
+function autenticar(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.slice(7);
+        try {
+            req.usuario = jwt.verify(token, JWT_SECRET);
+        } catch (error) {
+            req.usuario = null;
+        }
+    } else {
+        req.usuario = null;
+    }
+    next();
+}
+
+// Exige que exista um usuário autenticado com token válido
+function exigirLogin(req, res, next) {
+    if (!req.usuario) {
+        return res.status(401).json({ sucesso: false, erro: 'Sessão inválida ou expirada. Faça login novamente.' });
+    }
+    next();
+}
+
+// Exige que o usuário autenticado seja o administrador
+function exigirAdmin(req, res, next) {
+    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    if (!req.usuario || req.usuario.email !== adminEmail) {
+        return res.status(403).json({ sucesso: false, erro: 'Acesso negado' });
+    }
+    next();
+}
+
+app.use(autenticar);
 
 // Inicializar banco de dados
 initDatabase().catch(err => console.error('Erro ao inicializar banco:', err));
@@ -93,7 +154,9 @@ app.post('/api/login', async (req, res) => {
         if (!valido) {
             return res.status(401).json({ sucesso: false, erro: 'Email ou senha inválidos' });
         }
-        res.json({ sucesso: true, usuario: { id: usuario.id, nome: usuario.nome, email: usuario.email } });
+        const usuarioSemSenha = { id: usuario.id, nome: usuario.nome, email: usuario.email };
+        const token = gerarToken(usuarioSemSenha);
+        res.json({ sucesso: true, usuario: usuarioSemSenha, token });
     } catch (error) {
         res.status(500).json({ sucesso: false, erro: 'Erro ao fazer login' });
     }
@@ -193,7 +256,7 @@ app.put('/api/assuntos/:id/progresso', async (req, res) => {
     try {
         const { id } = req.params;
         const { progresso } = req.body;
-        const userEmail = req.headers['x-user-email'];
+        const userEmail = req.usuario?.email;
 
         console.log(`📊 Atualizando progresso do assunto ${id} para ${progresso}%`);
 
@@ -218,7 +281,7 @@ app.put('/api/assuntos/:id/status', async (req, res) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
-        const userEmail = req.headers['x-user-email'];
+        const userEmail = req.usuario?.email;
 
         console.log(`📌 Atualizando status do assunto ${id} para ${status}`);
 
@@ -239,8 +302,8 @@ app.put('/api/assuntos/:id/status', async (req, res) => {
 // ==================== FAVORITOS ====================
 
 // Buscar favoritos do usuário
-app.get('/api/favoritos/:usuario_id', async (req, res) => {
-    const { usuario_id } = req.params;
+app.get('/api/favoritos/:usuario_id', exigirLogin, async (req, res) => {
+    const usuario_id = req.usuario.id; // ignora o :usuario_id da URL - só o dono do token vê os próprios favoritos
     try {
         const result = await pool.query(
             `SELECT q.*, f.data_favorito 
@@ -257,8 +320,9 @@ app.get('/api/favoritos/:usuario_id', async (req, res) => {
 });
 
 // Adicionar favorito
-app.post('/api/favoritos', async (req, res) => {
-    const { usuario_id, questao_id } = req.body;
+app.post('/api/favoritos', exigirLogin, async (req, res) => {
+    const usuario_id = req.usuario.id;
+    const { questao_id } = req.body;
     try {
         await pool.query(
             'INSERT INTO favoritos_usuario (usuario_id, questao_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
@@ -271,8 +335,9 @@ app.post('/api/favoritos', async (req, res) => {
 });
 
 // Remover favorito
-app.delete('/api/favoritos/:usuario_id/:questao_id', async (req, res) => {
-    const { usuario_id, questao_id } = req.params;
+app.delete('/api/favoritos/:usuario_id/:questao_id', exigirLogin, async (req, res) => {
+    const usuario_id = req.usuario.id;
+    const { questao_id } = req.params;
     try {
         await pool.query(
             'DELETE FROM favoritos_usuario WHERE usuario_id = $1 AND questao_id = $2',
@@ -312,7 +377,7 @@ app.get('/api/anexos/download/:id', async (req, res) => {
 // 2º - LISTAR todos (admin)
 app.get('/api/anexos/todos', async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
-    const userEmail = req.headers['x-user-email'];
+    const userEmail = req.usuario?.email;
 
     if (userEmail !== adminEmail) {
         return res.status(403).json({ erro: 'Acesso negado' });
@@ -343,7 +408,7 @@ app.get('/api/anexos/:materia/:topico', async (req, res) => {
 // 4º - UPLOAD (POST)
 app.post('/api/anexos/upload', async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
-    const userEmail = req.headers['x-user-email'];
+    const userEmail = req.usuario?.email;
 
     if (userEmail !== adminEmail) {
         return res.status(403).json({ sucesso: false, erro: 'Apenas administrador pode adicionar anexos' });
@@ -368,7 +433,7 @@ app.post('/api/anexos/upload', async (req, res) => {
 app.delete('/api/anexos/:id', async (req, res) => {
     const { id } = req.params;
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
-    const userEmail = req.headers['x-user-email'];
+    const userEmail = req.usuario?.email;
 
     if (userEmail !== adminEmail) {
         return res.status(403).json({ sucesso: false, erro: 'Apenas administrador pode excluir anexos' });
@@ -388,8 +453,9 @@ app.delete('/api/anexos/:id', async (req, res) => {
 // ==================== ROTAS DE RESPOSTAS ====================
 
 // Registrar resposta
-app.post('/api/respostas', async (req, res) => {
-    const { usuario_id, questao_id, acertou, resposta_usuario } = req.body;
+app.post('/api/respostas', exigirLogin, async (req, res) => {
+    const usuario_id = req.usuario.id;
+    const { questao_id, acertou, resposta_usuario } = req.body;
     try {
         await pool.query(
             `INSERT INTO respostas_usuario (usuario_id, questao_id, respondida, acertou, resposta_usuario, data_resposta)
@@ -405,8 +471,8 @@ app.post('/api/respostas', async (req, res) => {
 });
 
 // Buscar respostas do usuário
-app.get('/api/respostas/:usuario_id', async (req, res) => {
-    const { usuario_id } = req.params;
+app.get('/api/respostas/:usuario_id', exigirLogin, async (req, res) => {
+    const usuario_id = req.usuario.id; // ignora o :usuario_id da URL - só o dono do token vê suas respostas
     try {
         const result = await pool.query(
             'SELECT questao_id, respondida, acertou, resposta_usuario FROM respostas_usuario WHERE usuario_id = $1',
@@ -428,8 +494,8 @@ app.get('/api/respostas/:usuario_id', async (req, res) => {
 
 // ==================== ESTATÍSTICAS ====================
 
-app.get('/api/estatisticas/:usuario_id', async (req, res) => {
-    const { usuario_id } = req.params;
+app.get('/api/estatisticas/:usuario_id', exigirLogin, async (req, res) => {
+    const usuario_id = req.usuario.id; // ignora o :usuario_id da URL - só o dono do token vê suas estatísticas
     try {
         // Buscar total de questões por matéria
         const totaisResult = await pool.query(`
@@ -513,7 +579,7 @@ async function isAdmin(email) {
 // Listar todos os usuários (apenas admin)
 app.get('/api/admin/usuarios', async (req, res) => {
     try {
-        const userEmail = req.headers['x-user-email'];
+        const userEmail = req.usuario?.email;
         if (!await isAdmin(userEmail)) {
             return res.status(403).json({ sucesso: false, erro: 'Acesso negado' });
         }
@@ -531,7 +597,7 @@ app.get('/api/admin/usuarios', async (req, res) => {
 app.get('/api/admin/estatisticas/:usuario_id', async (req, res) => {
     const { usuario_id } = req.params;
     try {
-        const userEmail = req.headers['x-user-email'];
+        const userEmail = req.usuario?.email;
         if (!await isAdmin(userEmail)) {
             return res.status(403).json({ sucesso: false, erro: 'Acesso negado' });
         }
@@ -574,7 +640,7 @@ app.get('/api/admin/estatisticas/:usuario_id', async (req, res) => {
 app.delete('/api/admin/excluir-usuario/:id', async (req, res) => {
     const { id } = req.params;
     const { senha } = req.body;
-    const adminEmail = req.headers['x-user-email'];
+    const adminEmail = req.usuario?.email;
 
     console.log("Excluindo usuário:", id);
     console.log("Admin email:", adminEmail);
@@ -692,7 +758,7 @@ app.put('/api/questoes/:id', async (req, res) => {
 // Listar todas as disciplinas com seus assuntos
 app.get('/api/admin/disciplinas', async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
-    const userEmail = req.headers['x-user-email'];
+    const userEmail = req.usuario?.email;
 
     if (userEmail !== adminEmail) {
         return res.status(403).json({ erro: 'Acesso negado' });
@@ -725,7 +791,7 @@ app.get('/api/admin/disciplinas', async (req, res) => {
 // Criar disciplina
 app.post('/api/admin/disciplinas', async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
-    const userEmail = req.headers['x-user-email'];
+    const userEmail = req.usuario?.email;
 
     if (userEmail !== adminEmail) {
         return res.status(403).json({ erro: 'Acesso negado' });
@@ -748,7 +814,7 @@ app.put('/api/admin/disciplinas/:id', async (req, res) => {
     const { id } = req.params;
     const { nome } = req.body;
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
-    const userEmail = req.headers['x-user-email'];
+    const userEmail = req.usuario?.email;
 
     if (userEmail !== adminEmail) {
         return res.status(403).json({ erro: 'Acesso negado' });
@@ -766,7 +832,7 @@ app.put('/api/admin/disciplinas/:id', async (req, res) => {
 app.delete('/api/admin/disciplinas/:id', async (req, res) => {
     const { id } = req.params;
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
-    const userEmail = req.headers['x-user-email'];
+    const userEmail = req.usuario?.email;
 
     if (userEmail !== adminEmail) {
         return res.status(403).json({ erro: 'Acesso negado' });
@@ -783,7 +849,7 @@ app.delete('/api/admin/disciplinas/:id', async (req, res) => {
 // Criar assunto
 app.post('/api/admin/assuntos', async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
-    const userEmail = req.headers['x-user-email'];
+    const userEmail = req.usuario?.email;
 
     if (userEmail !== adminEmail) {
         return res.status(403).json({ erro: 'Acesso negado' });
@@ -810,7 +876,7 @@ app.put('/api/admin/assuntos/:id', async (req, res) => {
     const { id } = req.params;
     const { nome } = req.body;
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
-    const userEmail = req.headers['x-user-email'];
+    const userEmail = req.usuario?.email;
 
     if (userEmail !== adminEmail) {
         return res.status(403).json({ erro: 'Acesso negado' });
@@ -853,7 +919,7 @@ app.put('/api/admin/assuntos/:id', async (req, res) => {
 app.delete('/api/admin/assuntos/:id', async (req, res) => {
     const { id } = req.params;
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
-    const userEmail = req.headers['x-user-email'];
+    const userEmail = req.usuario?.email;
 
     if (userEmail !== adminEmail) {
         return res.status(403).json({ erro: 'Acesso negado' });
@@ -870,7 +936,7 @@ app.delete('/api/admin/assuntos/:id', async (req, res) => {
 // Listar todos os assuntos (admin)
 app.get('/api/admin/assuntos', async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
-    const userEmail = req.headers['x-user-email'];
+    const userEmail = req.usuario?.email;
 
     if (userEmail !== adminEmail) {
         return res.status(403).json({ erro: 'Acesso negado' });
@@ -888,8 +954,8 @@ app.get('/api/admin/assuntos', async (req, res) => {
 // Buscar disciplinas com progresso do usuário (COM PERMISSÕES)
 // OTIMIZADO: antes fazia 1 + D + (2 × A) queries (uma cascata por disciplina/assunto).
 // Agora faz sempre 2 queries, não importa quantas disciplinas/assuntos existam.
-app.get('/api/plano-estudos/:usuario_id', async (req, res) => {
-    const { usuario_id } = req.params;
+app.get('/api/plano-estudos/:usuario_id', exigirLogin, async (req, res) => {
+    const usuario_id = req.usuario.id; // ignora o :usuario_id da URL - só o dono do token vê seu próprio plano
     try {
         // 1ª query: disciplinas ativas
         const disciplinasResult = await pool.query(
@@ -972,8 +1038,8 @@ function calcularStreak(dias, metaDiaria, hojeStr) {
 }
 
 // Buscar meta diária, progresso de hoje e sequência atual
-app.get('/api/meta/:usuario_id', async (req, res) => {
-    const { usuario_id } = req.params;
+app.get('/api/meta/:usuario_id', exigirLogin, async (req, res) => {
+    const usuario_id = req.usuario.id; // ignora o :usuario_id da URL - só o dono do token vê sua própria meta
     try {
         const usuarioResult = await pool.query('SELECT meta_diaria FROM usuarios WHERE id = $1', [usuario_id]);
         if (usuarioResult.rows.length === 0) {
@@ -1012,8 +1078,8 @@ app.get('/api/meta/:usuario_id', async (req, res) => {
 });
 
 // Atualizar a meta diária do usuário
-app.put('/api/meta/:usuario_id', async (req, res) => {
-    const { usuario_id } = req.params;
+app.put('/api/meta/:usuario_id', exigirLogin, async (req, res) => {
+    const usuario_id = req.usuario.id; // ignora o :usuario_id da URL - só o dono do token muda sua própria meta
     const { meta_diaria } = req.body;
 
     const valor = parseInt(meta_diaria);
@@ -1034,8 +1100,8 @@ app.put('/api/meta/:usuario_id', async (req, res) => {
 // ==================== ROTAS DE PERMISSÕES POR USUÁRIO ====================
 
 // Buscar assuntos permitidos para um usuário
-app.get('/api/usuario/assuntos/:usuario_id', async (req, res) => {
-    const { usuario_id } = req.params;
+app.get('/api/usuario/assuntos/:usuario_id', exigirLogin, async (req, res) => {
+    const usuario_id = req.usuario.id; // ignora o :usuario_id da URL - só o dono do token vê suas próprias permissões
     try {
         const result = await pool.query(`
             SELECT a.id, a.nome, a.disciplina_id
@@ -1052,7 +1118,7 @@ app.get('/api/usuario/assuntos/:usuario_id', async (req, res) => {
 // Admin: Listar permissões de um usuário
 app.get('/api/admin/usuario/:usuario_id/permissoes', async (req, res) => {
     const { usuario_id } = req.params;
-    const adminEmail = req.headers['x-user-email'];
+    const adminEmail = req.usuario?.email;
     const adminEmailConfig = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
 
     if (adminEmail !== adminEmailConfig) {
@@ -1088,7 +1154,7 @@ app.get('/api/admin/usuario/:usuario_id/permissoes', async (req, res) => {
 app.put('/api/admin/usuario/:usuario_id/permissoes', async (req, res) => {
     const { usuario_id } = req.params;
     const { assuntos_ids } = req.body;
-    const adminEmail = req.headers['x-user-email'];
+    const adminEmail = req.usuario?.email;
     const adminEmailConfig = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
 
     console.log(`📝 Atualizando permissões do usuário ${usuario_id}`);
@@ -1133,7 +1199,7 @@ app.put('/api/admin/disciplinas/:id/ativo', async (req, res) => {
     const { id } = req.params;
     const { ativo } = req.body;
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
-    const userEmail = req.headers['x-user-email'];
+    const userEmail = req.usuario?.email;
 
     if (userEmail !== adminEmail) {
         return res.status(403).json({ erro: 'Acesso negado' });
@@ -1153,7 +1219,7 @@ app.put('/api/admin/assuntos/:id/ativo', async (req, res) => {
     const { id } = req.params;
     const { ativo } = req.body;
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
-    const userEmail = req.headers['x-user-email'];
+    const userEmail = req.usuario?.email;
 
     if (userEmail !== adminEmail) {
         return res.status(403).json({ erro: 'Acesso negado' });
@@ -1253,62 +1319,16 @@ app.delete('/api/exercicios/:id', async (req, res) => {
 });
 
 // ==================== FAVORITOS ====================
-
-// Buscar favoritos do usuário
-app.get('/api/favoritos/:usuario_id', async (req, res) => {
-    const { usuario_id } = req.params;
-    try {
-        const result = await pool.query(
-            `SELECT q.*, f.data_favorito 
-             FROM favoritos_usuario f
-             JOIN questoes_base q ON f.questao_id = q.id
-             WHERE f.usuario_id = $1
-             ORDER BY f.data_favorito DESC`,
-            [usuario_id]
-        );
-        res.json({ sucesso: true, favoritos: result.rows });
-    } catch (error) {
-        console.error('Erro ao buscar favoritos:', error);
-        res.status(500).json({ erro: 'Erro ao buscar favoritos' });
-    }
-});
-
-// Adicionar favorito
-app.post('/api/favoritos', async (req, res) => {
-    const { usuario_id, questao_id } = req.body;
-    try {
-        await pool.query(
-            'INSERT INTO favoritos_usuario (usuario_id, questao_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
-            [usuario_id, questao_id]
-        );
-        res.json({ sucesso: true });
-    } catch (error) {
-        console.error('Erro ao adicionar favorito:', error);
-        res.status(500).json({ erro: 'Erro ao adicionar favorito' });
-    }
-});
-
-// Remover favorito
-app.delete('/api/favoritos/:usuario_id/:questao_id', async (req, res) => {
-    const { usuario_id, questao_id } = req.params;
-    try {
-        await pool.query(
-            'DELETE FROM favoritos_usuario WHERE usuario_id = $1 AND questao_id = $2',
-            [usuario_id, questao_id]
-        );
-        res.json({ sucesso: true });
-    } catch (error) {
-        console.error('Erro ao remover favorito:', error);
-        res.status(500).json({ erro: 'Erro ao remover favorito' });
-    }
-});
+// (as rotas de favoritos já estão definidas mais acima no arquivo - havia uma
+// duplicata inteira aqui que nunca era executada, o Express sempre usa a
+// primeira rota que casa com o caminho; removida para não confundir)
 
 // Mover assunto (subir/descer)
 app.put('/api/admin/assuntos/:id/mover', async (req, res) => {
     const { id } = req.params;
     const { direcao } = req.body;
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
-    const userEmail = req.headers['x-user-email'];
+    const userEmail = req.usuario?.email;
 
     if (userEmail !== adminEmail) {
         return res.status(403).json({ erro: 'Acesso negado' });
@@ -1396,7 +1416,7 @@ const TABELAS_BACKUP = [
 // Exportar backup completo do banco (admin) - inclui TODOS os usuários e anexos
 app.get('/api/admin/backup', async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
-    const userEmail = req.headers['x-user-email'];
+    const userEmail = req.usuario?.email;
 
     if (userEmail !== adminEmail) {
         return res.status(403).json({ sucesso: false, erro: 'Acesso negado' });
@@ -1429,7 +1449,7 @@ app.get('/api/admin/backup', async (req, res) => {
 // Restaurar backup completo do banco (admin) - APAGA TUDO e substitui pelos dados do arquivo
 app.post('/api/admin/restore', async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
-    const userEmail = req.headers['x-user-email'];
+    const userEmail = req.usuario?.email;
 
     if (userEmail !== adminEmail) {
         return res.status(403).json({ sucesso: false, erro: 'Acesso negado' });
@@ -1513,7 +1533,7 @@ app.listen(PORT, () => {
 
 app.post('/api/admin/limpar-duplicatas', async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
-    const userEmail = req.headers['x-user-email'];
+    const userEmail = req.usuario?.email;
 
     if (userEmail !== adminEmail) {
         return res.status(403).json({ erro: 'Acesso negado' });

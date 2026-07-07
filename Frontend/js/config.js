@@ -2,6 +2,35 @@
 
 const API_URL = window.location.origin;
 
+// ==================== AUTENTICAÇÃO AUTOMÁTICA NAS REQUISIÇÕES ====================
+// Em vez de editar toda chamada fetch(...) espalhada pelos arquivos .js do
+// projeto pra anexar o token, interceptamos o fetch nativo aqui uma única vez:
+// toda requisição feita para a própria API já sai com o header Authorization,
+// sem precisar mexer em mais nada.
+(function () {
+    const fetchOriginal = window.fetch;
+    window.fetch = function (input, init = {}) {
+        const token = localStorage.getItem('inss_token');
+        if (!token) return fetchOriginal(input, init);
+
+        const options = { ...init };
+        options.headers = new Headers(init.headers || {});
+        options.headers.set('Authorization', `Bearer ${token}`);
+
+        return fetchOriginal(input, options).then(response => {
+            if (response.status === 401) {
+                // Sessão expirada ou inválida - manda de volta pro login
+                localStorage.removeItem('usuario');
+                localStorage.removeItem('inss_token');
+                if (!window.location.pathname.endsWith('/') && window.location.pathname !== '/login.html') {
+                    window.location.href = '/';
+                }
+            }
+            return response;
+        });
+    };
+})();
+
 // Variáveis globais
 let usuario = null;
 let questoes = [];
