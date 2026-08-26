@@ -5,55 +5,81 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>INSS Total - Login</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@600&display=swap');
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            background:
+                radial-gradient(circle at 12% 12%, rgba(53, 208, 160, .22), transparent 30%),
+                radial-gradient(circle at 88% 16%, rgba(139, 124, 246, .24), transparent 32%),
+                linear-gradient(145deg, #07131f, #0d2636 58%, #282451);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
+            padding: 24px;
         }
         .container {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            width: 90%;
-            max-width: 450px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            background: rgba(16, 34, 49, .94);
+            color: #e8f2f8;
+            border: 1px solid #284456;
+            border-radius: 24px;
+            padding: 38px;
+            width: 100%;
+            max-width: 460px;
+            box-shadow: 0 28px 80px rgba(0,0,0,.38);
+            backdrop-filter: blur(16px);
         }
         h1 {
             text-align: center;
-            color: #2c3e50;
+            color: #f0f9ff;
+            font-family: 'Fraunces', Georgia, serif;
+            font-size: 1.65rem;
             margin-bottom: 10px;
         }
         .subtitle {
             text-align: center;
-            color: #7f8c8d;
+            color: #92aabc;
             margin-bottom: 30px;
+        }
+        .brand-mark {
+            display: grid;
+            place-items: center;
+            width: 54px;
+            height: 54px;
+            margin: 0 auto 16px;
+            border-radius: 16px;
+            background: #35d0a0;
+            color: #062319;
+            font-family: 'IBM Plex Mono', monospace;
+            font-weight: 700;
+            box-shadow: 0 12px 28px rgba(53, 208, 160, .22);
         }
         .tab-buttons {
             display: flex;
-            gap: 10px;
+            gap: 6px;
             margin-bottom: 25px;
+            padding: 5px;
+            background: #0b1b28;
+            border-radius: 12px;
         }
         .tab-btn {
             flex: 1;
             padding: 12px;
             border: none;
-            border-radius: 10px;
+            border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
-            background: #ecf0f1;
-            color: #2c3e50;
+            background: transparent;
+            color: #92aabc;
         }
         .tab-btn.active {
-            background: #27ae60;
-            color: white;
+            background: #35d0a0;
+            color: #062319;
         }
         .form-group {
             margin-bottom: 20px;
@@ -61,32 +87,42 @@
         label {
             display: block;
             margin-bottom: 5px;
-            font-weight: bold;
-            color: #2c3e50;
+            font-weight: 600;
+            color: #b8cbd8;
+            font-size: 14px;
         }
         input {
             width: 100%;
             padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
+            border: 1px solid #284456;
+            border-radius: 10px;
             font-size: 16px;
+            background: #0b1b28;
+            color: #e8f2f8;
+            outline: none;
+            transition: border-color .15s ease, box-shadow .15s ease;
+        }
+        input:focus {
+            border-color: #8b7cf6;
+            box-shadow: 0 0 0 3px rgba(139, 124, 246, .16);
         }
         button[type="submit"] {
             width: 100%;
             padding: 12px;
-            background: #3498db;
-            color: white;
+            background: linear-gradient(100deg, #35d0a0, #52bfc9);
+            color: #062319;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
         }
         button[type="submit"]:hover {
-            background: #2980b9;
+            background: linear-gradient(100deg, #20b889, #42aab5);
+            transform: translateY(-1px);
         }
         .error {
-            color: #e74c3c;
+            color: #ff7d88;
             text-align: center;
             margin-top: 15px;
             font-size: 14px;
@@ -101,8 +137,9 @@
 </head>
 <body>
     <div class="container">
-        <h1>📚 SISTEMA DE QUESTÕES</h1>
-        <div class="subtitle">Sistema de Estudos Multi-usuário</div>
+        <div class="brand-mark">IN</div>
+        <h1>INSS Total</h1>
+        <div class="subtitle">Preparação inteligente, progresso constante.</div>
         
         <div class="tab-buttons">
             <button class="tab-btn active" data-tab="login">🔐 Entrar</button>

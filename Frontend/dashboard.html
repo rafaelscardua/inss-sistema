@@ -10,18 +10,22 @@
 
 <body>
     <div class="container">
-        <div class="header">
-            <div>
-                <h1>📚 SISTEMA DE QUESTÕES - Dashboard</h1>
-                <p>Modo Aleatório | Estatísticas com Links | Multi-usuário</p>
+        <div class="header app-header">
+            <div class="brand-block">
+                <span class="brand-mark">IN</span>
+                <div>
+                    <h1>INSS Total</h1>
+                    <p>Seu espaço de preparação, prática e evolução.</p>
+                </div>
             </div>
-            <div style="display: flex; gap: 10px;">
+            <div class="header-actions">
                 <span class="user-info" id="userName">Carregando...</span>
                 <button class="logout-btn" onclick="logout()">🚪 Sair</button>
-                <div style="display: flex; gap: 8px;">
+                <div class="theme-switcher" aria-label="Escolher tema">
                     <button class="theme-btn" data-theme="light">☀️ Claro</button>
                     <button class="theme-btn" data-theme="dark">🌙 Escuro</button>
                     <button class="theme-btn" data-theme="concurso">🎯 Concurso Pro</button>
+                    <button class="theme-btn" data-theme="codex">✦ Codex Aurora</button>
                 </div>
             </div>
         </div>
@@ -40,6 +44,7 @@
 
         <!-- PLANO DE ESTUDOS -->
         <div id="tab-estudos" class="tab-content active">
+            <div class="page-intro"><div><span class="page-kicker">VISÃO GERAL</span><h2>Plano de estudos</h2><p>Acompanhe sua meta, desempenho e avance matéria por matéria.</p></div></div>
             <div class="meta-diaria-box" id="metaDiariaBox">
                 <div class="meta-diaria-topo">
                     <span class="meta-diaria-label">🎯 Meta de hoje</span>
@@ -78,6 +83,7 @@
 
         <!-- EXERCÍCIOS -->
         <div id="tab-exercicios" class="tab-content">
+            <div class="page-intro"><div><span class="page-kicker">PRÁTICA GUIADA</span><h2>Exercícios</h2><p>Escolha uma área e aprofunde o conteúdo com resolução comentada.</p></div></div>
             <div class="filtros-box">
                 <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
                     <div class="filtro-group" style="flex:1;"><label>📚 Matéria</label><select
@@ -93,6 +99,7 @@
 
         <!-- QUESTÕES -->
         <div id="tab-questoes" class="tab-content">
+            <div class="page-intro"><div><span class="page-kicker">BANCO DE QUESTÕES</span><h2>Treinar questões</h2><p>Filtre, responda e transforme seus erros em revisão direcionada.</p></div></div>
             <div class="filtros-box">
                 <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
                     <div class="filtro-group" style="flex:1;"><label>📚 Matéria</label><select
@@ -124,6 +131,7 @@
 
         <!-- FAVORITOS -->
         <div id="tab-favoritos" class="tab-content">
+            <div class="page-intro"><div><span class="page-kicker">REVISÃO RÁPIDA</span><h2>Favoritos</h2><p>Reúna as questões mais importantes para consultar quando precisar.</p></div></div>
             <div class="filtros-box">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <h3>⭐ Minhas Questões Favoritas</h3>
@@ -141,6 +149,7 @@
 
         <!-- CRONÔMETRO -->
         <div id="tab-cronometro" class="tab-content">
+            <div class="page-intro page-intro-centered"><div><span class="page-kicker">SESSÃO DE FOCO</span><h2>Pomodoro</h2><p>Estude em ciclos equilibrados e preserve sua concentração.</p></div></div>
             <div class="cronometro-box">
                 <h2>🍅 Pomodoro Timer</h2>
                 <div class="timer-display" id="timerDisplay">25:00</div>
@@ -269,7 +278,8 @@ B) Alternativa dois</pre>
         </div>
         <!-- ADICIONAR MANUAL -->
         <div id="tab-add" class="tab-content">
-            <div class="question-card">
+            <div class="page-intro"><div><span class="page-kicker">CONTEÚDO</span><h2>Adicionar questão</h2><p>Cadastre uma questão individual com alternativas e explicação.</p></div></div>
+            <div class="question-card form-card">
                 <h3>➕ Nova Questão</h3>
                 <div class="filtro-group"><label>Matéria</label><input type="text" id="novaMateria"></div>
                 <div class="filtro-group"><label>Assunto</label><input type="text" id="novoAssunto"></div>
@@ -289,6 +299,7 @@ B) Alternativa dois</pre>
 
         <!-- BACKUP -->
         <div id="tab-backup" class="tab-content">
+            <div class="page-intro"><div><span class="page-kicker">SEGURANÇA DOS DADOS</span><h2>Backup e restauração</h2><p>Exporte uma cópia íntegra ou restaure um backup validado do sistema.</p></div></div>
             <div class="backup-box">
                 <h3>💾 Backup</h3>
                 <div style="display: flex; gap: 20px; flex-wrap: wrap;">
@@ -301,6 +312,7 @@ B) Alternativa dois</pre>
 
         <!-- ESTATÍSTICAS COMPLETAS -->
         <div id="tab-stats" class="tab-content">
+            <div class="page-intro"><div><span class="page-kicker">DESEMPENHO</span><h2>Estatísticas</h2><p>Entenda seu ritmo, seus acertos e os pontos que merecem revisão.</p></div></div>
             <div class="stats-grid">
                 <div class="stat-card">
                     <h3>Total Questões</h3>
@@ -2035,7 +2047,7 @@ B) Alternativa dois</pre>
 
         function aplicarTema(theme) {
             // Remove todas as classes de tema
-            document.body.classList.remove('light-mode', 'dark-mode', 'concurso-mode');
+            document.body.classList.remove('light-mode', 'dark-mode', 'concurso-mode', 'codex-mode');
 
             // Adiciona a classe do tema selecionado
             document.body.classList.add(`${theme}-mode`);

@@ -112,10 +112,48 @@ body.concurso-mode {
     --pill-text: #E9D9C9;
 }
 
+/* Tema autoral: noite profunda, aurora verde e acento violeta. */
+body.codex-mode {
+    --bg-primary: #08131F;
+    --card-bg: #102231;
+    --header-bg: #0C1B29;
+    --header-text: #F0F9FF;
+    --text-primary: #E8F2F8;
+    --text-secondary: #92AABC;
+    --btn-primary: #35D0A0;
+    --btn-primary-hover: #20B889;
+    --btn-secondary: #8B7CF6;
+    --btn-secondary-hover: #7566E4;
+    --danger: #FF6B79;
+    --danger-hover: #E95262;
+    --warning: #F1B85B;
+    --warning-hover: #D99C3F;
+    --correct-bg: #113B32;
+    --correct-border: #35D0A0;
+    --wrong-bg: #41202A;
+    --wrong-border: #FF6B79;
+    --border-color: #223B4D;
+    --progress-bar-bg: #35D0A0;
+    --tab-active: #35D0A0;
+    --tab-active-text: #062319;
+    --tab-inactive: #142838;
+    --timer-accent: #8B7CF6;
+    --timer-track: #223049;
+    --input-bg: #0B1B28;
+    --pill-bg: rgba(53, 208, 160, 0.10);
+    --pill-text: #A9C9D9;
+    --aurora-a: rgba(53, 208, 160, 0.12);
+    --aurora-b: rgba(139, 124, 246, 0.13);
+    --shadow-card: 0 14px 34px rgba(0, 0, 0, 0.22);
+}
+
 /* ==================== BASE ==================== */
 body {
     font-family: var(--font-body);
-    background: var(--bg-primary);
+    background:
+        radial-gradient(circle at 8% 0%, var(--aurora-a, transparent) 0, transparent 34%),
+        radial-gradient(circle at 92% 12%, var(--aurora-b, transparent) 0, transparent 32%),
+        var(--bg-primary);
     color: var(--text-primary);
     transition: background 0.2s ease, color 0.2s ease;
     min-height: 100vh;
@@ -1102,6 +1140,192 @@ textarea:focus {
     font-size: 0.86em;
 }
 
+/* ==================== REFINAMENTO GLOBAL DA INTERFACE ==================== */
+.app-header {
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 14px 34px rgba(8, 20, 34, 0.18);
+}
+
+.app-header::after {
+    content: '';
+    position: absolute;
+    width: 240px;
+    height: 240px;
+    right: -90px;
+    top: -130px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.12), transparent 68%);
+    pointer-events: none;
+}
+
+.brand-block,
+.header-actions,
+.theme-switcher {
+    display: flex;
+    align-items: center;
+}
+
+.brand-block {
+    gap: 13px;
+    position: relative;
+    z-index: 1;
+}
+
+.brand-mark {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 13px;
+    background: var(--btn-primary);
+    color: var(--tab-active-text);
+    font-family: var(--font-mono);
+    font-weight: 700;
+    letter-spacing: -0.06em;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+}
+
+.header-actions {
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 1;
+}
+
+.theme-switcher {
+    gap: 6px;
+    padding: 4px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.08);
+    flex-wrap: wrap;
+}
+
+.tabs {
+    position: sticky;
+    top: 8px;
+    z-index: 30;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--card-bg) 92%, transparent);
+    box-shadow: var(--shadow-card);
+    backdrop-filter: blur(12px);
+}
+
+.tab-content.active {
+    animation: tabEnter 0.22s ease-out;
+}
+
+@keyframes tabEnter {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.page-intro {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 18px;
+    margin: 26px 2px 18px;
+}
+
+.page-intro h2 {
+    font-size: clamp(1.35rem, 2vw, 1.8rem);
+    margin: 2px 0 5px;
+}
+
+.page-intro p {
+    color: var(--text-secondary);
+    font-size: 0.92em;
+    line-height: 1.5;
+}
+
+.page-kicker {
+    color: var(--btn-primary);
+    font-family: var(--font-mono);
+    font-size: 0.7em;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+}
+
+.page-intro-centered {
+    justify-content: center;
+    text-align: center;
+}
+
+.stat-card,
+.question-card,
+.filtros-box,
+.backup-box,
+.cronometro-box,
+.materia,
+.modal-content,
+.meta-diaria-box {
+    transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.stat-card:hover,
+.question-card:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--btn-primary) 48%, var(--border-color));
+}
+
+.stat-card::before {
+    content: '';
+    display: block;
+    width: 34px;
+    height: 3px;
+    margin: 0 auto 12px;
+    border-radius: 20px;
+    background: linear-gradient(90deg, var(--btn-primary), var(--btn-secondary));
+}
+
+button:not(:disabled) {
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+button:not(:disabled):active {
+    transform: translateY(1px);
+}
+
+select,
+input,
+textarea {
+    min-height: 42px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+select:focus,
+input:focus,
+textarea:focus {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--btn-secondary) 16%, transparent);
+    outline: none;
+}
+
+.form-card {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 26px;
+}
+
+.backup-box {
+    padding: 26px;
+}
+
+body.codex-mode .header {
+    background: linear-gradient(125deg, #0C1B29 0%, #113348 58%, #302C62 115%);
+}
+
+body.codex-mode .tab-btn.active {
+    box-shadow: 0 5px 16px rgba(53, 208, 160, 0.24);
+}
+
+body.codex-mode .timer-display {
+    box-shadow: 0 0 44px rgba(139, 124, 246, 0.16);
+}
+
 /* ==================== RESPONSIVO ==================== */
 @media (max-width: 768px) {
     .container {
@@ -1137,5 +1361,30 @@ textarea:focus {
 
     .import-header {
         gap: 12px;
+    }
+
+    .app-header,
+    .header-actions {
+        align-items: stretch;
+    }
+
+    .header-actions,
+    .theme-switcher {
+        width: 100%;
+    }
+
+    .theme-switcher .theme-btn {
+        flex: 1 1 130px;
+    }
+
+    .tabs {
+        top: 4px;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: thin;
+    }
+
+    .tab-btn {
+        flex: 0 0 auto;
     }
 }
