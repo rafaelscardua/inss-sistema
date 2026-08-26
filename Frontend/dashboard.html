@@ -32,7 +32,7 @@
             <button class="tab-btn" data-tab="exercicios">📝 EXERCÍCIOS</button>
             <button class="tab-btn" data-tab="favoritos">⭐ FAVORITOS</button>
             <button class="tab-btn" data-tab="cronometro">⏱️ POMODORO</button>
-            <button class="tab-btn" data-tab="importar">📥 IMPORTAR</button>
+            <button class="tab-btn" data-tab="importar" hidden>📥 IMPORTAR</button>
             <button class="tab-btn" data-tab="add">➕ ADICIONAR</button>
             <button class="tab-btn" data-tab="backup">💾 BACKUP</button>
             <button class="tab-btn" data-tab="stats">📊 ESTATS</button>
@@ -156,7 +156,7 @@
         </div>
 
         <!-- IMPORTAÇÃO -->
-        <div id="tab-importar" class="tab-content">
+        <div id="tab-importar" class="tab-content" hidden>
             <div class="import-box">
                 <h3>📥 Importar Questões</h3>
 
@@ -532,6 +532,7 @@
 
 
             if (!checkAuth()) return;
+            await atualizarPermissoesInterface();
             await carregarQuestoes();
             await carregarRespostas();
             await carregarFavoritos();
@@ -941,11 +942,12 @@
             )].sort();
 
             // Recriar o select
-            assuntoSelect.innerHTML = '<option value="">-- Selecione --</option>';
-            assuntoSelect.innerHTML += '<option value="nova">+ Novo assunto...</option>';
+            assuntoSelect.replaceChildren();
+            assuntoSelect.add(new Option('-- Selecione --', ''));
+            assuntoSelect.add(new Option('+ Novo assunto...', 'nova'));
 
             assuntosFiltrados.forEach(assunto => {
-                assuntoSelect.innerHTML += `<option value="${assunto}">${assunto}</option>`;
+                assuntoSelect.add(new Option(assunto, assunto));
             });
         }
 

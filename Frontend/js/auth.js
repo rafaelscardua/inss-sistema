@@ -19,3 +19,21 @@ function logout() {
     localStorage.removeItem('inss_token');
     window.location.href = '/';
 }
+
+async function atualizarPermissoesInterface() {
+    try {
+        const res = await fetch('/api/me');
+        const data = await res.json();
+        if (!res.ok || !data.sucesso) return false;
+
+        usuario = data.usuario;
+        localStorage.setItem('usuario', JSON.stringify(usuario));
+        const podeImportar = usuario.isAdmin === true;
+        document.querySelector('[data-tab="importar"]')?.toggleAttribute('hidden', !podeImportar);
+        document.getElementById('tab-importar')?.toggleAttribute('hidden', !podeImportar);
+        return podeImportar;
+    } catch (error) {
+        console.error('Erro ao verificar permissões da interface:', error);
+        return false;
+    }
+}

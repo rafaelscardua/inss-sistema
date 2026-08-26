@@ -155,11 +155,235 @@ app.post('/api/login', async (req, res) => {
         if (!valido) {
             return res.status(401).json({ sucesso: false, erro: 'Email ou senha inválidos' });
         }
-        const usuarioSemSenha = { id: usuario.id, nome: usuario.nome, email: usuario.email };
+        const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+        const usuarioSemSenha = {
+            id: usuario.id,
+            nome: usuario.nome,
+            email: usuario.email,
+            isAdmin: usuario.email === adminEmail
+        };
         const token = gerarToken(usuarioSemSenha);
         res.json({ sucesso: true, usuario: usuarioSemSenha, token });
     } catch (error) {
         res.status(500).json({ sucesso: false, erro: 'Erro ao fazer login' });
+    }
+});
+
+app.get('/api/me', exigirLogin, (req, res) => {
+    const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
+    res.json({
+        sucesso: true,
+        usuario: {
+            id: req.usuario.id,
+            nome: req.usuario.nome,
+            email: req.usuario.email,
+            isAdmin: req.usuario.email === adminEmail
+        }
+    });
+});
+
+// ==================== IMPORTAÇÃO EM LOTE ====================
+
+const LIMITE_IMPORTACAO = 500;
+
+function textoObrigatorio(valor, campo, indice) {
+    if (typeof valor !== 'string' || !valor.trim()) {
+        throw new Error(`Item ${indice + 1}: campo ${campo} é obrigatório`);
+    }
+    return valor.trim();
+}
+
+function normalizarAlternativas(valor, indice) {
+    if (!valor || typeof valor !== 'object' || Array.isArray(valor)) {
+        throw new Error(`Item ${indice + 1}: alternativas inválidas`);
+    }
+    const alternativas = {};
+    for (const [chaveOriginal, texto] of Object.entries(valor)) {
+        const chave = String(chaveOriginal).trim().toUpperCase();
+        if (!/^(?:[A-E]|RESPOSTA)$/.test(chave) || typeof texto !== 'string' || !texto.trim()) {
+            throw new Error(`Item ${indice + 1}: alternativa inválida (${chave || 'sem letra'})`);
+        }
+        if (alternativas[chave]) {
+            throw new Error(`Item ${indice + 1}: alternativa repetida (${chave})`);
+        }
+        alternativas[chave] = texto.trim();
+    }
+    if (Object.keys(alternativas).length === 0) {
+        throw new Error(`Item ${indice + 1}: informe ao menos uma alternativa`);
+    }
+    return alternativas;
+}
+
+function normalizarCorreta(valor, alternativas, indice, obrigatoria) {
+    let correta = typeof valor === 'string' ? valor.trim().toUpperCase() : '';
+    if (correta === 'CORRETO' || correta === 'VERDADEIRO') correta = 'A';
+    if (correta === 'ERRADO' || correta === 'FALSO') correta = 'B';
+    if (!correta && !obrigatoria) return '';
+    if (!correta || !Object.prototype.hasOwnProperty.call(alternativas, correta)) {
+        throw new Error(`Item ${indice + 1}: resposta correta não corresponde às alternativas`);
+    }
+    return correta;
+}
+
+function validarLoteEntrada(req, res) {
+    const itens = req.body?.itens;
+    if (!Array.isArray(itens) || itens.length === 0) {
+        res.status(400).json({ sucesso: false, erro: 'Envie um lote com pelo menos um item' });
+        return null;
+    }
+    if (itens.length > LIMITE_IMPORTACAO) {
+        res.status(400).json({ sucesso: false, erro: `O limite é de ${LIMITE_IMPORTACAO} itens por lote` });
+        return null;
+    }
+    return itens;
+}
+
+async function obterOuCriarClassificacao(client, materia, assunto) {
+    const disciplina = await client.query(
+        `INSERT INTO disciplinas (nome) VALUES ($1)
+         ON CONFLICT (nome) DO UPDATE SET nome = EXCLUDED.nome
+         RETURNING id`,
+        [materia]
+    );
+    const assuntoResult = await client.query(
+        `INSERT INTO assuntos (disciplina_id, nome) VALUES ($1, $2)
+         ON CONFLICT (disciplina_id, nome) DO UPDATE SET nome = EXCLUDED.nome
+         RETURNING id`,
+        [disciplina.rows[0].id, assunto]
+    );
+    return { disciplinaId: disciplina.rows[0].id, assuntoId: assuntoResult.rows[0].id };
+}
+
+app.post('/api/importar/questoes', exigirAdmin, async (req, res) => {
+    const itens = validarLoteEntrada(req, res);
+    if (!itens) return;
+
+    let normalizados;
+    try {
+        normalizados = itens.map((item, indice) => {
+            const alternativas = normalizarAlternativas(item.alternativas, indice);
+            if (Object.keys(alternativas).length < 2) {
+                throw new Error(`Item ${indice + 1}: uma questão precisa ter ao menos duas alternativas`);
+            }
+            return {
+                indice,
+                materia: textoObrigatorio(item.materia, 'matéria', indice),
+                assunto: textoObrigatorio(item.assunto, 'assunto', indice),
+                enunciado: textoObrigatorio(item.enunciado, 'enunciado', indice),
+                alternativas,
+                correta: normalizarCorreta(item.correta, alternativas, indice, true),
+                explicacao: typeof item.explicacao === 'string' ? item.explicacao.trim() : ''
+            };
+        });
+    } catch (error) {
+        return res.status(400).json({ sucesso: false, erro: error.message });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        await client.query('LOCK TABLE questoes_base IN SHARE ROW EXCLUSIVE MODE');
+        const duplicados = [];
+        let importados = 0;
+
+        for (const item of normalizados) {
+            const existente = await client.query(
+                `SELECT id FROM questoes_base
+                  WHERE LOWER(TRIM(materia)) = LOWER($1)
+                    AND LOWER(TRIM(assunto)) = LOWER($2)
+                    AND LOWER(TRIM(enunciado)) = LOWER($3)
+                  LIMIT 1`,
+                [item.materia, item.assunto, item.enunciado]
+            );
+            if (existente.rowCount > 0) {
+                duplicados.push({ item: item.indice + 1, idExistente: existente.rows[0].id });
+                continue;
+            }
+
+            const ids = await obterOuCriarClassificacao(client, item.materia, item.assunto);
+            await client.query(
+                `INSERT INTO questoes_base
+                    (materia, assunto, enunciado, alternativas, correta, explicacao, disciplina_id, assunto_id)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+                [item.materia, item.assunto, item.enunciado, item.alternativas,
+                    item.correta, item.explicacao, ids.disciplinaId, ids.assuntoId]
+            );
+            importados++;
+        }
+
+        await client.query('COMMIT');
+        res.json({ sucesso: true, recebidos: normalizados.length, importados, duplicados });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Erro na importação de questões:', error);
+        res.status(500).json({ sucesso: false, erro: 'Nenhuma questão foi importada: ' + error.message });
+    } finally {
+        client.release();
+    }
+});
+
+app.post('/api/importar/exercicios', exigirAdmin, async (req, res) => {
+    const itens = validarLoteEntrada(req, res);
+    if (!itens) return;
+
+    let normalizados;
+    try {
+        normalizados = itens.map((item, indice) => {
+            const alternativas = normalizarAlternativas(item.alternativas, indice);
+            const dissertativa = Object.prototype.hasOwnProperty.call(alternativas, 'RESPOSTA');
+            return {
+                indice,
+                materia: textoObrigatorio(item.materia, 'matéria', indice),
+                assunto: textoObrigatorio(item.assunto, 'assunto', indice),
+                enunciado: textoObrigatorio(item.enunciado, 'enunciado', indice),
+                alternativas,
+                correta: normalizarCorreta(item.correta, alternativas, indice, !dissertativa),
+                solucao: typeof item.solucao === 'string' ? item.solucao.trim() : '',
+                explicacao: typeof item.explicacao === 'string' ? item.explicacao.trim() : ''
+            };
+        });
+    } catch (error) {
+        return res.status(400).json({ sucesso: false, erro: error.message });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        await client.query('LOCK TABLE exercicios IN SHARE ROW EXCLUSIVE MODE');
+        const duplicados = [];
+        let importados = 0;
+
+        for (const item of normalizados) {
+            const existente = await client.query(
+                `SELECT id FROM exercicios
+                  WHERE LOWER(TRIM(materia)) = LOWER($1)
+                    AND LOWER(TRIM(assunto)) = LOWER($2)
+                    AND LOWER(TRIM(enunciado)) = LOWER($3)
+                  LIMIT 1`,
+                [item.materia, item.assunto, item.enunciado]
+            );
+            if (existente.rowCount > 0) {
+                duplicados.push({ item: item.indice + 1, idExistente: existente.rows[0].id });
+                continue;
+            }
+            await client.query(
+                `INSERT INTO exercicios
+                    (materia, assunto, enunciado, alternativas, correta, solucao, explicacao)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                [item.materia, item.assunto, item.enunciado, JSON.stringify(item.alternativas),
+                    item.correta, item.solucao, item.explicacao]
+            );
+            importados++;
+        }
+
+        await client.query('COMMIT');
+        res.json({ sucesso: true, recebidos: normalizados.length, importados, duplicados });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Erro na importação de exercícios:', error);
+        res.status(500).json({ sucesso: false, erro: 'Nenhum exercício foi importado: ' + error.message });
+    } finally {
+        client.release();
     }
 });
 

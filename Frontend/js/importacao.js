@@ -14,64 +14,82 @@ function detectarQuestoes() {
 
 async function importarQuestoes() {
     const tipo = document.getElementById("tipoImportacao")?.value || "questoes";
-
-    if (tipo === 'exercicios') {
-        // ==================== IMPORTA EXERCÍCIOS ====================
-        let importados = 0;
-        for (let i = 0; i < questoesDetectadas.length; i++) {
-            let ex = questoesDetectadas[i];
-            let solucao = document.getElementById(`solucao_${i}`)?.value.trim();
-            if (solucao) ex.solucao = solucao;
-
-            try {
-                const res = await fetch(`${API_URL}/api/exercicios`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(ex)
-                });
-                const data = await res.json();
-                if (data.sucesso) importados++;
-            } catch (error) {
-                console.error('Erro ao importar exercício:', error);
-            }
-        }
-        alert(`✅ ${importados} exercícios importados!`);
-        document.getElementById("previewArea").style.display = "none";
-        document.getElementById("importTexto").value = "";
-        questoesDetectadas = [];
-        if (typeof renderizarExercicios === 'function') renderizarExercicios();
+    if (questoesDetectadas.length === 0) {
+        alert('Detecte e revise os itens antes de importar.');
         return;
     }
 
-    // ==================== IMPORTA QUESTÕES NORMAIS ====================
-    let importadas = 0;
-    for (let i = 0; i < questoesDetectadas.length; i++) {
-        let q = questoesDetectadas[i];
-        let correta = document.getElementById(`correta_${i}`)?.value.trim().toUpperCase();
-        if (correta && q.alternativas[correta]) {
-            q.correta = correta;
-            try {
-                const res = await fetch(`${API_URL}/api/questoes`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(q)
-                });
-                const data = await res.json();
-                if (data.sucesso) importadas++;
-            } catch (error) {
-                console.error('Erro ao importar questão:', error);
+    const itens = questoesDetectadas.map((item, indice) => ({ ...item }));
+    if (tipo === 'exercicios') {
+        itens.forEach((item, indice) => {
+            item.solucao = document.getElementById(`solucao_${indice}`)?.value.trim() || '';
+            const campoCorreta = document.getElementById(`correta_ex_${indice}`);
+            if (campoCorreta) {
+                let correta = campoCorreta.value.trim().toUpperCase();
+                if (correta === 'CORRETO' || correta === 'VERDADEIRO') correta = 'A';
+                if (correta === 'ERRADO' || correta === 'FALSO') correta = 'B';
+                item.correta = correta;
             }
+        });
+    } else {
+        for (let i = 0; i < itens.length; i++) {
+            let correta = document.getElementById(`correta_${i}`)?.value.trim().toUpperCase() || '';
+            if (correta === 'CORRETO' || correta === 'VERDADEIRO') correta = 'A';
+            if (correta === 'ERRADO' || correta === 'FALSO') correta = 'B';
+            if (!correta || !Object.prototype.hasOwnProperty.call(itens[i].alternativas, correta)) {
+                alert(`Resposta correta inválida no item ${i + 1}. Corrija antes de importar.`);
+                document.getElementById(`correta_${i}`)?.focus();
+                return;
+            }
+            itens[i].correta = correta;
         }
     }
-    alert(`${importadas} questões importadas!`);
-    document.getElementById("previewArea").style.display = "none";
-    document.getElementById("importTexto").value = "";
-    questoesDetectadas = [];
+
+    const botao = document.getElementById('confirmarImportacaoBtn');
+    if (botao) {
+        botao.disabled = true;
+        botao.textContent = '⏳ Importando lote...';
+    }
+
+    try {
+        const endpoint = tipo === 'exercicios' ? '/api/importar/exercicios' : '/api/importar/questoes';
+        const res = await fetch(`${API_URL}${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ itens })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.sucesso) {
+            throw new Error(data.erro || 'Falha ao importar o lote');
+        }
+
+        const qtdDuplicados = data.duplicados?.length || 0;
+        alert(`✅ Importação concluída: ${data.importados} novo(s), ${qtdDuplicados} duplicado(s) ignorado(s).`);
+        document.getElementById("previewArea").style.display = "none";
+        document.getElementById("importTexto").value = "";
+        document.getElementById("importGabarito").value = "";
+        questoesDetectadas = [];
+        if (tipo === 'exercicios' && typeof renderizarExercicios === 'function') renderizarExercicios();
+        if (tipo === 'questoes' && typeof carregarQuestoes === 'function') await carregarQuestoes();
+    } catch (error) {
+        console.error('Erro ao importar lote:', error);
+        alert(`❌ ${error.message}\n\nNenhum item foi gravado. O conteúdo foi mantido para correção.`);
+    } finally {
+        if (botao) {
+            botao.disabled = false;
+            botao.textContent = '✅ Importar';
+        }
+    }
 }
 
 function detectarQuestoesNormal() {
     const texto = document.getElementById("importTexto").value;
     const gabaritoTexto = document.getElementById("importGabarito").value;
+
+    if (!texto.trim()) {
+        alert('Cole ao menos uma questão para detectar.');
+        return;
+    }
 
     // Processa gabarito
     let gabaritoMap = new Map();
@@ -204,7 +222,7 @@ function detectarQuestoesNormal() {
 
 function detectarExercicios() {
     const texto = document.getElementById("importTexto").value;
-    const solucaoAlternativa = document.getElementById("importGabarito")?.value.trim();
+    const solucaoTexto = document.getElementById("importGabarito")?.value.trim() || '';
 
     // Pegar matéria e assunto
     const materiaSelect = document.getElementById("importMateriaSelect");
@@ -225,6 +243,17 @@ function detectarExercicios() {
         return;
     }
 
+    if (!texto.trim()) {
+        alert('Cole ao menos um exercício para detectar.');
+        return;
+    }
+
+    const solucoesPorNumero = new Map();
+    for (const linha of solucaoTexto.split('\n')) {
+        const match = linha.trim().match(/^(\d+)[\.\)\-:]\s*(.+)$/);
+        if (match) solucoesPorNumero.set(Number(match[1]), match[2].trim());
+    }
+
     const blocos = texto.split(/\n\s*\n/);
     let exerciciosTemp = [];
 
@@ -236,7 +265,10 @@ function detectarExercicios() {
         let alternativas = {};
         let solucao = "";
         let correta = "";
-        let tipo = "dissertativa"; // padrão
+        let tipo = "dissertativa";
+        let numero = exerciciosTemp.length + 1;
+        let ultimaAlternativa = null;
+        let emSolucao = false;
 
         for (let linha of linhas) {
             linha = linha.trim();
@@ -244,6 +276,8 @@ function detectarExercicios() {
             // Detecta SOLUÇÃO: se existir (opcional)
             if (linha.toUpperCase().startsWith('SOLUÇÃO:') || linha.toUpperCase().startsWith('SOLUCAO:')) {
                 solucao = linha.replace(/SOLUÇÃO:\s*/i, '').replace(/SOLUCAO:\s*/i, '');
+                emSolucao = true;
+                ultimaAlternativa = null;
                 continue;
             }
 
@@ -254,6 +288,8 @@ function detectarExercicios() {
                 let letra = matchAlt[1].toUpperCase();
                 let textoAlt = matchAlt[2];
                 alternativas[letra] = textoAlt;
+                ultimaAlternativa = letra;
+                emSolucao = false;
                 continue;
             }
 
@@ -261,24 +297,30 @@ function detectarExercicios() {
             if (linha.toUpperCase() === 'VERDADEIRO' || linha.toUpperCase() === 'V') {
                 tipo = "verdadeiro_falso";
                 alternativas = { "A": "Verdadeiro", "B": "Falso" };
+                ultimaAlternativa = null;
                 continue;
             }
             if (linha.toUpperCase() === 'FALSO' || linha.toUpperCase() === 'F') {
                 tipo = "verdadeiro_falso";
                 alternativas = { "A": "Verdadeiro", "B": "Falso" };
+                ultimaAlternativa = null;
                 continue;
             }
 
             // Detecta número da questão
             let matchNum = linha.match(/^(\d+)[\.\)]\s*(.*)/);
             if (matchNum && !enunciado) {
+                numero = Number(matchNum[1]);
                 enunciado = matchNum[2];
                 continue;
             }
 
-            // Constrói o enunciado
-            if (!enunciado) {
-                enunciado += " " + linha;
+            if (emSolucao) {
+                solucao += `${solucao ? ' ' : ''}${linha}`;
+            } else if (ultimaAlternativa) {
+                alternativas[ultimaAlternativa] += ` ${linha}`;
+            } else {
+                enunciado += `${enunciado ? ' ' : ''}${linha}`;
             }
         }
 
@@ -289,9 +331,10 @@ function detectarExercicios() {
             };
         }
 
-        // Prioridade: campo "Solução (opcional)" > linha SOLUÇÃO:
-        if (solucaoAlternativa) {
-            solucao = solucaoAlternativa;
+        // Soluções numeradas no campo separado substituem a solução embutida.
+        if (solucoesPorNumero.has(numero)) solucao = solucoesPorNumero.get(numero);
+        if (!solucoesPorNumero.size && blocos.filter(b => b.trim()).length === 1 && solucaoTexto) {
+            solucao = solucaoTexto;
         }
 
         // Determina alternativa correta (apenas para múltipla escolha)
@@ -306,9 +349,9 @@ function detectarExercicios() {
                 }
             }
         } else if (tipo === "verdadeiro_falso") {
-            if (solucao.toUpperCase().includes('VERDADEIRO') || solucao.toUpperCase().includes('V')) {
+            if (/\b(VERDADEIRO|CORRETO)\b/i.test(solucao)) {
                 correta = "A";
-            } else if (solucao.toUpperCase().includes('FALSO') || solucao.toUpperCase().includes('F')) {
+            } else if (/\b(FALSO|ERRADO)\b/i.test(solucao)) {
                 correta = "B";
             }
         }
@@ -320,7 +363,7 @@ function detectarExercicios() {
                 enunciado: enunciado,
                 alternativas: alternativas,
                 correta: correta || (tipo === "dissertativa" ? "RESPOSTA" : ""),
-                solucao: solucao || 'Solução não fornecida',
+                solucao: solucao,
                 tipo: tipo  // Guarda o tipo do exercício
             });
         }
@@ -347,11 +390,16 @@ function mostrarPreviewExercicios() {
     previewList.innerHTML = questoesDetectadas.map((ex, idx) => `
         <div class="preview-item">
             <strong>Exercício ${idx + 1}</strong><br>
-            <strong>Enunciado:</strong> ${ex.enunciado.substring(0, 200)}${ex.enunciado.length > 200 ? '...' : ''}<br>
-            <strong>Alternativas:</strong> ${Object.entries(ex.alternativas).map(([k, v]) => `${k}) ${v.substring(0, 50)}`).join(' | ')}<br>
+            <strong>Enunciado:</strong> ${escapeHtml(ex.enunciado.substring(0, 200))}${ex.enunciado.length > 200 ? '...' : ''}<br>
+            <strong>Alternativas:</strong> ${Object.entries(ex.alternativas).map(([k, v]) => `${escapeHtml(k)}) ${escapeHtml(v.substring(0, 50))}`).join(' | ')}<br>
+            ${Object.prototype.hasOwnProperty.call(ex.alternativas, 'RESPOSTA') ? '' : `
+            <div class="filtro-group" style="margin-top:10px;">
+                <label>✅ Resposta Correta:</label>
+                <input type="text" id="correta_ex_${idx}" value="${escapeHtml(ex.correta || '')}" placeholder="A/B/C/D/E">
+            </div>`}
             <div class="filtro-group" style="margin-top:10px;">
                 <label>✏️ Solução (multilinha):</label><br>
-                <textarea id="solucao_${idx}" rows="3" style="width:100%;">${ex.solucao.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
+                <textarea id="solucao_${idx}" rows="3" style="width:100%;">${escapeHtml(ex.solucao || '')}</textarea>
             </div>
         </div>
     `).join('');
@@ -375,15 +423,25 @@ function mostrarPreview() {
     previewList.innerHTML = questoesDetectadas.map((q, idx) => `
         <div class="preview-item">
             <strong>Questão ${idx + 1}</strong><br>
-            <strong>Enunciado:</strong> ${q.enunciado.substring(0, 200)}${q.enunciado.length > 200 ? '...' : ''}<br>
-            <strong>Alternativas:</strong> ${Object.entries(q.alternativas).map(([k, v]) => `${k}) ${v.substring(0, 50)}`).join(' | ')}<br>
+            <strong>Enunciado:</strong> ${escapeHtml(q.enunciado.substring(0, 200))}${q.enunciado.length > 200 ? '...' : ''}<br>
+            <strong>Alternativas:</strong> ${Object.entries(q.alternativas).map(([k, v]) => `${escapeHtml(k)}) ${escapeHtml(v.substring(0, 50))}`).join(' | ')}<br>
             <div class="filtro-group" style="margin-top:10px;">
                 <label>✅ Resposta Correta:</label>
-                <input type="text" id="correta_${idx}" placeholder="A/B/C/D/E ou CORRETO/ERRADO" value="${q.correta || ''}" style="width:150px;">
+                <input type="text" id="correta_${idx}" placeholder="A/B/C/D/E ou CORRETO/ERRADO" value="${escapeHtml(q.correta || '')}" style="width:150px;">
             </div>
         </div>
     `).join('');
 
     previewArea.style.display = "block";
+}
+
+function escapeHtml(valor) {
+    return String(valor ?? '').replace(/[&<>"']/g, caractere => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    })[caractere]);
 }
 
