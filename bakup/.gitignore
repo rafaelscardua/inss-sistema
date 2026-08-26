@@ -1,0 +1,4 @@
+# Mantém esta pasta no repositório, mas nunca versiona backups reais.
+# Os arquivos exportados contêm dados sensíveis do sistema.
+*
+!.gitignore
