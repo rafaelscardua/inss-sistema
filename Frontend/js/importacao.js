@@ -445,3 +445,17 @@ function escapeHtml(valor) {
     })[caractere]);
 }
 
+function abrirAjudaImportacao() {
+    const modal = document.getElementById('ajudaImportacaoModal');
+    if (!modal) return;
+    modal.hidden = false;
+    document.getElementById('fecharAjudaImportacao')?.focus();
+}
+
+function fecharAjudaImportacao() {
+    const modal = document.getElementById('ajudaImportacaoModal');
+    if (!modal) return;
+    modal.hidden = true;
+    document.getElementById('abrirAjudaImportacao')?.focus();
+}
+

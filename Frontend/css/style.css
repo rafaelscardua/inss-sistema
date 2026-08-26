@@ -917,6 +917,191 @@ textarea:focus {
     cursor: not-allowed;
 }
 
+/* ==================== IMPORTAÇÃO GUIADA ==================== */
+.import-panel {
+    padding: 26px;
+}
+
+.import-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    padding-bottom: 18px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.import-header h3 {
+    margin-bottom: 5px;
+    font-size: 1.2em;
+}
+
+.import-header p,
+.import-field-hint,
+.import-actions span {
+    color: var(--text-secondary);
+    font-size: 0.86em;
+    line-height: 1.5;
+}
+
+.import-help-btn,
+.import-help-close {
+    flex: 0 0 auto;
+    border: 1px solid var(--btn-secondary);
+    background: transparent;
+    color: var(--btn-secondary);
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.import-help-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 1.15em;
+}
+
+.import-help-btn:hover {
+    background: var(--btn-secondary);
+    color: white;
+}
+
+.import-type-field {
+    max-width: 520px;
+}
+
+.import-classification-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.import-field-hint {
+    margin: -2px 0 8px;
+}
+
+.import-code-input {
+    min-height: 190px;
+    font-family: var(--font-mono);
+    font-size: 0.88em;
+    line-height: 1.65;
+    resize: vertical;
+}
+
+.import-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-top: 4px;
+}
+
+.import-actions .btn-import {
+    margin: 0;
+}
+
+.import-help-modal[hidden] {
+    display: none;
+}
+
+.import-help-content {
+    max-width: 760px;
+    padding: 28px;
+}
+
+.import-help-content .modal-header {
+    align-items: flex-start;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 16px;
+}
+
+.import-help-kicker {
+    display: block;
+    color: var(--btn-primary);
+    font-family: var(--font-mono);
+    font-size: 0.72em;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    margin-bottom: 5px;
+}
+
+.import-help-close {
+    width: 36px;
+    height: 36px;
+    border-color: var(--border-color);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 1.4em;
+}
+
+.import-help-steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.import-help-steps div {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 12px;
+    border-radius: 10px;
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    font-size: 0.84em;
+    line-height: 1.4;
+}
+
+.import-help-steps strong {
+    display: grid;
+    place-items: center;
+    flex: 0 0 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--btn-primary);
+    color: white;
+    font-family: var(--font-mono);
+}
+
+.import-help-section {
+    margin-top: 18px;
+}
+
+.import-help-section h4 {
+    margin-bottom: 8px;
+}
+
+.import-help-section pre {
+    white-space: pre-wrap;
+    padding: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 0.82em;
+    line-height: 1.55;
+}
+
+.import-help-section p {
+    color: var(--text-secondary);
+    font-size: 0.86em;
+    line-height: 1.5;
+    margin-top: 8px;
+}
+
+.import-help-note {
+    margin-top: 20px;
+    padding: 12px 14px;
+    border-left: 3px solid var(--btn-primary);
+    border-radius: 0 8px 8px 0;
+    background: var(--correct-bg);
+    color: var(--text-primary);
+    font-size: 0.86em;
+}
+
 /* ==================== RESPONSIVO ==================== */
 @media (max-width: 768px) {
     .container {
@@ -938,5 +1123,19 @@ textarea:focus {
         position: static;
         justify-content: flex-end;
         margin-bottom: 10px;
+    }
+
+    .import-panel,
+    .import-help-content {
+        padding: 18px;
+    }
+
+    .import-classification-grid,
+    .import-help-steps {
+        grid-template-columns: 1fr;
+    }
+
+    .import-header {
+        gap: 12px;
     }
 }

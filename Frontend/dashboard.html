@@ -157,10 +157,17 @@
 
         <!-- IMPORTAÇÃO -->
         <div id="tab-importar" class="tab-content" hidden>
-            <div class="import-box">
-                <h3>📥 Importar Questões</h3>
+            <div class="import-box import-panel">
+                <div class="import-header">
+                    <div>
+                        <h3>📥 Importar questões e exercícios</h3>
+                        <p>Escolha a classificação, cole o conteúdo e revise a prévia antes de importar.</p>
+                    </div>
+                    <button type="button" class="import-help-btn" id="abrirAjudaImportacao"
+                        aria-label="Consultar instruções de importação" title="Como importar corretamente?">?</button>
+                </div>
 
-                <div class="filtro-group">
+                <div class="filtro-group import-type-field">
                     <label>📋 Tipo de Importação</label>
                     <select id="tipoImportacao" onchange="toggleTipoImportacao()">
                         <option value="questoes">📝 Questões (com gabarito)</option>
@@ -168,29 +175,32 @@
                     </select>
                 </div>
 
-                <div class="filtro-group">
-                    <label>📚 Matéria padrão</label>
-                    <select id="importMateriaSelect" onchange="toggleMateriaInput(); carregarAssuntosImportacao()">
-                        <option value="">-- Selecione --</option>
-                        <option value="nova">+ Nova matéria...</option>
-                    </select>
-                    <input type="text" id="importMateriaNova" placeholder="Digite nova matéria"
-                        style="display:none; margin-top:5px;">
+                <div class="import-classification-grid">
+                    <div class="filtro-group">
+                        <label>📚 Matéria padrão</label>
+                        <select id="importMateriaSelect" onchange="toggleMateriaInput(); carregarAssuntosImportacao()">
+                            <option value="">-- Selecione --</option>
+                            <option value="nova">+ Nova matéria...</option>
+                        </select>
+                        <input type="text" id="importMateriaNova" placeholder="Digite nova matéria"
+                            style="display:none; margin-top:5px;">
+                    </div>
+
+                    <div class="filtro-group">
+                        <label>📌 Assunto padrão</label>
+                        <select id="importAssuntoSelect" onchange="toggleAssuntoInput()">
+                            <option value="">-- Selecione --</option>
+                            <option value="nova">+ Novo assunto...</option>
+                        </select>
+                        <input type="text" id="importAssuntoNova" placeholder="Digite novo assunto"
+                            style="display:none; margin-top:5px;">
+                    </div>
                 </div>
 
                 <div class="filtro-group">
-                    <label>📌 Assunto padrão</label>
-                    <select id="importAssuntoSelect" onchange="toggleAssuntoInput()">
-                        <option value="">-- Selecione --</option>
-                        <option value="nova">+ Novo assunto...</option>
-                    </select>
-                    <input type="text" id="importAssuntoNova" placeholder="Digite novo assunto"
-                        style="display:none; margin-top:5px;">
-                </div>
-
-                <div class="filtro-group">
-                    <label>📋 Questões (cole aqui)</label>
-                    <textarea id="importTexto" rows="10" placeholder="Cole as questões..."></textarea>
+                    <label for="importTexto">📋 Questões (cole aqui)</label>
+                    <p class="import-field-hint" id="dicaTextoImportacao">Separe cada questão com uma linha em branco.</p>
+                    <textarea class="import-code-input" id="importTexto" rows="10" placeholder="1. Enunciado da questão&#10;A) Primeira alternativa&#10;B) Segunda alternativa&#10;&#10;2. Próxima questão..."></textarea>
                 </div>
 
                 <div class="filtro-group">
@@ -198,13 +208,62 @@
                     <textarea id="importGabarito" rows="4" placeholder="1. B&#10;2. D&#10;3. CORRETO"></textarea>
                 </div>
 
-                <button class="btn-import" id="detectarQuestoesBtn">🔍 Detectar</button>
+                <div class="import-actions">
+                    <button class="btn-import" id="detectarQuestoesBtn">🔍 Detectar e revisar</button>
+                    <span>Você poderá conferir cada item antes de gravar.</span>
+                </div>
             </div>
 
             <div id="previewArea" style="display:none;">
                 <div class="import-box">
                     <div id="previewList"></div>
                     <button class="btn-add-questao" id="confirmarImportacaoBtn">✅ Importar</button>
+                </div>
+            </div>
+
+            <div class="modal import-help-modal" id="ajudaImportacaoModal" hidden role="dialog"
+                aria-modal="true" aria-labelledby="tituloAjudaImportacao">
+                <div class="modal-content import-help-content">
+                    <div class="modal-header">
+                        <div>
+                            <span class="import-help-kicker">GUIA RÁPIDO</span>
+                            <h3 id="tituloAjudaImportacao">Como importar corretamente</h3>
+                        </div>
+                        <button type="button" class="import-help-close" id="fecharAjudaImportacao"
+                            aria-label="Fechar instruções">×</button>
+                    </div>
+
+                    <div class="import-help-steps">
+                        <div><strong>1</strong><span>Selecione o tipo, a matéria e o assunto.</span></div>
+                        <div><strong>2</strong><span>Cole os itens separados por uma linha em branco.</span></div>
+                        <div><strong>3</strong><span>Clique em “Detectar e revisar”, confira e importe.</span></div>
+                    </div>
+
+                    <section class="import-help-section">
+                        <h4>Exemplo de questões</h4>
+                        <pre>1. Qual é a capital do Brasil?
+A) São Paulo
+B) Brasília
+C) Salvador
+
+2. A Constituição é a lei maior do país.
+A) Certo
+B) Errado</pre>
+                        <p><strong>Gabarito:</strong> use uma resposta por linha: <code>1. B</code> e <code>2. CORRETO</code>.</p>
+                    </section>
+
+                    <section class="import-help-section">
+                        <h4>Exemplo de exercícios</h4>
+                        <pre>1. Explique o princípio da legalidade.
+SOLUÇÃO: A Administração só pode agir conforme a lei.
+
+2. Marque a alternativa correta.
+A) Alternativa um
+B) Alternativa dois</pre>
+                        <p>Para várias soluções no campo separado, use <code>1. texto da solução</code>, <code>2. texto da solução</code>.</p>
+                    </section>
+
+                    <div class="import-help-note">O sistema ignora duplicados e não grava nenhum item se o lote apresentar erro.</div>
                 </div>
             </div>
         </div>
@@ -619,6 +678,16 @@
             document.getElementById("salvarNovaQuestao")?.addEventListener("click", adicionarNovaQuestao);
             document.getElementById("detectarQuestoesBtn")?.addEventListener("click", detectarQuestoes);
             document.getElementById("confirmarImportacaoBtn")?.addEventListener("click", importarQuestoes);
+            document.getElementById("abrirAjudaImportacao")?.addEventListener("click", abrirAjudaImportacao);
+            document.getElementById("fecharAjudaImportacao")?.addEventListener("click", fecharAjudaImportacao);
+            document.getElementById("ajudaImportacaoModal")?.addEventListener("click", (event) => {
+                if (event.target.id === "ajudaImportacaoModal") fecharAjudaImportacao();
+            });
+            document.addEventListener("keydown", (event) => {
+                if (event.key === "Escape" && !document.getElementById("ajudaImportacaoModal")?.hidden) {
+                    fecharAjudaImportacao();
+                }
+            });
             document.getElementById("exportarDadosBtn")?.addEventListener("click", exportarBackup);
             document.getElementById("importarDadosBtn")?.addEventListener("click", () => document.getElementById("arquivoRestore").click());
             document.getElementById("arquivoRestore")?.addEventListener("change", (e) => { if (e.target.files[0]) importarBackup(e.target.files[0]); });
@@ -954,13 +1023,19 @@
         function toggleTipoImportacao() {
             const tipo = document.getElementById("tipoImportacao").value;
             const labelGabarito = document.querySelector("#importGabarito")?.closest('.filtro-group');
+            const labelTexto = document.querySelector('label[for="importTexto"]') || document.getElementById("importTexto")?.previousElementSibling?.previousElementSibling;
+            const dicaTexto = document.getElementById("dicaTextoImportacao");
             if (labelGabarito) {
                 if (tipo === 'exercicios') {
                     labelGabarito.querySelector('label').innerHTML = '📖 Solução (opcional)';
                     document.getElementById("importGabarito").placeholder = "1. A - Backup é cópia de segurança\n2. B - Firewall filtra tráfego";
+                    if (labelTexto?.tagName === 'LABEL') labelTexto.innerHTML = '📋 Exercícios (cole aqui)';
+                    if (dicaTexto) dicaTexto.textContent = 'Separe cada exercício com uma linha em branco. Você pode incluir uma linha iniciada por SOLUÇÃO:';
                 } else {
                     labelGabarito.querySelector('label').innerHTML = '📋 Gabarito (opcional)';
                     document.getElementById("importGabarito").placeholder = "1. B\n2. D\n3. CORRETO";
+                    if (labelTexto?.tagName === 'LABEL') labelTexto.innerHTML = '📋 Questões (cole aqui)';
+                    if (dicaTexto) dicaTexto.textContent = 'Separe cada questão com uma linha em branco.';
                 }
             }
         }
