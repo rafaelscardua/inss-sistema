@@ -113,10 +113,59 @@ async function initDatabase() {
     await client.query(`
         ALTER TABLE questoes_base ADD COLUMN IF NOT EXISTS assunto_id INTEGER REFERENCES assuntos(id)
     `);
-    ;
 
+    // Colunas usadas pelas funcionalidades atuais
+    await client.query(`
+        ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS meta_diaria INTEGER DEFAULT 20
+    `);
+    await client.query(`
+        ALTER TABLE assuntos ADD COLUMN IF NOT EXISTS progresso INTEGER DEFAULT 0
+    `);
+    await client.query(`
+        ALTER TABLE assuntos ADD COLUMN IF NOT EXISTS status INTEGER DEFAULT 0
+    `);
 
-
+    // Tabelas complementares. Mantê-las no inicializador garante que uma
+    // instalação nova tenha o mesmo schema esperado pelo backup completo.
+    await client.query(`
+        CREATE TABLE IF NOT EXISTS exercicios (
+            id SERIAL PRIMARY KEY,
+            materia VARCHAR(100) NOT NULL,
+            assunto VARCHAR(100) NOT NULL,
+            enunciado TEXT NOT NULL,
+            alternativas JSONB NOT NULL,
+            correta VARCHAR(50) NOT NULL DEFAULT '',
+            solucao TEXT,
+            explicacao TEXT,
+            criada_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+    await client.query(`
+        CREATE TABLE IF NOT EXISTS favoritos_usuario (
+            id SERIAL PRIMARY KEY,
+            usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+            questao_id INTEGER NOT NULL REFERENCES questoes_base(id) ON DELETE CASCADE,
+            UNIQUE(usuario_id, questao_id)
+        )
+    `);
+    await client.query(`
+        CREATE TABLE IF NOT EXISTS usuario_assuntos (
+            id SERIAL PRIMARY KEY,
+            usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+            assunto_id INTEGER NOT NULL REFERENCES assuntos(id) ON DELETE CASCADE,
+            UNIQUE(usuario_id, assunto_id)
+        )
+    `);
+    await client.query(`
+        CREATE TABLE IF NOT EXISTS progresso_usuario (
+            id SERIAL PRIMARY KEY,
+            usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+            materia VARCHAR(100) NOT NULL,
+            topico VARCHAR(100) NOT NULL,
+            status INTEGER DEFAULT 0,
+            UNIQUE(usuario_id, materia, topico)
+        )
+    `);
 
     console.log('✅ Banco de dados inicializado com sucesso!');
   } catch (error) {

@@ -2,8 +2,6 @@
 // Faz backup/restore direto no servidor (PostgreSQL), não mais em memória do navegador.
 // Só o admin pode exportar ou restaurar.
 
-const ADMIN_EMAIL_BACKUP = 'rafaelscardua@gmail.com';
-
 function getUsuarioLogado() {
     const usuarioSalvo = localStorage.getItem('usuario');
     return usuarioSalvo ? JSON.parse(usuarioSalvo) : null;
@@ -11,17 +9,17 @@ function getUsuarioLogado() {
 
 async function exportarBackup() {
     const usuarioAtual = getUsuarioLogado();
-    if (!usuarioAtual || usuarioAtual.email !== ADMIN_EMAIL_BACKUP) {
-        alert("❌ Apenas o administrador pode exportar backups.");
+    if (!usuarioAtual) {
+        alert("❌ Faça login novamente para exportar o backup.");
         return;
     }
 
     try {
-        const btn = document.getElementById("btnExportarBackup");
+        const btn = document.getElementById("exportarDadosBtn");
         if (btn) { btn.disabled = true; btn.textContent = "⏳ Gerando backup..."; }
 
         const res = await fetch(`${API_URL}/api/admin/backup`, {
-            headers: { 'x-user-email': usuarioAtual.email }
+            headers: { 'Accept': 'application/json' }
         });
         const data = await res.json();
 
@@ -43,15 +41,15 @@ async function exportarBackup() {
         console.error(e);
         alert("❌ Erro ao exportar backup!");
     } finally {
-        const btn = document.getElementById("btnExportarBackup");
+        const btn = document.getElementById("exportarDadosBtn");
         if (btn) { btn.disabled = false; btn.textContent = "💾 Exportar Backup"; }
     }
 }
 
 function importarBackup(file) {
     const usuarioAtual = getUsuarioLogado();
-    if (!usuarioAtual || usuarioAtual.email !== ADMIN_EMAIL_BACKUP) {
-        alert("❌ Apenas o administrador pode restaurar backups.");
+    if (!usuarioAtual) {
+        alert("❌ Faça login novamente para restaurar o backup.");
         return;
     }
 
@@ -65,8 +63,8 @@ function importarBackup(file) {
             return;
         }
 
-        if (!backup.tabelas) {
-            alert("❌ Este arquivo não parece ser um backup deste sistema.");
+        if (backup.versao !== 3 || !backup.tabelas || !backup.manifesto || !backup.checksum) {
+            alert("❌ Backup inválido ou de uma versão antiga incompatível.");
             return;
         }
 
@@ -82,7 +80,7 @@ function importarBackup(file) {
         try {
             const res = await fetch(`${API_URL}/api/admin/restore`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-user-email': usuarioAtual.email },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ backup })
             });
             const data = await res.json();

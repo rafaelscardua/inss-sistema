@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { pool, initDatabase } = require('./db');
 require('dotenv').config();
 
@@ -165,7 +166,7 @@ app.post('/api/login', async (req, res) => {
 // ==================== ROTAS DE QUESTÕES ====================
 
 // Listar questões
-app.get('/api/questoes', async (req, res) => {
+app.get('/api/questoes', exigirLogin, async (req, res) => {
     const { materia, assunto } = req.query;
     let query = 'SELECT * FROM questoes_base';
     let params = [];
@@ -194,7 +195,7 @@ app.get('/api/questoes', async (req, res) => {
 
 
 // Criar nova questão (POST) - COM CRIAÇÃO AUTOMÁTICA DE DISCIPLINA E ASSUNTO
-app.post('/api/questoes', async (req, res) => {
+app.post('/api/questoes', exigirAdmin, async (req, res) => {
     const { materia, assunto, enunciado, alternativas, correta, explicacao } = req.body;
 
     try {
@@ -252,7 +253,7 @@ app.post('/api/questoes', async (req, res) => {
 // ==================== ROTAS DE PROGRESSO DOS ASSUNTOS ====================
 
 // Atualizar progresso do assunto
-app.put('/api/assuntos/:id/progresso', async (req, res) => {
+app.put('/api/assuntos/:id/progresso', exigirAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const { progresso } = req.body;
@@ -277,7 +278,7 @@ app.put('/api/assuntos/:id/progresso', async (req, res) => {
 });
 
 // Atualizar status do assunto
-app.put('/api/assuntos/:id/status', async (req, res) => {
+app.put('/api/assuntos/:id/status', exigirAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
@@ -354,7 +355,7 @@ app.delete('/api/favoritos/:usuario_id/:questao_id', exigirLogin, async (req, re
 // ==================== ROTAS DE ANEXOS ====================
 
 // 1º - DOWNLOAD (rota específica - tem que vir PRIMEIRO!)
-app.get('/api/anexos/download/:id', async (req, res) => {
+app.get('/api/anexos/download/:id', exigirLogin, async (req, res) => {
     const { id } = req.params;
     try {
         const result = await pool.query('SELECT * FROM anexos_topico WHERE id = $1', [id]);
@@ -375,7 +376,7 @@ app.get('/api/anexos/download/:id', async (req, res) => {
 });
 
 // 2º - LISTAR todos (admin)
-app.get('/api/anexos/todos', async (req, res) => {
+app.get('/api/anexos/todos', exigirAdmin, async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
     const userEmail = req.usuario?.email;
 
@@ -392,7 +393,7 @@ app.get('/api/anexos/todos', async (req, res) => {
 });
 
 // 3º - LISTAR anexos de um tópico (rota com parâmetros genéricos - vem por último!)
-app.get('/api/anexos/:materia/:topico', async (req, res) => {
+app.get('/api/anexos/:materia/:topico', exigirLogin, async (req, res) => {
     const { materia, topico } = req.params;
     try {
         const result = await pool.query(
@@ -406,7 +407,7 @@ app.get('/api/anexos/:materia/:topico', async (req, res) => {
 });
 
 // 4º - UPLOAD (POST)
-app.post('/api/anexos/upload', async (req, res) => {
+app.post('/api/anexos/upload', exigirAdmin, async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
     const userEmail = req.usuario?.email;
 
@@ -430,7 +431,7 @@ app.post('/api/anexos/upload', async (req, res) => {
 });
 
 // 5º - EXCLUIR (DELETE)
-app.delete('/api/anexos/:id', async (req, res) => {
+app.delete('/api/anexos/:id', exigirAdmin, async (req, res) => {
     const { id } = req.params;
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
     const userEmail = req.usuario?.email;
@@ -577,7 +578,7 @@ async function isAdmin(email) {
 }
 
 // Listar todos os usuários (apenas admin)
-app.get('/api/admin/usuarios', async (req, res) => {
+app.get('/api/admin/usuarios', exigirAdmin, async (req, res) => {
     try {
         const userEmail = req.usuario?.email;
         if (!await isAdmin(userEmail)) {
@@ -594,7 +595,7 @@ app.get('/api/admin/usuarios', async (req, res) => {
 });
 
 // Estatísticas detalhadas de um usuário específico (apenas admin)
-app.get('/api/admin/estatisticas/:usuario_id', async (req, res) => {
+app.get('/api/admin/estatisticas/:usuario_id', exigirAdmin, async (req, res) => {
     const { usuario_id } = req.params;
     try {
         const userEmail = req.usuario?.email;
@@ -637,7 +638,7 @@ app.get('/api/admin/estatisticas/:usuario_id', async (req, res) => {
 });
 
 // Excluir usuário (apenas ADMIN)
-app.delete('/api/admin/excluir-usuario/:id', async (req, res) => {
+app.delete('/api/admin/excluir-usuario/:id', exigirAdmin, async (req, res) => {
     const { id } = req.params;
     const { senha } = req.body;
     const adminEmail = req.usuario?.email;
@@ -679,7 +680,7 @@ app.delete('/api/admin/excluir-usuario/:id', async (req, res) => {
 
 
 // Criar tabela progresso_usuario (se não existir)
-app.post('/api/admin/criar-tabela-progresso', async (req, res) => {
+app.post('/api/admin/criar-tabela-progresso', exigirAdmin, async (req, res) => {
     try {
         await pool.query(`
             CREATE TABLE IF NOT EXISTS progresso_usuario (
@@ -700,7 +701,7 @@ app.post('/api/admin/criar-tabela-progresso', async (req, res) => {
 
 
 // Deletar resposta de um usuário para uma questão específica (mantém a questão)
-app.delete('/api/respostas/usuario/:usuarioId/questao/:questaoId', async (req, res) => {
+app.delete('/api/respostas/usuario/:usuarioId/questao/:questaoId', exigirAdmin, async (req, res) => {
     const { usuarioId, questaoId } = req.params;
     try {
         await pool.query(
@@ -717,7 +718,7 @@ app.delete('/api/respostas/usuario/:usuarioId/questao/:questaoId', async (req, r
 // ==================== EXCLUIR QUESTÃO ====================
 
 // Excluir questão (DELETE)
-app.delete('/api/questoes/:id', async (req, res) => {
+app.delete('/api/questoes/:id', exigirAdmin, async (req, res) => {
     const { id } = req.params;
     console.log("Excluindo questão:", id);
     try {
@@ -734,7 +735,7 @@ app.delete('/api/questoes/:id', async (req, res) => {
 
 
 // Atualizar questão (PUT)
-app.put('/api/questoes/:id', async (req, res) => {
+app.put('/api/questoes/:id', exigirAdmin, async (req, res) => {
     const { id } = req.params;
     const { materia, assunto, enunciado, alternativas, correta, explicacao, disciplina_id, assunto_id } = req.body;
     try {
@@ -756,7 +757,7 @@ app.put('/api/questoes/:id', async (req, res) => {
 
 
 // Listar todas as disciplinas com seus assuntos
-app.get('/api/admin/disciplinas', async (req, res) => {
+app.get('/api/admin/disciplinas', exigirAdmin, async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
     const userEmail = req.usuario?.email;
 
@@ -789,7 +790,7 @@ app.get('/api/admin/disciplinas', async (req, res) => {
 });
 
 // Criar disciplina
-app.post('/api/admin/disciplinas', async (req, res) => {
+app.post('/api/admin/disciplinas', exigirAdmin, async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
     const userEmail = req.usuario?.email;
 
@@ -810,7 +811,7 @@ app.post('/api/admin/disciplinas', async (req, res) => {
 });
 
 // Editar disciplina
-app.put('/api/admin/disciplinas/:id', async (req, res) => {
+app.put('/api/admin/disciplinas/:id', exigirAdmin, async (req, res) => {
     const { id } = req.params;
     const { nome } = req.body;
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
@@ -829,7 +830,7 @@ app.put('/api/admin/disciplinas/:id', async (req, res) => {
 });
 
 // Excluir disciplina
-app.delete('/api/admin/disciplinas/:id', async (req, res) => {
+app.delete('/api/admin/disciplinas/:id', exigirAdmin, async (req, res) => {
     const { id } = req.params;
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
     const userEmail = req.usuario?.email;
@@ -847,7 +848,7 @@ app.delete('/api/admin/disciplinas/:id', async (req, res) => {
 });
 
 // Criar assunto
-app.post('/api/admin/assuntos', async (req, res) => {
+app.post('/api/admin/assuntos', exigirAdmin, async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
     const userEmail = req.usuario?.email;
 
@@ -872,7 +873,7 @@ app.post('/api/admin/assuntos', async (req, res) => {
 
 // Editar assunto
 // Editar assunto
-app.put('/api/admin/assuntos/:id', async (req, res) => {
+app.put('/api/admin/assuntos/:id', exigirAdmin, async (req, res) => {
     const { id } = req.params;
     const { nome } = req.body;
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
@@ -916,7 +917,7 @@ app.put('/api/admin/assuntos/:id', async (req, res) => {
 });
 
 // Excluir assunto
-app.delete('/api/admin/assuntos/:id', async (req, res) => {
+app.delete('/api/admin/assuntos/:id', exigirAdmin, async (req, res) => {
     const { id } = req.params;
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
     const userEmail = req.usuario?.email;
@@ -934,7 +935,7 @@ app.delete('/api/admin/assuntos/:id', async (req, res) => {
 });
 
 // Listar todos os assuntos (admin)
-app.get('/api/admin/assuntos', async (req, res) => {
+app.get('/api/admin/assuntos', exigirAdmin, async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
     const userEmail = req.usuario?.email;
 
@@ -1116,7 +1117,7 @@ app.get('/api/usuario/assuntos/:usuario_id', exigirLogin, async (req, res) => {
 });
 
 // Admin: Listar permissões de um usuário
-app.get('/api/admin/usuario/:usuario_id/permissoes', async (req, res) => {
+app.get('/api/admin/usuario/:usuario_id/permissoes', exigirAdmin, async (req, res) => {
     const { usuario_id } = req.params;
     const adminEmail = req.usuario?.email;
     const adminEmailConfig = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
@@ -1151,7 +1152,7 @@ app.get('/api/admin/usuario/:usuario_id/permissoes', async (req, res) => {
 });
 
 // Admin: Atualizar permissões de um usuário
-app.put('/api/admin/usuario/:usuario_id/permissoes', async (req, res) => {
+app.put('/api/admin/usuario/:usuario_id/permissoes', exigirAdmin, async (req, res) => {
     const { usuario_id } = req.params;
     const { assuntos_ids } = req.body;
     const adminEmail = req.usuario?.email;
@@ -1195,7 +1196,7 @@ app.put('/api/admin/usuario/:usuario_id/permissoes', async (req, res) => {
 // ==================== ROTAS PARA ATIVAR/DESATIVAR ====================
 
 // Ativar/desativar disciplina
-app.put('/api/admin/disciplinas/:id/ativo', async (req, res) => {
+app.put('/api/admin/disciplinas/:id/ativo', exigirAdmin, async (req, res) => {
     const { id } = req.params;
     const { ativo } = req.body;
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
@@ -1215,7 +1216,7 @@ app.put('/api/admin/disciplinas/:id/ativo', async (req, res) => {
 });
 
 // Ativar/desativar assunto
-app.put('/api/admin/assuntos/:id/ativo', async (req, res) => {
+app.put('/api/admin/assuntos/:id/ativo', exigirAdmin, async (req, res) => {
     const { id } = req.params;
     const { ativo } = req.body;
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
@@ -1238,7 +1239,7 @@ app.put('/api/admin/assuntos/:id/ativo', async (req, res) => {
 // ==================== EXERCÍCIOS ====================
 
 // Listar exercícios
-app.get('/api/exercicios', async (req, res) => {
+app.get('/api/exercicios', exigirLogin, async (req, res) => {
     const { materia, assunto } = req.query;
     let query = 'SELECT * FROM exercicios';
     let params = [];
@@ -1266,7 +1267,7 @@ app.get('/api/exercicios', async (req, res) => {
 });
 
 // Criar exercício (flexível - aceita qualquer formato)
-app.post('/api/exercicios', async (req, res) => {
+app.post('/api/exercicios', exigirAdmin, async (req, res) => {
     const { materia, assunto, enunciado, alternativas, correta, solucao, explicacao } = req.body;
 
     try {
@@ -1308,7 +1309,7 @@ app.post('/api/exercicios', async (req, res) => {
 });
 
 // Deletar exercício
-app.delete('/api/exercicios/:id', async (req, res) => {
+app.delete('/api/exercicios/:id', exigirAdmin, async (req, res) => {
     const { id } = req.params;
     try {
         await pool.query('DELETE FROM exercicios WHERE id = $1', [id]);
@@ -1324,7 +1325,7 @@ app.delete('/api/exercicios/:id', async (req, res) => {
 // primeira rota que casa com o caminho; removida para não confundir)
 
 // Mover assunto (subir/descer)
-app.put('/api/admin/assuntos/:id/mover', async (req, res) => {
+app.put('/api/admin/assuntos/:id/mover', exigirAdmin, async (req, res) => {
     const { id } = req.params;
     const { direcao } = req.body;
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
@@ -1397,8 +1398,8 @@ app.put('/api/admin/assuntos/:id/mover', async (req, res) => {
 
 // ==================== BACKUP E RESTAURAÇÃO COMPLETA DO BANCO (ADMIN) ====================
 
-// Lista de tabelas que fazem parte do backup. Se uma tabela não existir no banco
-// (ex.: schema ainda não tem `exercicios` criada), ela é simplesmente ignorada.
+// Lista completa e ordenada das tabelas do backup. A exportação falha se alguma
+// estiver ausente, evitando gerar um arquivo parcial apresentado como completo.
 const TABELAS_BACKUP = [
     'usuarios',
     'disciplinas',
@@ -1413,8 +1414,37 @@ const TABELAS_BACKUP = [
     'progresso_usuario'
 ];
 
+const BACKUP_VERSAO = 3;
+
+function calcularChecksumBackup(backup) {
+    const conteudo = {
+        versao: backup.versao,
+        data: backup.data,
+        manifesto: backup.manifesto,
+        tabelas: backup.tabelas
+    };
+    return crypto.createHash('sha256').update(JSON.stringify(conteudo)).digest('hex');
+}
+
+async function obterColunasTabela(client, tabela) {
+    const result = await client.query(
+        `SELECT column_name
+           FROM information_schema.columns
+          WHERE table_schema = current_schema() AND table_name = $1
+          ORDER BY ordinal_position`,
+        [tabela]
+    );
+    return result.rows.map(row => row.column_name);
+}
+
+function identificarSeguro(nome) {
+    // Os nomes também vêm de uma whitelist, mas escapar identificadores aqui evita
+    // que futuras alterações transformem interpolação de SQL em vulnerabilidade.
+    return `"${String(nome).replace(/"/g, '""')}"`;
+}
+
 // Exportar backup completo do banco (admin) - inclui TODOS os usuários e anexos
-app.get('/api/admin/backup', async (req, res) => {
+app.get('/api/admin/backup', exigirAdmin, async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
     const userEmail = req.usuario?.email;
 
@@ -1422,32 +1452,48 @@ app.get('/api/admin/backup', async (req, res) => {
         return res.status(403).json({ sucesso: false, erro: 'Acesso negado' });
     }
 
+    const client = await pool.connect();
     try {
+        await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+
         const backup = {
-            versao: 2,
+            versao: BACKUP_VERSAO,
             data: new Date().toISOString(),
+            manifesto: {},
             tabelas: {}
         };
 
         for (const tabela of TABELAS_BACKUP) {
-            try {
-                const result = await pool.query(`SELECT * FROM ${tabela}`);
-                backup.tabelas[tabela] = result.rows;
-            } catch (err) {
-                // Tabela não existe nesse banco (ex.: schema mais antigo) - só avisa e segue
-                console.warn(`⚠️ Tabela "${tabela}" não encontrada durante o backup, pulando.`);
+            const colunas = await obterColunasTabela(client, tabela);
+            if (colunas.length === 0) {
+                throw new Error(`Tabela obrigatória ausente no banco: ${tabela}`);
             }
+
+            const possuiId = colunas.includes('id');
+            const result = await client.query(
+                `SELECT * FROM ${identificarSeguro(tabela)}${possuiId ? ' ORDER BY "id"' : ''}`
+            );
+            backup.tabelas[tabela] = result.rows;
+            backup.manifesto[tabela] = {
+                colunas,
+                registros: result.rowCount
+            };
         }
 
+        backup.checksum = calcularChecksumBackup(backup);
+        await client.query('COMMIT');
         res.json({ sucesso: true, backup });
     } catch (error) {
+        await client.query('ROLLBACK').catch(() => {});
         console.error('Erro ao gerar backup:', error);
         res.status(500).json({ sucesso: false, erro: 'Erro ao gerar backup: ' + error.message });
+    } finally {
+        client.release();
     }
 });
 
 // Restaurar backup completo do banco (admin) - APAGA TUDO e substitui pelos dados do arquivo
-app.post('/api/admin/restore', async (req, res) => {
+app.post('/api/admin/restore', exigirAdmin, async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
     const userEmail = req.usuario?.email;
 
@@ -1456,32 +1502,66 @@ app.post('/api/admin/restore', async (req, res) => {
     }
 
     const { backup } = req.body;
-    if (!backup || !backup.tabelas || typeof backup.tabelas !== 'object') {
+    if (!backup || backup.versao !== BACKUP_VERSAO || !backup.tabelas ||
+        typeof backup.tabelas !== 'object' || !backup.manifesto ||
+        typeof backup.manifesto !== 'object' || typeof backup.checksum !== 'string') {
         return res.status(400).json({ sucesso: false, erro: 'Arquivo de backup inválido' });
     }
 
-    // Só mexe nas tabelas que: (1) estão na whitelist do servidor E (2) vieram no arquivo
-    const tabelasParaRestaurar = TABELAS_BACKUP.filter(t => Array.isArray(backup.tabelas[t]));
-
-    if (tabelasParaRestaurar.length === 0) {
-        return res.status(400).json({ sucesso: false, erro: 'Nenhuma tabela reconhecida no arquivo de backup' });
+    const checksumCalculado = calcularChecksumBackup(backup);
+    const checksumRecebido = backup.checksum.toLowerCase();
+    if (!/^[a-f0-9]{64}$/.test(checksumRecebido) ||
+        !crypto.timingSafeEqual(Buffer.from(checksumCalculado), Buffer.from(checksumRecebido))) {
+        return res.status(400).json({ sucesso: false, erro: 'Backup corrompido ou alterado (checksum inválido)' });
     }
 
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
 
-        // Desabilita triggers (inclui checagem de foreign keys) para poder inserir sem se
-        // preocupar com a ordem entre tabelas relacionadas
-        for (const tabela of tabelasParaRestaurar) {
-            await client.query(`ALTER TABLE ${tabela} DISABLE TRIGGER ALL`);
+        // Toda a validação ocorre antes do TRUNCATE: um arquivo incompleto, adulterado
+        // ou incompatível nunca chega à etapa que apaga os dados atuais.
+        for (const tabela of TABELAS_BACKUP) {
+            const linhas = backup.tabelas[tabela];
+            const meta = backup.manifesto[tabela];
+            if (!Array.isArray(linhas) || !meta || !Array.isArray(meta.colunas) ||
+                !Number.isInteger(meta.registros) || meta.registros !== linhas.length) {
+                throw new Error(`Tabela ausente ou manifesto inválido: ${tabela}`);
+            }
+
+            const colunasBanco = await obterColunasTabela(client, tabela);
+            if (colunasBanco.length === 0) {
+                throw new Error(`Tabela obrigatória ausente no banco: ${tabela}`);
+            }
+            if (JSON.stringify(meta.colunas) !== JSON.stringify(colunasBanco)) {
+                throw new Error(`Schema incompatível na tabela: ${tabela}`);
+            }
+
+            const permitidas = new Set(colunasBanco);
+            for (const linha of linhas) {
+                if (!linha || typeof linha !== 'object' || Array.isArray(linha)) {
+                    throw new Error(`Registro inválido na tabela: ${tabela}`);
+                }
+                const colunasLinha = Object.keys(linha);
+                if (colunasLinha.some(coluna => !permitidas.has(coluna))) {
+                    throw new Error(`Coluna inválida na tabela: ${tabela}`);
+                }
+                if (colunasLinha.length !== colunasBanco.length ||
+                    colunasBanco.some(coluna => !Object.prototype.hasOwnProperty.call(linha, coluna))) {
+                    throw new Error(`Registro incompleto na tabela: ${tabela}`);
+                }
+            }
         }
 
-        // Apaga todos os dados atuais dessas tabelas e reseta os IDs (auto-incremento)
-        await client.query(`TRUNCATE ${tabelasParaRestaurar.join(', ')} RESTART IDENTITY CASCADE`);
+        // Todas as tabelas obrigatórias estão presentes, então o CASCADE não apaga
+        // silenciosamente dados que não possam ser restaurados pelo mesmo arquivo.
+        await client.query(
+            `TRUNCATE ${TABELAS_BACKUP.map(identificarSeguro).join(', ')} RESTART IDENTITY CASCADE`
+        );
 
-        // Reinsere linha por linha, respeitando as colunas de cada tabela
-        for (const tabela of tabelasParaRestaurar) {
+        // A whitelist está em ordem de dependência: tabelas pai são inseridas primeiro,
+        // mantendo as foreign keys ativas durante toda a restauração.
+        for (const tabela of TABELAS_BACKUP) {
             const linhas = backup.tabelas[tabela];
             for (const linha of linhas) {
                 const colunas = Object.keys(linha);
@@ -1489,33 +1569,33 @@ app.post('/api/admin/restore', async (req, res) => {
                 const placeholders = colunas.map((_, i) => `$${i + 1}`).join(', ');
                 const valores = colunas.map(c => linha[c]);
                 await client.query(
-                    `INSERT INTO ${tabela} (${colunas.map(c => `"${c}"`).join(', ')}) VALUES (${placeholders})`,
+                    `INSERT INTO ${identificarSeguro(tabela)} (${colunas.map(identificarSeguro).join(', ')}) VALUES (${placeholders})`,
                     valores
                 );
             }
         }
 
-        // Reabilita os triggers/foreign keys
-        for (const tabela of tabelasParaRestaurar) {
-            await client.query(`ALTER TABLE ${tabela} ENABLE TRIGGER ALL`);
-        }
-
         // Corrige as sequências de auto-incremento para continuarem depois do maior ID restaurado
-        for (const tabela of tabelasParaRestaurar) {
-            try {
-                await client.query(`
-                    SELECT setval(
-                        pg_get_serial_sequence('${tabela}', 'id'),
-                        GREATEST((SELECT COALESCE(MAX(id), 0) FROM ${tabela}), 1)
-                    )
-                `);
-            } catch (e) {
-                // Tabela sem coluna "id" serial - ignora
+        for (const tabela of TABELAS_BACKUP) {
+            const sequencia = await client.query(
+                'SELECT pg_get_serial_sequence($1, $2) AS nome',
+                [tabela, 'id']
+            );
+            if (sequencia.rows[0]?.nome) {
+                const maxResult = await client.query(
+                    `SELECT MAX("id") AS max_id FROM ${identificarSeguro(tabela)}`
+                );
+                const maxId = maxResult.rows[0].max_id;
+                await client.query('SELECT setval($1::regclass, $2, $3)', [
+                    sequencia.rows[0].nome,
+                    maxId === null ? 1 : maxId,
+                    maxId !== null
+                ]);
             }
         }
 
         await client.query('COMMIT');
-        res.json({ sucesso: true, mensagem: 'Backup restaurado com sucesso!', tabelas: tabelasParaRestaurar });
+        res.json({ sucesso: true, mensagem: 'Backup restaurado com sucesso!', tabelas: TABELAS_BACKUP });
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Erro ao restaurar backup:', error);
@@ -1531,7 +1611,7 @@ app.listen(PORT, () => {
 
 // ==================== LIMPAR DUPLICATAS ====================
 
-app.post('/api/admin/limpar-duplicatas', async (req, res) => {
+app.post('/api/admin/limpar-duplicatas', exigirAdmin, async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'rafaelscardua@gmail.com';
     const userEmail = req.usuario?.email;
 
